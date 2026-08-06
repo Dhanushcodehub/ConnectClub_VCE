@@ -1,0 +1,252 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-unbounded);
+  --font-mono: var(--font-syne);
+  --font-heading: var(--font-unbounded);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-glow: var(--accent-glow);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+:root, .dark {
+  --background: #0A0B14;
+  --foreground: #F4F1EC;
+  --card: rgba(255, 255, 255, 0.03);
+  --card-foreground: #F4F1EC;
+  --popover: rgba(255, 255, 255, 0.03);
+  --popover-foreground: #F4F1EC;
+  --primary: #0055FF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #00E5FF;
+  --secondary-foreground: #09090B;
+  --muted: #16161A;
+  --muted-foreground: #9B98A3;
+  --accent: #0055FF;
+  --accent-foreground: #FFFFFF;
+  --accent-glow: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #0055FF;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-white;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  /* ── Custom Scrollbar ────────────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+}
+
+@layer utilities {
+  /* ── Typography (Clamp) ──────────────────────────────── */
+  .text-h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.1;
+  }
+  .text-h2 {
+    font-size: clamp(32px, 4vw, 40px);
+    line-height: 1.1;
+  }
+  .text-h3 {
+    font-size: clamp(20px, 2vw, 24px);
+    line-height: 1.2;
+  }
+  .text-body {
+    font-size: clamp(16px, 1vw, 17px);
+    line-height: 1.6;
+  }
+  .text-label {
+    font-size: clamp(12px, 0.5vw, 13px);
+    line-height: 1.5;
+  }
+
+  /* ── Strict Layout Grid ──────────────────────────────── */
+  .container-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px; /* Strict 24px gutters */
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  @media (min-width: 768px) {
+    .container-grid {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-grid {
+      grid-template-columns: repeat(12, 1fr);
+    }
+  }
+
+  /* ── Glass card ──────────────────────────────────────── */
+  .glass-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    box-shadow: 
+      0 8px 32px -4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.4s ease,
+                box-shadow 0.4s ease;
+  }
+
+  .glass-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 24px 48px -12px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.03);
+  }
+
+  /* ── Text gradient ───────────────────────────────────── */
+  .text-gradient-cyan {
+    background: linear-gradient(135deg, #ffffff 20%, #00E5FF 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* ── Glow button ─────────────────────────────────────── */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0055FF, #00E5FF);
+    color: white;
+    font-weight: 700;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.3s ease;
+    box-shadow: 0 0 24px rgba(0, 85, 255, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .btn-glow:hover {
+    box-shadow: 0 0 36px rgba(0, 229, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+
+  .btn-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+    pointer-events: none;
+  }
+
+  /* ── Eyebrow label ───────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--font-syne), sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    color: var(--secondary);
+  }
+
+  /* ── Scrollbar hide ──────────────────────────────────── */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .bg-grid-pattern-light {
+    background-size: 50px 50px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  }
+  /* ── Background Grid Pattern ─────────────────────────── */
+  .bg-grid-pattern {
+    background-size: 50px 50px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  }
+}
+
+/* ── Custom keyframes ─────────────────────────────────── */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.08); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+.delay-1000 {
+  animation-delay: 2s;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
