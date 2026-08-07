@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, ArrowRight, Search, ChevronLeft, ChevronRight, X, MapPin } from "lucide-react";
+import { Calendar, ArrowRight, Search, ChevronLeft, ChevronRight, X, MapPin, Clock } from "lucide-react";
 import { EventStatus, ConnectEvent } from "@/lib/data/events";
 import { getEvents } from "@/lib/firebase/api";
 import { cn } from "@/lib/utils";
@@ -273,29 +273,29 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
               key={event.id}
               variants={fadeUp}
               onClick={() => setSelectedEvent(event)}
-              className="group cursor-pointer relative flex flex-col rounded-xl border border-white/[0.06] bg-[#0C0C0E] overflow-hidden transition-all hover:border-white/[0.15] hover:bg-[#111114] shadow-xl hover:shadow-2xl"
+              className="group cursor-pointer relative flex flex-col rounded-2xl border border-white/[0.08] bg-[#161618] overflow-hidden transition-all hover:border-white/[0.15] hover:bg-[#1A1A1D] shadow-lg hover:shadow-2xl"
             >
               {/* Image Top */}
-              <div className="relative w-full h-[240px] overflow-hidden bg-white/5">
+              <div className="relative w-full aspect-[16/9] overflow-hidden bg-white/5">
                 {event.banner && (
                   <img
                     src={event.banner}
                     alt={event.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-110"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 )}
                 
                 {/* Overlay Badges */}
-                <div className="absolute top-5 left-5 z-20 flex gap-2">
+                <div className="absolute top-4 left-4 z-20 flex gap-2">
                   <span
                     className={cn(
-                      "px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-[0.15em] backdrop-blur-md shadow-lg",
+                      "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-lg",
                       event.status === "Upcoming"
                         ? "bg-primary text-white"
                         : event.status === "Ongoing"
                         ? "bg-green-500 text-white"
-                        : "bg-white/20 text-white"
+                        : "bg-black/50 text-white border border-white/10"
                     )}
                   >
                     {event.status}
@@ -304,24 +304,42 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
               </div>
 
               {/* Content Bottom */}
-              <div className="flex flex-col flex-1 p-8">
-                <h3 className="font-display font-black text-2xl md:text-3xl text-white uppercase tracking-tight mb-4 group-hover:text-primary transition-colors">
+              <div className="flex flex-col flex-1 p-5 md:p-6">
+                <h3 className="font-bold text-lg md:text-xl text-white mb-1 group-hover:text-primary transition-colors line-clamp-1">
                   {event.title}
                 </h3>
-                <p className="text-white/50 leading-relaxed text-sm line-clamp-2 mb-10">
-                  {event.description}
+                <p className="text-white/50 text-xs md:text-sm mb-5">
+                  Organized by <span className="font-medium text-white/70">Connect Club</span>
                 </p>
 
+                <div className="flex flex-col gap-2.5 mb-6 text-sm text-white/70">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-[#f04b5a]" />
+                    <span>{event.date}</span>
+                  </div>
+                  {event.venue && (
+                    <div className="flex items-center gap-3">
+                      <MapPin className="w-4 h-4 text-[#f04b5a]" />
+                      <span className="line-clamp-1">{event.venue}</span>
+                    </div>
+                  )}
+                  {event.agenda && event.agenda.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-[#f04b5a]" />
+                      <span>{event.agenda[0].time.split(' - ')[1] || event.agenda[0].time}</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Footer of Card */}
-                <div className="flex items-center justify-between mt-auto pt-5 border-t border-white/[0.05]">
-                  <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
-                    <Calendar className="w-4 h-4 text-white/30" />
-                    {event.date}
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/[0.06]">
+                  <div className="flex flex-col">
+                    <span className="text-white/40 text-[10px] md:text-xs">From</span>
+                    <span className="text-white font-bold text-sm md:text-base">Free</span>
                   </div>
-                  <div className="flex items-center text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] gap-2 group-hover:text-primary transition-all group-hover:gap-4">
-                    Explore
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
-                  </div>
+                  <button className="px-5 py-2 rounded-xl bg-[#f04b5a] text-white text-xs md:text-sm font-semibold hover:bg-[#d83c48] transition-colors shadow-lg">
+                    {event.status === "Past" ? "View Details" : "Register"}
+                  </button>
                 </div>
               </div>
             </motion.div>
