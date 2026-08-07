@@ -126,6 +126,27 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative">
       
+      {/* Trending Events Heading */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-white/80 text-xs font-bold uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+              🔥 Hot Right Now
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+            Trending events
+          </h1>
+          <p className="text-white/50 text-base md:text-lg">
+            What students are booking this week.
+          </p>
+        </div>
+        <button className="flex items-center gap-2 text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2.5 rounded-full text-sm font-medium transition-all group">
+          Browse all
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        </button>
+      </div>
+
       {/* Featured Event Hero Carousel */}
       {featuredEvent && (
         <div className="relative mb-12 group/carousel">
@@ -170,6 +191,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                   />
                 ) : null}
                 <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#0C0C0E] via-[#0C0C0E]/40 to-transparent" />
+                
+                {/* ConnectClub Label */}
+                <div className="absolute top-6 left-6 z-20">
+                  <div className="bg-primary text-white text-xs font-black px-2.5 py-1 rounded-sm shadow-lg tracking-tighter flex items-center">
+                    connectclub<span className="opacity-70">.</span>
+                  </div>
+                </div>
               </div>
 
               {/* Featured Content */}
@@ -288,6 +316,9 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                 
                 {/* Overlay Badges */}
                 <div className="absolute top-4 left-4 z-20 flex gap-2">
+                  <div className="bg-primary text-white text-[10px] font-black px-2 py-1 rounded-sm shadow-lg tracking-tighter flex items-center h-fit">
+                    connectclub<span className="opacity-70">.</span>
+                  </div>
                   <span
                     className={cn(
                       "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-[0.15em] backdrop-blur-md shadow-lg",
