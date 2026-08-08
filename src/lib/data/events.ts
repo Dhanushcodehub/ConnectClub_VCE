@@ -15,6 +15,9 @@ export interface ConnectEvent {
   galleryAlbums?: string[];
   certificates?: boolean;
   highlights?: string[];
+  time?: string;
+  price?: string;
+  organizedBy?: string;
 }
 
 export const eventsData: ConnectEvent[] = [

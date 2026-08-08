@@ -42,9 +42,9 @@ export default function MemberLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-row-reverse">
-      {/* Right Side - Branding (Hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden border-l border-white/5">
+    <div className="min-h-screen bg-[#050505] flex flex-row">
+      {/* Left Side - Branding (Hidden on mobile) */}
+      <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
         <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
         
@@ -60,34 +60,34 @@ export default function MemberLoginPage() {
           className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" 
         />
 
-        <div className="relative z-10 flex items-center justify-end">
+        <div className="relative z-10 flex items-center mb-8">
           <img 
-            src="/logo/logo-transparent.svg" 
+            src="/logo/logo-transparent.png" 
             alt="Connect Club" 
-            className="h-10 w-auto object-contain brightness-0 invert"
+            className="h-32 md:h-40 w-auto object-contain brightness-0 invert"
           />
         </div>
 
-        <div className="relative z-10 max-w-lg mt-20 ml-auto text-right">
+        <div className="relative z-10 max-w-lg mt-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-white/70 mb-6 justify-end">
-              <span>Member Portal Access</span>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-white/70 mb-6">
               <Users className="w-3 h-3 text-blue-400" />
+              <span>Member Portal Access</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-black font-heading text-white leading-[1.1] tracking-tight mb-6">
-              Welcome to the <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary to-blue-400">Inner Circle</span>.
+              Welcome to the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-primary">Inner Circle</span>.
             </h1>
-            <p className="text-lg text-white/50 leading-relaxed ml-auto max-w-md">
+            <p className="text-lg text-white/50 leading-relaxed max-w-md">
               Log in to your member account to collaborate on projects, organize events, and manage the Connect Club community.
             </p>
           </motion.div>
         </div>
 
-        <div className="relative z-10 flex justify-end">
+        <div className="relative z-10 flex">
           <div className="flex items-center space-x-2 text-sm text-white/40">
             <Sparkles className="w-4 h-4" />
             <span>Empowering Student Leaders</span>
@@ -103,9 +103,9 @@ export default function MemberLoginPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-12">
             <img 
-              src="/logo/logo-transparent.svg" 
+              src="/logo/logo-transparent.png" 
               alt="Connect Club" 
-              className="h-10 w-auto object-contain brightness-0 invert"
+              className="h-24 w-auto object-contain brightness-0 invert"
             />
           </div>
 

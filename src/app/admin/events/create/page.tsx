@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase/config";
 import { ArrowLeft, Save, Loader2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import ImageUploader from "@/components/ImageUploader";
+import MediaUploader from "@/components/MediaUploader";
 import { EventStatus, ConnectEvent } from "@/lib/data/events";
 
 export default function CreateEventPage() {
@@ -21,6 +22,9 @@ export default function CreateEventPage() {
     status: "Upcoming",
     banner: "",
     registrationLink: "",
+    time: "",
+    price: "",
+    organizedBy: "",
     speakers: [],
     agenda: [],
     faqs: [],
@@ -128,14 +132,14 @@ export default function CreateEventPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-white/80">Date & Time</label>
+                    <label className="text-sm font-medium text-white/80">Date</label>
                     <input
                       type="text"
                       required
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full bg-background border border-white/10 rounded-md px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      placeholder="e.g. March 15, 2026"
+                      placeholder="e.g. 15 Aug 2026"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -146,7 +150,40 @@ export default function CreateEventPage() {
                       value={formData.venue}
                       onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
                       className="w-full bg-background border border-white/10 rounded-md px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      placeholder="e.g. Main Auditorium"
+                      placeholder="e.g. T-Works, Hyderabad"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-white/80">Time</label>
+                    <input
+                      type="text"
+                      value={formData.time || ""}
+                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      className="w-full bg-background border border-white/10 rounded-md px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      placeholder="e.g. 3:00 PM"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-white/80">Price</label>
+                    <input
+                      type="text"
+                      value={formData.price || ""}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      className="w-full bg-background border border-white/10 rounded-md px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      placeholder="e.g. Free or ₹69.00"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-white/80">Organized By</label>
+                    <input
+                      type="text"
+                      value={formData.organizedBy || ""}
+                      onChange={(e) => setFormData({ ...formData, organizedBy: e.target.value })}
+                      className="w-full bg-background border border-white/10 rounded-md px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      placeholder="e.g. Connect Club"
                     />
                   </div>
                 </div>
@@ -345,28 +382,35 @@ export default function CreateEventPage() {
                 )}
               </div>
 
-              {/* Gallery */}
+              {/* Gallery Media */}
               <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-white">Gallery Images</h2>
+                  <h2 className="text-lg font-bold text-white">Gallery Media</h2>
                 </div>
-                <div className="space-y-4">
-                  {formData.galleryAlbums?.map((imgUrl, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input
-                        type="url"
-                        value={imgUrl}
-                        onChange={(e) => handleArrayStringChange("galleryAlbums", i, e.target.value)}
-                        className="flex-1 bg-background border border-white/10 rounded-md px-4 py-2 text-white text-sm"
-                        placeholder="Image URL"
-                      />
-                      <button type="button" onClick={() => handleArrayStringRemove("galleryAlbums", i)} className="p-2 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {formData.galleryAlbums?.map((url, i) => (
+                    <div key={i} className="relative aspect-video">
+                       <MediaUploader 
+                         defaultMedia={url}
+                         onUpload={(newUrl) => handleArrayStringChange("galleryAlbums", i, newUrl)}
+                         className="w-full h-full"
+                       />
+                       <button 
+                         type="button" 
+                         onClick={() => handleArrayStringRemove("galleryAlbums", i)} 
+                         className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:scale-110 z-10 shadow-lg"
+                       >
+                         <Trash2 className="w-3 h-3" />
+                       </button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => handleArrayStringAdd("galleryAlbums")} className="w-full text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-md flex items-center justify-center">
-                    <Plus className="w-3 h-3 mr-1" /> Add Image URL
+                  <button 
+                    type="button" 
+                    onClick={() => handleArrayStringAdd("galleryAlbums")} 
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl bg-white/5 hover:bg-white/10 hover:border-primary/50 transition-colors aspect-video text-white/70 w-full h-full"
+                  >
+                    <Plus className="w-5 h-5 mb-1" /> 
+                    <span className="text-[10px] font-medium uppercase tracking-wider">Add Media</span>
                   </button>
                 </div>
               </div>

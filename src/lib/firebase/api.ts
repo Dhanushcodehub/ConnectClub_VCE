@@ -5,7 +5,6 @@ import { ConnectProject, projectsData } from "../data/projects";
 
 // Events
 export async function getEvents(): Promise<ConnectEvent[]> {
-  if (typeof window === "undefined") return [];
   try {
     const querySnapshot = await getDocs(collection(db, "events"));
     if (querySnapshot.empty) {
@@ -19,7 +18,6 @@ export async function getEvents(): Promise<ConnectEvent[]> {
 }
 
 export async function getEventBySlug(slug: string): Promise<ConnectEvent | null> {
-  if (typeof window === "undefined") return null;
   try {
     const docRef = doc(db, "events", slug);
     const docSnap = await getDoc(docRef);

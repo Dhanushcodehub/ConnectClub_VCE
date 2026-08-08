@@ -119,7 +119,13 @@ export function ConnectAIChat() {
     sendChatRequest(trimmed);
   }, [messages, sendChatRequest]);
 
-  if (pathname?.startsWith("/connect-ai")) return null;
+  if (
+    pathname?.startsWith("/connect-ai") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/member")
+  ) {
+    return null;
+  }
 
   return (
     <>

@@ -20,7 +20,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
   }, []);
 
   return (
-    <div className="w-full container-grid py-16 md:py-24">
+    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 md:pt-36 md:pb-20 relative">
       {/* Page Header */}
       <motion.div
         variants={staggerContainer}
@@ -78,7 +78,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="col-span-full container-grid p-0 m-0 w-full max-w-none gap-y-12"
+          className="w-full grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-y-12 gap-x-6"
         >
           {projects.map((project, idx) => {
             const isFeatured = idx === 0;

@@ -110,14 +110,11 @@ export default function AdminLoginPage() {
           className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px]" 
         />
 
-        <div className="relative z-10 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black font-heading text-xl shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-            C
-          </div>
-          <span className="text-xl font-bold font-heading text-white tracking-tight">Connect Club .</span>
+        <div className="relative z-10 flex items-center mb-8">
+          <img src="/logo/logo-transparent.png" alt="Connect Club" className="h-32 md:h-40 w-auto object-contain brightness-0 invert" />
         </div>
 
-        <div className="relative z-10 max-w-lg mt-20">
+        <div className="relative z-10 max-w-lg mt-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,11 +145,8 @@ export default function AdminLoginPage() {
         
         <div className="w-full max-w-md relative z-10">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center space-x-3 mb-12">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black font-heading text-xl shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-              C
-            </div>
-            <span className="text-xl font-bold font-heading text-white tracking-tight">Connect Club .</span>
+          <div className="lg:hidden flex items-center justify-center mb-12">
+            <img src="/logo/logo-transparent.png" alt="Connect Club" className="h-24 w-auto object-contain brightness-0 invert" />
           </div>
 
           <AnimatePresence mode="wait">

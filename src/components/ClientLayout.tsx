@@ -15,7 +15,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       {!isPortal && <Navbar />}
       
       <main className="flex-1 flex flex-col relative z-0">
-        <GlobalChatListener />
+        {!isPortal && <GlobalChatListener />}
         {children}
       </main>
       

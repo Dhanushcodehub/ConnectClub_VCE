@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, ArrowRight, Search, ChevronLeft, ChevronRight, X, MapPin } from "lucide-react";
+import { Calendar, ArrowRight, Search, ChevronLeft, ChevronRight, X, MapPin, Clock } from "lucide-react";
 import { EventStatus, ConnectEvent } from "@/lib/data/events";
 import { getEvents } from "@/lib/firebase/api";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
   const [activeTab, setActiveTab] = useState<EventStatus | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
-  const [selectedEvent, setSelectedEvent] = useState<ConnectEvent | null>(null);
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,16 +53,6 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
     
     return matchesTab && matchesSearch;
   });
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (selectedEvent) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => { document.body.style.overflow = "unset"; };
-  }, [selectedEvent]);
 
   // Auto-slide carousel every 5 seconds
   useEffect(() => {
@@ -124,28 +114,29 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
   }
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative">
+    <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 md:pt-36 md:pb-20 relative">
       
       {/* Trending Events Heading */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-white/80 text-xs font-bold uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
-              🔥 Hot Right Now
-            </span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
-            Trending events
-          </h1>
-          <p className="text-white/50 text-base md:text-lg">
-            What students are booking this week.
-          </p>
-        </div>
-        <button className="flex items-center gap-2 text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2.5 rounded-full text-sm font-medium transition-all group">
-          Browse all
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </button>
-      </div>
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="mb-8 md:mb-12"
+      >
+        <motion.div variants={fadeUp} className="flex items-center gap-3 mb-4">
+          <span className="w-8 h-[2px] bg-primary rounded-full" />
+          <span className="text-xs md:text-sm text-primary font-bold uppercase tracking-[0.2em]">{`Hot Right Now`}</span>
+        </motion.div>
+        <motion.h1
+          variants={fadeUp}
+          className="text-4xl md:text-5xl font-display font-black text-white uppercase tracking-tight mb-4"
+        >
+          Trending Events
+        </motion.h1>
+        <motion.p variants={fadeUp} className="text-white/60 text-lg md:text-xl max-w-2xl leading-relaxed">
+          Discover the most anticipated events happening around campus.
+        </motion.p>
+      </motion.div>
 
       {/* Featured Event Hero Carousel */}
       {featuredEvent && (
@@ -178,7 +169,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
               exit={{ opacity: 0, x: -50, scale: 0.98 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col md:flex-row w-full cursor-pointer"
-              onClick={() => setSelectedEvent(featuredEvent)}
+              onClick={() => router.push(`/events/${featuredEvent.id}`)}
             >
               {/* Featured Image */}
               <div className="relative w-full md:w-1/2 h-[350px] md:h-[500px]">
@@ -186,15 +177,15 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                   <img
                     src={featuredEvent.banner}
                     alt={featuredEvent.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    className="w-full h-full object-contain object-center transition-transform duration-1000 group-hover:scale-105"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : null}
                 <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#0C0C0E] via-[#0C0C0E]/40 to-transparent" />
                 
                 {/* ConnectClub Label */}
-                <div className="absolute top-6 left-6 z-20">
-                  <div className="bg-primary text-white text-xs font-black px-2.5 py-1 rounded-sm shadow-lg tracking-tighter flex items-center">
+                <div className="absolute bottom-6 right-6 z-20">
+                  <div className="text-[#FFD700] text-sm font-black tracking-tighter flex items-center drop-shadow-md">
                     connectclub<span className="opacity-70">.</span>
                   </div>
                 </div>
@@ -205,20 +196,39 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                 <span className="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.2em] bg-primary/20 text-primary border border-primary/20 w-fit mb-6 shadow-[0_0_15px_rgba(0,85,255,0.3)]">
                   Featured Event
                 </span>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-white uppercase tracking-tight mb-4 leading-tight">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-white uppercase tracking-tight mb-2 leading-tight">
                   {featuredEvent.title || "Untitled Event"}
                 </h2>
-                <p className="text-white/50 text-sm md:text-base leading-relaxed mb-8 line-clamp-3">
-                  {featuredEvent.description || "No description provided."}
+                <p className="text-white/50 text-sm mb-6">
+                  Organized by <span className="text-white font-medium">{featuredEvent.organizedBy || "Connect Club"}</span>
                 </p>
-                <div className="flex items-center justify-between mt-auto">
-                   <div className="flex items-center text-white/60 text-sm gap-2 font-medium">
-                     <Calendar className="w-4 h-4 text-primary" />
-                     {featuredEvent.date || "TBD"}
+
+                <div className="flex flex-col gap-3 text-white/60 text-sm mb-8">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    {featuredEvent.date || "TBD"}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    {featuredEvent.venue || "TBA"}
+                  </div>
+                  {featuredEvent.time && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-primary" />
+                      {featuredEvent.time}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between mt-auto border-t border-white/[0.05] pt-6 group cursor-pointer" onClick={() => router.push(`/events/${featuredEvent.id}`)}>
+                   <div className="flex flex-col">
+                     <span className="text-white/50 text-[10px] uppercase tracking-wider mb-0.5">From</span>
+                     <span className="text-white font-bold text-lg">{featuredEvent.price || "Free"}</span>
                    </div>
-                   <button className="relative z-30 px-8 py-3 rounded-md bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors shadow-lg">
-                     Explore
-                   </button>
+                   <div className="flex items-center text-white/70 text-xs font-bold uppercase tracking-[0.2em] gap-2 group-hover:text-primary transition-all group-hover:gap-3">
+                     {featuredEvent.registrationLink ? "Register" : "Explore"}
+                     <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
+                   </div>
                 </div>
               </div>
             </motion.div>
@@ -294,13 +304,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
         >
           {filteredEvents.map((event) => (
             <motion.div
               key={event.id}
               variants={fadeUp}
-              onClick={() => setSelectedEvent(event)}
+              onClick={() => router.push(`/events/${event.id}`)}
               className="group cursor-pointer relative flex flex-col rounded-2xl border border-white/[0.08] bg-[#111114] overflow-hidden transition-all hover:border-white/[0.15] hover:bg-[#16161a] shadow-xl hover:shadow-2xl"
             >
               {/* Image Top */}
@@ -309,48 +319,69 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                   <img
                     src={event.banner}
                     alt={event.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-contain object-center transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 )}
                 
                 {/* Overlay Badges */}
                 <div className="absolute top-4 left-4 z-20 flex gap-2">
-                  <div className="bg-primary text-white text-[10px] font-black px-2 py-1 rounded-sm shadow-lg tracking-tighter flex items-center h-fit">
-                    connectclub<span className="opacity-70">.</span>
-                  </div>
                   <span
                     className={cn(
-                      "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-[0.15em] backdrop-blur-md shadow-lg",
+                      "px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest backdrop-blur-md border",
                       event.status === "Upcoming"
-                        ? "bg-primary text-white"
+                        ? "bg-primary/20 text-primary border-primary/30"
                         : event.status === "Ongoing"
-                        ? "bg-green-500 text-white"
-                        : "bg-white/20 text-white"
+                        ? "bg-green-500/20 text-green-400 border-green-500/30"
+                        : "bg-zinc-800/80 text-zinc-400 border-zinc-700/50"
                     )}
                   >
                     {event.status}
                   </span>
                 </div>
+
+                {/* ConnectClub Label */}
+                <div className="absolute bottom-4 right-4 z-20">
+                  <div className="text-[#FFD700] text-xs font-black tracking-tighter flex items-center drop-shadow-md">
+                    connectclub<span className="opacity-70">.</span>
+                  </div>
+                </div>
               </div>
 
               {/* Content Bottom */}
               <div className="flex flex-col flex-1 p-5 md:p-6">
-                <h3 className="font-display font-black text-xl md:text-2xl text-white uppercase tracking-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                <h3 className="font-display font-black text-xl md:text-2xl text-white tracking-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
                   {event.title}
                 </h3>
-                <p className="text-white/50 leading-relaxed text-sm line-clamp-2 mb-6">
-                  {event.description}
+                <p className="text-white/50 text-sm mb-6">
+                  Organized by <span className="text-white font-medium">{event.organizedBy || "Connect Club"}</span>
                 </p>
 
-                {/* Footer of Card */}
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/[0.05]">
-                  <div className="flex items-center gap-2 text-white/50 text-xs font-medium">
+                <div className="flex flex-col gap-2 text-white/60 text-sm mb-6">
+                  <div className="flex items-center gap-3">
                     <Calendar className="w-4 h-4 text-white/30" />
-                    {event.date}
+                    {event.date || "TBD"}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-4 h-4 text-white/30" />
+                    {event.venue || "TBA"}
+                  </div>
+                  {event.time && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-white/30" />
+                      {event.time}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer of Card */}
+                <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-white/50 text-[10px] uppercase tracking-wider mb-0.5">From</span>
+                    <span className="text-white font-bold text-base">{event.price || "Free"}</span>
                   </div>
                   <div className="flex items-center text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] gap-2 group-hover:text-primary transition-all group-hover:gap-3">
-                    Explore
+                    {event.registrationLink ? "Register" : "Explore"}
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
                   </div>
                 </div>
@@ -360,220 +391,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
         </motion.div>
       </AnimatePresence>
 
+
       {filteredEvents.length === 0 && (
         <div className="text-center py-32">
           <p className="text-white/30 text-sm font-bold uppercase tracking-widest">
             No events found matching your criteria.
           </p>
         </div>
-      )}
-
-      {/* Event Details Modal Overlay (Using React Portal to escape z-index hell) */}
-      {mounted && createPortal(
-        <AnimatePresence>
-          {selectedEvent && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8">
-              {/* Blurred Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 bg-black/80 backdrop-blur-xl"
-                onClick={() => setSelectedEvent(null)}
-              />
-              
-              {/* Massive Industry-Level Modal */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 40 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 40 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="relative w-full max-w-7xl h-full max-h-[90vh] bg-[#0A0A0C] border border-white/10 rounded-xl overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10"
-              >
-                {/* Close Button */}
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-12 h-12 flex items-center justify-center rounded-md bg-black/50 border border-white/10 text-white/70 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all hover:scale-105 shadow-2xl"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-
-                {/* Modal Banner (Left Side on Desktop) */}
-                <div className="w-full md:w-1/2 h-[250px] md:h-full relative shrink-0 border-b md:border-b-0 md:border-r border-white/10">
-                  <img src={selectedEvent.banner} alt={selectedEvent.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C]/40 to-transparent md:bg-gradient-to-r" />
-                  
-                  {/* Floating Title on Banner for Mobile */}
-                  <div className="absolute bottom-6 left-6 right-6 md:hidden">
-                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight mb-2 drop-shadow-xl">{selectedEvent.title}</h3>
-                  </div>
-                </div>
-
-                {/* Modal Content Scrollable Area (Right Side on Desktop) */}
-                <div className="w-full md:w-1/2 flex-1 overflow-y-auto p-6 md:p-10 lg:p-14 scrollbar-hide" data-lenis-prevent="true">
-                  
-                  {/* Meta details */}
-                  <div className="flex flex-wrap items-center gap-4 mb-8">
-                    <span className={cn(
-                        "px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-[0.2em]",
-                        selectedEvent.status === "Upcoming"
-                          ? "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(0,85,255,0.2)]"
-                          : selectedEvent.status === "Ongoing"
-                          ? "bg-green-500/20 text-green-400 border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
-                          : "bg-white/10 text-white/50 border border-white/10"
-                      )}>
-                      {selectedEvent.status}
-                    </span>
-                    <div className="flex items-center gap-2 text-white/60 text-xs md:text-sm font-medium">
-                      <Calendar className="w-4 h-4 text-white/40" />
-                      {selectedEvent.date}
-                    </div>
-                    <div className="flex items-center gap-2 text-white/60 text-xs md:text-sm font-medium">
-                      <MapPin className="w-4 h-4 text-white/40" />
-                      {selectedEvent.venue}
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-white uppercase tracking-tighter mb-6 leading-none">
-                    {selectedEvent.title}
-                  </h2>
-                  
-                  {/* Description */}
-                  <p className="text-white/60 text-sm md:text-base leading-relaxed mb-10 max-w-2xl">
-                    {selectedEvent.description}
-                  </p>
-
-                  {/* Event Highlights Section */}
-                  {selectedEvent.highlights && selectedEvent.highlights.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">
-                        Event Highlights
-                      </h3>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl">
-                        {selectedEvent.highlights.map((highlight, i) => (
-                          <li key={i} className="flex items-start gap-3 bg-white/[0.01] p-4 rounded-md border border-white/[0.03]">
-                            <div className="w-6 h-6 shrink-0 rounded-sm bg-primary/20 text-primary flex items-center justify-center mt-0.5">
-                              <span className="text-[10px] font-bold">✓</span>
-                            </div>
-                            <span className="text-white/80 text-sm md:text-base leading-relaxed">{highlight}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {/* Speakers Section */}
-                  {selectedEvent.speakers && selectedEvent.speakers.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">
-                        Guest Speakers
-                      </h3>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {selectedEvent.speakers.map((speaker, i) => (
-                          <li key={i} className="flex items-center gap-4 bg-white/[0.02] border border-white/[0.04] p-4 rounded-md hover:bg-white/[0.05] transition-colors">
-                            <div className="w-10 h-10 rounded-sm bg-gradient-to-br from-primary/40 to-secondary/40 border border-white/10 flex items-center justify-center text-white/50 font-bold uppercase">
-                              {speaker.charAt(0)}
-                            </div>
-                            <span className="text-white/80 text-sm font-medium">{speaker}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Agenda Section */}
-                  {selectedEvent.agenda && selectedEvent.agenda.length > 0 && (
-                    <div className="mb-10">
-                      <h3 className="text-xs md:text-sm font-bold text-white mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">
-                        Event Agenda
-                      </h3>
-                      <div className="space-y-3 max-w-2xl">
-                        {selectedEvent.agenda.map((item, i) => (
-                          <div key={i} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 bg-white/[0.01] p-4 rounded-md border border-white/[0.02] hover:border-white/[0.08] transition-colors">
-                            <div className="text-primary text-xs font-bold uppercase tracking-widest shrink-0 md:w-32">
-                              {item.time}
-                            </div>
-                            <div className="text-white/90 text-sm md:text-base font-medium">
-                              {item.title}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Certificates Banner */}
-                  {selectedEvent.certificates && (
-                    <div className="mb-12 max-w-4xl bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-md p-6 flex items-center gap-6">
-                      <div className="w-12 h-12 rounded-md bg-primary/20 flex items-center justify-center shrink-0">
-                        <span className="text-xl">🏆</span>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-bold text-lg mb-1">Certificates of Participation</h4>
-                        <p className="text-white/60 text-sm">All attendees will receive a verified certificate upon completion of this event.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Gallery Section */}
-                  {selectedEvent.galleryAlbums && selectedEvent.galleryAlbums.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">
-                        Gallery & Memories
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {selectedEvent.galleryAlbums.map((img, i) => (
-                          <div key={i} className="relative aspect-video rounded-md overflow-hidden border border-white/10 group">
-                            <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* FAQs Section */}
-                  {selectedEvent.faqs && selectedEvent.faqs.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-[0.2em] border-b border-white/10 pb-4">
-                        Frequently Asked Questions
-                      </h3>
-                      <div className="space-y-4 max-w-4xl">
-                        {selectedEvent.faqs.map((faq, i) => (
-                          <div key={i} className="bg-white/[0.02] border border-white/[0.05] p-6 rounded-md">
-                            <h4 className="text-white font-bold text-sm md:text-base mb-2">{faq.question}</h4>
-                            <p className="text-white/60 text-sm leading-relaxed">{faq.answer}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Registration CTA */}
-                  <div className="pt-8 border-t border-white/10 mt-auto">
-                    {selectedEvent.registrationLink ? (
-                      <a
-                        href={selectedEvent.registrationLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center px-10 py-5 rounded-md bg-primary text-white text-sm font-bold uppercase tracking-[0.2em] hover:bg-primary/90 hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,85,255,0.4)] w-full sm:w-auto"
-                      >
-                        Register Now
-                      </a>
-                    ) : (
-                      <button disabled className="inline-flex items-center justify-center px-10 py-5 rounded-md bg-white/5 border border-white/10 text-white/30 text-sm font-bold uppercase tracking-[0.2em] w-full sm:w-auto cursor-not-allowed">
-                        Registrations Closed
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body
       )}
     </div>
   );

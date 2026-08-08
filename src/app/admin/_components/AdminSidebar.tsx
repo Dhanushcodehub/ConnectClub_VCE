@@ -87,15 +87,15 @@ export default function AdminSidebar() {
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:translate-x-0 md:relative
-        group w-72 md:w-20 lg:w-72 border-r border-white/5 bg-background md:bg-card/50 md:backdrop-blur-xl flex flex-col shrink-0 shadow-2xl md:hover:w-64 h-[100svh]
+        group w-72 md:w-20 lg:w-72 border-r border-white/5 bg-background md:bg-card/50 md:backdrop-blur-xl flex flex-col shrink-0 shadow-2xl md:hover:w-72 h-[100svh]
       `}>
         <div className="p-6 border-b border-white/5 flex flex-col items-center">
 
   <Link href="/admin">
     <img
-      src="/logo/logo-light.png"
+      src="/logo/logo-transparent.png"
       alt="Connect Club"
-      className="w-16 h-16 lg:w-20 lg:h-20 object-contain"
+      className="w-16 h-16 lg:w-20 lg:h-20 object-contain brightness-0 invert"
     />
   </Link>
 

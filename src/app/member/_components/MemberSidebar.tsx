@@ -40,8 +40,26 @@ export default function MemberSidebar({ memberProfile }: { memberProfile: Connec
 
   return (
     <aside className="w-72 border-r border-white/5 bg-card/50 backdrop-blur-xl flex flex-col hidden md:flex shrink-0 z-50 shadow-2xl">
-      <div className="p-8 border-b border-white/5 flex items-center">
-        <h2 className="text-2xl font-black font-heading tracking-tight">Member Portal</h2>
+      <div className="p-6 border-b border-white/5 flex flex-col items-center">
+        <Link href="/member/dashboard">
+          <img
+            src="/logo/logo-transparent.png"
+            alt="Connect Club"
+            className="w-16 h-16 lg:w-20 lg:h-20 object-contain brightness-0 invert"
+          />
+        </Link>
+        <div className="flex flex-col items-center mt-3">
+          <h2 className="text-lg font-bold text-white">CONNECT CLUB</h2>
+          <p className="text-[11px] text-gray-400 text-center leading-4">
+            Vardhaman College
+            <br />
+            of Engineering
+          </p>
+          <div className="w-20 h-px bg-white/10 mt-3"></div>
+          <span className="mt-3 text-[10px] uppercase tracking-[0.35em] text-blue-400">
+            MEMBER PORTAL
+          </span>
+        </div>
       </div>
       
       <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar" data-lenis-prevent>
