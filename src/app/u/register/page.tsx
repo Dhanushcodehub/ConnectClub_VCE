@@ -22,7 +22,6 @@ export default function UserRegisterPage() {
     yearOfStudy: ""
   });
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -88,11 +87,7 @@ export default function UserRegisterPage() {
       // Sign out immediately so they can't access the app until verified
       await auth.signOut();
       
-      setSuccessMsg("Registration successful! Please check your email to verify your account before logging in.");
-      setFormData({
-        name: "", rollNo: "", phone: "", email: "", password: "", department: "", yearOfStudy: ""
-      });
-      setLoading(false);
+      router.push("/u/verify");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to create account. Please try again.");
@@ -102,7 +97,6 @@ export default function UserRegisterPage() {
 
   const handleGoogleSignUp = async () => {
     setError("");
-    setSuccessMsg("");
     setGoogleLoading(true);
 
     try {
@@ -198,12 +192,6 @@ export default function UserRegisterPage() {
               {error && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center">
                   {error}
-                </motion.div>
-              )}
-
-              {successMsg && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center">
-                  {successMsg}
                 </motion.div>
               )}
 
