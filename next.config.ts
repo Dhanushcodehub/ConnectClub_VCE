@@ -24,8 +24,28 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        // Proxy Firebase auth handler through our domain so signInWithRedirect works.
+        // Without this, browsers block the cross-origin cookie from firebaseapp.com.
+        source: '/__/auth/:path*',
+        destination: 'https://connect-club-vce-2026.firebaseapp.com/__/auth/:path*',
+      },
+    ];
+  },
   async headers() {
     return [
+      {
+        // Allow Firebase auth handler iframe to work
+        source: '/__/auth/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
