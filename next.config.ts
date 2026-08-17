@@ -28,7 +28,6 @@ const nextConfig: NextConfig = {
     return [
       {
         // Proxy Firebase auth handler through our domain so signInWithRedirect works.
-        // Without this, browsers block the cross-origin cookie from firebaseapp.com.
         source: '/__/auth/:path*',
         destination: 'https://connect-club-vce-2026.firebaseapp.com/__/auth/:path*',
       },
@@ -37,16 +36,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Allow Firebase auth handler iframe to work
-        source: '/__/auth/:path*',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-        ],
-      },
-      {
         source: '/(.*)',
         headers: [
           {
@@ -54,8 +43,11 @@ const nextConfig: NextConfig = {
             value: 'nosniff',
           },
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            // CSP frame-ancestors replaces X-Frame-Options.
+            // 'self' provides the same clickjacking protection as X-Frame-Options: SAMEORIGIN
+            // without breaking Firebase SDK's internal auth iframes.
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self'",
           },
           {
             key: 'Referrer-Policy',
