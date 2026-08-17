@@ -283,16 +283,16 @@ export default function UserRegisterPage() {
                       onChange={handleInputChange}
                       className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
                     >
-                      <option value="" disabled>Select Dept</option>
-                      <option value="CSE">CSE</option>
-                      <option value="ECE">ECE</option>
-                      <option value="EEE">EEE</option>
-                      <option value="MECH">MECH</option>
-                      <option value="CIVIL">CIVIL</option>
-                      <option value="IT">IT</option>
-                      <option value="AI&ML">AI&ML</option>
-                      <option value="DS">DS</option>
-                      <option value="Other">Other</option>
+                      <option value="" disabled className="bg-[#0C0C0E] text-white">Select Dept</option>
+                      <option value="CSE" className="bg-[#0C0C0E] text-white">CSE</option>
+                      <option value="ECE" className="bg-[#0C0C0E] text-white">ECE</option>
+                      <option value="EEE" className="bg-[#0C0C0E] text-white">EEE</option>
+                      <option value="MECH" className="bg-[#0C0C0E] text-white">MECH</option>
+                      <option value="CIVIL" className="bg-[#0C0C0E] text-white">CIVIL</option>
+                      <option value="IT" className="bg-[#0C0C0E] text-white">IT</option>
+                      <option value="AI&ML" className="bg-[#0C0C0E] text-white">AI&ML</option>
+                      <option value="DS" className="bg-[#0C0C0E] text-white">DS</option>
+                      <option value="Other" className="bg-[#0C0C0E] text-white">Other</option>
                     </select>
                   </div>
                   <div className="space-y-2 relative">
@@ -303,11 +303,11 @@ export default function UserRegisterPage() {
                       onChange={handleInputChange}
                       className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
                     >
-                      <option value="" disabled>Select Year</option>
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
+                      <option value="" disabled className="bg-[#0C0C0E] text-white">Select Year</option>
+                      <option value="1st Year" className="bg-[#0C0C0E] text-white">1st Year</option>
+                      <option value="2nd Year" className="bg-[#0C0C0E] text-white">2nd Year</option>
+                      <option value="3rd Year" className="bg-[#0C0C0E] text-white">3rd Year</option>
+                      <option value="4th Year" className="bg-[#0C0C0E] text-white">4th Year</option>
                     </select>
                   </div>
                 </div>
