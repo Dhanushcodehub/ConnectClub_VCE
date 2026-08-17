@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, User } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, sendEmailVerification, GoogleAuthProvider, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
@@ -22,6 +22,7 @@ export default function UserRegisterPage() {
     yearOfStudy: ""
   });
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -34,7 +35,8 @@ export default function UserRegisterPage() {
   // This useEffect reacts to the auth state change and routes accordingly.
 
   useEffect(() => {
-    if (!authLoading && user && !showOnboarding) {
+    // Only redirect if the user's email is verified (Google auth is pre-verified)
+    if (!authLoading && user && user.emailVerified && !showOnboarding) {
       if (role === "admin") {
         router.push("/admin");
       } else if (role === "member") {
@@ -55,6 +57,7 @@ export default function UserRegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters.");
@@ -77,8 +80,19 @@ export default function UserRegisterPage() {
         throw new Error(data.error || "Failed to register.");
       }
 
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      // Let useEffect handle routing
+      const userCred = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Send verification email
+      await sendEmailVerification(userCred.user);
+      
+      // Sign out immediately so they can't access the app until verified
+      await auth.signOut();
+      
+      setSuccessMsg("Registration successful! Please check your email to verify your account before logging in.");
+      setFormData({
+        name: "", rollNo: "", phone: "", email: "", password: "", department: "", yearOfStudy: ""
+      });
+      setLoading(false);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to create account. Please try again.");
@@ -88,17 +102,16 @@ export default function UserRegisterPage() {
 
   const handleGoogleSignUp = async () => {
     setError("");
+    setSuccessMsg("");
     setGoogleLoading(true);
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
-      // No code runs after this, as the page redirects.
-      // Upon returning, the global AuthContext and local useEffect will catch the new user
-      // and either route them to the dashboard or open the OnboardingModal.
+      await signInWithPopup(auth, provider);
+      // Popup resolves and local useEffect catches the new user and routes them.
     } catch (err: any) {
       console.error(err);
-      setError("Failed to redirect to Google. Please try again.");
+      setError("Failed to sign in with Google. Please try again.");
       setGoogleLoading(false);
     }
   };
@@ -185,6 +198,12 @@ export default function UserRegisterPage() {
               {error && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center">
                   {error}
+                </motion.div>
+              )}
+
+              {successMsg && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center">
+                  {successMsg}
                 </motion.div>
               )}
 

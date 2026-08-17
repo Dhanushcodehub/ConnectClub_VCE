@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, User } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
@@ -27,7 +27,8 @@ export default function UserLoginPage() {
   // This useEffect reacts to the auth state change and routes accordingly.
 
   useEffect(() => {
-    if (!authLoading && user && !showOnboarding) {
+    // Only redirect if the user's email is verified (Google auth is pre-verified)
+    if (!authLoading && user && user.emailVerified && !showOnboarding) {
       if (role === "admin") {
         router.push("/admin");
       } else if (role === "member") {
@@ -49,10 +50,15 @@ export default function UserLoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      if (!userCred.user.emailVerified) {
+        await auth.signOut();
+        throw new Error("Please verify your email before logging in. Check your inbox.");
+      }
+      // If verified, useEffect will handle routing
     } catch (err: any) {
       console.error(err);
-      setError("Invalid email or password. Please try again.");
+      setError(err.message || "Invalid email or password. Please try again.");
       setLoading(false);
     }
   };
@@ -63,13 +69,11 @@ export default function UserLoginPage() {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
-      // No code runs after this, as the page redirects.
-      // Upon returning, the global AuthContext and local useEffect will catch the new user
-      // and either route them to the dashboard or open the OnboardingModal.
+      await signInWithPopup(auth, provider);
+      // Popup resolves and local useEffect catches the new user and routes them.
     } catch (err: any) {
       console.error(err);
-      setError("Failed to redirect to Google. Please try again.");
+      setError("Failed to sign in with Google. Please try again.");
       setGoogleLoading(false);
     }
   };
