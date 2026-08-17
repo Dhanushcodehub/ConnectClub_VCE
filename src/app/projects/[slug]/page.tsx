@@ -3,13 +3,10 @@ import { notFound } from "next/navigation";
 import { getProjectBySlug, getProjects } from "@/lib/firebase/api";
 import { ArrowUpRight, CheckCircle2, GitBranch, Globe } from "lucide-react";
 import Link from "next/link";
+import ProjectLikeButton from "./ProjectLikeButton";
+import ProjectComments from "./ProjectComments";
 
-export async function generateStaticParams() {
-  const projects = await getProjects();
-  return projects.map((project) => ({
-    slug: project.id,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -148,6 +145,8 @@ export default async function ProjectDetailPage({
                     Source Code
                   </a>
                 )}
+                
+                <ProjectLikeButton projectId={project.id} initialLikes={project.likes || 0} />
               </div>
             </div>
           </div>
@@ -225,6 +224,11 @@ export default async function ProjectDetailPage({
             </div>
           </div>
 
+        </div>
+        
+        {/* Comments Section */}
+        <div className="max-w-4xl mx-auto mt-12">
+          <ProjectComments projectId={project.id} />
         </div>
       </div>
     </article>

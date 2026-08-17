@@ -144,16 +144,18 @@ export function Hero() {
             className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10"
           >
             {/* Globe container - Responsive sizing */}
-            <div className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[90%] lg:w-full mx-auto" style={{ aspectRatio: "1 / 1", maxHeight: "580px" }}>
+            <div className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[90%] lg:max-w-[580px] mx-auto">
+              <div className="relative w-full pb-[100%]">
+                {/* Ambient glow behind the sphere */}
+                <div className="absolute inset-[8%] rounded-full pointer-events-none"
+                  style={{ background: "radial-gradient(ellipse,rgba(0,85,255,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
+                />
 
-              {/* Ambient glow behind the sphere */}
-              <div className="absolute inset-[8%] rounded-full pointer-events-none"
-                style={{ background: "radial-gradient(ellipse,rgba(0,85,255,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
-              />
-
-              {/* 3D canvas */}
-              <LogoCanvas />
-
+                {/* 3D canvas */}
+                <div className="absolute inset-0">
+                  <LogoCanvas />
+                </div>
+              </div>
             </div>
 
             {/* Connect Club wordmark */}

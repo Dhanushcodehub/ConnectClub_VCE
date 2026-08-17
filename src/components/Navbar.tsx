@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useScroll, useSpring, useTransform } from "framer-motion";
-import { Menu, X, Sparkles } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Menu, X, Sparkles, UserCircle, LayoutDashboard, FolderGit2, Bell, Settings, LogOut, Calendar, Award } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase/config";
 
 const navLinks = [
   { name: "Events",    href: "/events" },
@@ -18,7 +21,11 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { user, role } = useAuth();
 
   const { scrollY } = useScroll();
   const { scrollYProgress } = useScroll();
@@ -37,7 +44,22 @@ export function Navbar() {
     ["0 4px 20px rgba(0,0,0,0.3)", "0 16px 40px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)"]
   );
 
-  useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+    setUserDropdownOpen(false);
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUserDropdownOpen(false);
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const photoURL = user?.photoURL; // Add profile?.photoURL if available in the context
 
   return (
     <>
@@ -92,7 +114,7 @@ export function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop links */}
+            {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link
@@ -126,6 +148,7 @@ export function Navbar() {
                 <Sparkles className="w-3.5 h-3.5 text-current group-hover:animate-pulse shrink-0" />
                 <span>Connect AI</span>
               </Link>
+
 
               <button
                 className="md:hidden p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
@@ -188,7 +211,8 @@ export function Navbar() {
                     </Link>
                   </motion.div>
                 ))}
-                <div className="p-2 mt-2 border-t border-white/10">
+                <div className="p-2 mt-2 border-t border-white/10 flex flex-col gap-2">
+
                   <Link href="/connect-ai"
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider w-full btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group">
                     <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" /> Connect AI

@@ -308,7 +308,7 @@ export default function CreateProjectPage() {
                   onUpload={(url) => setFormData({ ...formData, banner: url })}
                 />
                 {formData.banner && (
-                  <div className="text-xs text-green-400 mt-2 break-all">Banner uploaded! ({formData.banner})</div>
+                  <div className="text-xs text-green-400 mt-2 break-all">Banner uploaded!</div>
                 )}
               </div>
 

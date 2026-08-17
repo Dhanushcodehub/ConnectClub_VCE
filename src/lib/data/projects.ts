@@ -14,6 +14,8 @@ export interface ConnectProject {
   githubRepo?: string;
   githubLink?: string;
   status: ProjectStatus;
+  likes?: number;
+  commentsCount?: number;
 }
 
 export const projectsData: ConnectProject[] = [

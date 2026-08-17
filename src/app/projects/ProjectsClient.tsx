@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Code2 } from "lucide-react";
+import { ArrowRight, Code2, Heart, MessageCircle } from "lucide-react";
 import { ConnectProject } from "@/lib/data/projects";
 import { getProjects } from "@/lib/firebase/api";
+import { getApprovedUserProjects } from "@/lib/firebase/users";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 
 export default function ProjectsClient({ initialProjects }: { initialProjects: ConnectProject[] }) {
@@ -13,8 +14,37 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
   const [isLoading, setIsLoading] = useState(initialProjects.length === 0);
 
   useEffect(() => {
-    getProjects().then((data) => {
-      setProjects(data);
+    Promise.all([getProjects(), getApprovedUserProjects()]).then(([officialProjects, userProjects]) => {
+      // Map user projects to ConnectProject format
+      const formattedUserProjects: ConnectProject[] = userProjects.map((p) => ({
+        id: p.id,
+        name: p.title,
+        description: p.description,
+        technologies: p.technologies || [],
+        timeline: "Community Project",
+        banner: p.banner || "",
+        githubLink: p.githubUrl,
+        demoLink: p.demoUrl,
+        status: "Live", // Assume approved projects are Live
+        likes: p.likes || 0,
+        commentsCount: p.commentsCount || 0
+      }));
+
+      const combinedProjects = [...officialProjects, ...formattedUserProjects];
+
+      const statusWeight: Record<string, number> = {
+        Live: 1,
+        "In Development": 2,
+        Archived: 3,
+      };
+      
+      const sorted = combinedProjects.sort((a, b) => {
+        const weightA = statusWeight[a.status] || 4;
+        const weightB = statusWeight[b.status] || 4;
+        return weightA - weightB;
+      });
+      
+      setProjects(sorted);
       setIsLoading(false);
     });
   }, []);
@@ -90,7 +120,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
                 className={`w-full group relative flex flex-col rounded-xl border border-white/[0.06] bg-[#0C0C0E] transition-all hover:border-white/[0.15] hover:bg-[#111114] shadow-xl hover:shadow-2xl overflow-hidden ${
                   isFeatured 
                     ? "col-span-full lg:flex-row lg:h-[480px]" 
-                    : "col-span-full md:col-span-3 lg:col-span-6 h-full"
+                    : "col-span-full md:col-span-4 lg:col-span-4 h-full"
                 }`}
               >
                 <Link
@@ -102,15 +132,21 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
                 {/* Image Section */}
                 <div
                   className={`relative overflow-hidden shrink-0 bg-white/5 ${
-                    isFeatured ? "w-full lg:w-1/2 h-[300px] lg:h-full order-1 lg:order-2" : "w-full h-[240px] order-1"
+                    isFeatured ? "w-full lg:w-1/2 h-[300px] lg:h-full order-1 lg:order-2" : "w-full aspect-[16/9] order-1"
                   }`}
                 >
-                  <img
-                    src={project.banner}
-                    alt={project.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
+                  {project.banner ? (
+                    <img
+                      src={project.banner}
+                      alt={project.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Code2 className="w-12 h-12 text-white/10" />
+                    </div>
+                  )}
                   {/* Subtle overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B14]/80 lg:bg-gradient-to-r lg:from-[#0A0B14]/40 to-transparent pointer-events-none" />
                 </div>
@@ -122,18 +158,18 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
                   }`}
                 >
                   {/* Badge */}
-                  <div className="flex items-center gap-2.5 mb-6">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                      <Code2 className="w-4 h-4" />
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                      <Code2 className="w-3 h-3" />
                     </div>
-                    <span className="text-label text-primary font-bold uppercase tracking-[0.2em]">{project.status}</span>
+                    <span className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">{project.status}</span>
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className={`text-h2 lg:text-h3 font-black text-white uppercase tracking-tight mb-4 group-hover:text-primary transition-colors`}>
+                  <h3 className={`font-black text-white uppercase tracking-tight mb-2 group-hover:text-primary transition-colors line-clamp-2 ${isFeatured ? "text-h2 lg:text-h3 mb-4" : "text-xl md:text-2xl"}`}>
                     {project.name}
                   </h3>
-                  <p className={`text-body text-white/50 mb-8 ${isFeatured ? "max-w-md" : "line-clamp-3"}`}>
+                  <p className={`text-body text-white/50 mb-6 ${isFeatured ? "max-w-md mb-8" : "line-clamp-2"}`}>
                     {project.description}
                   </p>
 
@@ -154,10 +190,24 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
                     )}
                   </div>
 
-                  {/* CTA */}
-                  <div className={`flex items-center text-primary text-label font-bold uppercase tracking-[0.2em] gap-2 group-hover:gap-4 transition-all ${isFeatured ? "mt-auto lg:mt-0" : ""}`}>
-                    View Case Study
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
+                  {/* CTA & Stats */}
+                  <div className={`flex items-center justify-between mt-auto lg:mt-0 ${isFeatured ? "w-full" : "w-full"}`}>
+                    
+                    <div className="flex items-center gap-4 text-white/50">
+                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                        <Heart className="w-4 h-4" />
+                        <span className="text-xs font-medium">{project.likes || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="text-xs font-medium">{project.commentsCount || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center text-primary text-label font-bold uppercase tracking-[0.2em] gap-2 group-hover:gap-4 transition-all">
+                      View Case Study
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
+                    </div>
                   </div>
                 </div>
               </motion.div>

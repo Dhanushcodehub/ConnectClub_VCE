@@ -6,12 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import EventDetailClient from "./EventDetailClient";
 
-export async function generateStaticParams() {
-  const events = await getEvents();
-  return events.map((event) => ({
-    slug: event.id,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

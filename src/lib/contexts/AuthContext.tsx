@@ -3,22 +3,40 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, getIdTokenResult } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
+import { getUserProfile, ConnectUser } from "@/lib/firebase/users";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  role: "admin" | "member" | null;
+  role: "admin" | "member" | "user" | null;
+  profile: ConnectUser | null;
+  refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, role: null });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true, 
+  role: null, 
+  profile: null,
+  refreshProfile: async () => {} 
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<"admin" | "member" | null>(null);
-  const [loading, setLoading] = useState(!isFirebaseConfigured || !auth);
+  const [role, setRole] = useState<"admin" | "member" | "user" | null>(null);
+  const [profile, setProfile] = useState<ConnectUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshProfile = async () => {
+    if (user) {
+      const p = await getUserProfile(user.uid);
+      setProfile(p);
+    }
+  };
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
       return;
     }
 
@@ -32,17 +50,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (idTokenResult.claims.role === "member") {
             setRole("member");
-          } else {
-            // Default to admin if no claim is found (since original setup was just the admin)
-            // or we could check the email explicitly against a hardcoded list.
+          } else if (idTokenResult.claims.role === "user") {
+            setRole("user");
+            // Load user profile from Firestore
+            const userProfile = await getUserProfile(currentUser.uid);
+            setProfile(userProfile);
+          } else if (idTokenResult.claims.role === "admin") {
             setRole("admin");
+          } else {
+            // Check if the user has a profile in the users collection (Google sign-in without claim yet)
+            const userProfile = await getUserProfile(currentUser.uid);
+            if (userProfile) {
+              setRole("user");
+              setProfile(userProfile);
+            } else {
+              // Fallback for new/incomplete accounts
+              if (currentUser.email === "admin@connectclubvce.in") {
+                setRole("admin");
+              } else {
+                // Not an admin, no profile yet. Leave as user so they can complete onboarding.
+                setRole("user");
+              }
+            }
           }
         } catch (error) {
           console.error("Error fetching custom claims:", error);
-          setRole("member"); // Fail safe to lowest privilege
+          setRole(null); // Fail safe to lowest privilege
         }
       } else {
         setRole(null);
+        setProfile(null);
       }
 
       setLoading(false);
@@ -52,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, role }}>
+    <AuthContext.Provider value={{ user, loading, role, profile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

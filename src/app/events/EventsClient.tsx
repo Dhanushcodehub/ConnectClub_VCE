@@ -45,6 +45,12 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
   };
 
   // 2. Search & Filter Logic
+  const statusWeight: Record<string, number> = {
+    Upcoming: 1,
+    Ongoing: 2,
+    Past: 3,
+  };
+
   const filteredEvents = events.filter((event) => {
     const matchesTab = activeTab === "All" || event.status === activeTab;
     const matchesSearch = 
@@ -52,6 +58,10 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
       event.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     return matchesTab && matchesSearch;
+  }).sort((a, b) => {
+    const weightA = statusWeight[a.status] || 4;
+    const weightB = statusWeight[b.status] || 4;
+    return weightA - weightB;
   });
 
   // Auto-slide carousel every 5 seconds

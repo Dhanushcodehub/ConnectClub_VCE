@@ -150,6 +150,7 @@ export default function LogoCanvas() {
       camera={{ position: [0, 0, 6.8], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 2]}
+      resize={{ scroll: false }}
       style={{ width: "100%", height: "100%" }}
     >
       <ambientLight intensity={0.55} color="#0a1a3a" />
