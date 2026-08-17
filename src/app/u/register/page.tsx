@@ -56,8 +56,8 @@ export default function UserRegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccessMsg("");
     
+
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
