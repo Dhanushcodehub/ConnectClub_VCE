@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, User } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
@@ -16,36 +16,15 @@ export default function UserLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(true); // Start loading while checking redirect
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingUser, setPendingUser] = useState<User | null>(null);
 
   const router = useRouter();
   const { user, role, profile, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    // Process redirect result if coming back from Google
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          console.log("Redirect Result Caught:", result.user);
-          const exists = await checkUserExists(result.user.uid);
-          if (exists) {
-            router.push("/u/dashboard");
-          } else {
-            setPendingUser(result.user);
-            setShowOnboarding(true);
-          }
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect Error:", error);
-        setError(`Sign-In Error: ${error.message}`);
-      })
-      .finally(() => {
-        setGoogleLoading(false);
-      });
-  }, []);
+  // onAuthStateChanged in AuthContext already detects the user after redirect.
+  // This useEffect reacts to the auth state change and routes accordingly.
 
   useEffect(() => {
     if (!authLoading && user && !showOnboarding) {
