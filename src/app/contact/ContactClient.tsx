@@ -1,20 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, MapPin, Camera, Briefcase, ArrowUpRight, Send, Globe, Users, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function ContactPage() {
+  const { user, profile } = useAuth();
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     message: ""
   });
+  
+  // Pre-fill form data when user is loaded
+  useEffect(() => {
+    if (user) {
+      const fullName = profile?.name || user.displayName || "";
+      const nameParts = fullName.split(" ");
+      setFormData(prev => ({
+        ...prev,
+        firstName: nameParts[0] || "",
+        lastName: nameParts.slice(1).join(" ") || "",
+        email: user.email || ""
+      }));
+    }
+  }, [user, profile]);
+
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -181,60 +199,70 @@ export default function ContactPage() {
                     className="space-y-5" 
                     onSubmit={handleSubmit}
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-5">
+                      {!user ? (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">First Name *</label>
+                              <input 
+                                type="text" 
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                required
+                                disabled={status === "loading"}
+                                placeholder="John"
+                                className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Last Name</label>
+                              <input 
+                                type="text" 
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                disabled={status === "loading"}
+                                placeholder="Doe"
+                                className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Email Address *</label>
+                            <input 
+                              type="email" 
+                              name="email"
+                              value={formData.email}
+                              onChange={handleChange}
+                              required
+                              disabled={status === "loading"}
+                              placeholder="john@example.com"
+                              className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-white/50 mb-2">
+                          Sending message as <span className="text-white font-medium">{profile?.name || user?.displayName || "Anonymous"}</span> ({user.email})
+                        </div>
+                      )}
+
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">First Name *</label>
-                        <input 
-                          type="text" 
-                          name="firstName"
-                          value={formData.firstName}
+                        <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Message *</label>
+                        <textarea 
+                          name="message"
+                          value={formData.message}
                           onChange={handleChange}
                           required
                           disabled={status === "loading"}
-                          placeholder="John"
-                          className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
+                          placeholder="How can we help you?"
+                          rows={4}
+                          className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50 resize-y min-h-[120px]"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Last Name</label>
-                        <input 
-                          type="text" 
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          disabled={status === "loading"}
-                          placeholder="Doe"
-                          className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Email Address *</label>
-                      <input 
-                        type="email" 
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        disabled={status === "loading"}
-                        placeholder="john@example.com"
-                        className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 disabled:opacity-50"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Message *</label>
-                      <textarea 
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        required
-                        disabled={status === "loading"}
-                        rows={6}
-                        placeholder="How can we help you?"
-                        className="w-full bg-[#0C0C0E]/60 border border-white/10 rounded-lg px-4 py-3 text-white text-[14px] focus:outline-none focus:border-primary/50 focus:bg-[#0C0C0E]/90 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 resize-none disabled:opacity-50"
-                      />
                     </div>
 
                     {status === "error" && (

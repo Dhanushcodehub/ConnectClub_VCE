@@ -19,7 +19,14 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
     const checkAuth = async () => {
       if (loading) return;
 
-      const isAuthPage = pathname === "/u/login" || pathname === "/u/register";
+      const isAuthPage = pathname === "/u/login" || pathname === "/u/register" || pathname === "/u/verify";
+      const isPublicProfile = pathname.startsWith("/u/profile/") && pathname.split("/").length > 3;
+
+      // Allow public profile pages to bypass strict auth checks
+      if (isPublicProfile) {
+        setProfileLoading(false);
+        return;
+      }
 
       if (!user && !isAuthPage) {
         router.push("/u/login");
@@ -27,6 +34,18 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (user && !isAuthPage) {
+        // Force unverified users to the verification page
+        if (!user.emailVerified && pathname !== "/u/verify") {
+          router.replace(`/u/verify?email=${encodeURIComponent(user.email || "")}`);
+          return;
+        }
+
+        // Prevent verified users from being stuck on the verification page
+        if (user.emailVerified && pathname === "/u/verify") {
+          router.replace(role === "admin" ? "/admin" : "/u/dashboard");
+          return;
+        }
+
         if (role === "admin") {
           router.replace("/admin");
           return;
@@ -57,9 +76,10 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [user, role, loading, pathname, router]);
 
-  const isAuthPage = pathname === "/u/login" || pathname === "/u/register";
+  const isAuthPage = pathname === "/u/login" || pathname === "/u/register" || pathname === "/u/verify";
+  const isPublicProfile = pathname.startsWith("/u/profile/") && pathname.split("/").length > 3;
 
-  if (loading || (user && profileLoading && !isAuthPage)) {
+  if (loading || (user && profileLoading && !isAuthPage && !isPublicProfile)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -67,12 +87,16 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && !isAuthPage) {
+  if (!user && !isAuthPage && !isPublicProfile) {
     return null;
   }
   
-  if ((role === "admin" || role === "member") && !isAuthPage) {
+  if ((role === "admin" || role === "member") && !isAuthPage && !isPublicProfile) {
     return null;
+  }
+
+  if (isAuthPage) {
+    return <>{children}</>;
   }
 
   return (

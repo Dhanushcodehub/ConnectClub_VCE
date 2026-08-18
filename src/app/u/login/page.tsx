@@ -27,9 +27,10 @@ export default function UserLoginPage() {
   // This useEffect reacts to the auth state change and routes accordingly.
 
   useEffect(() => {
-    // Only redirect if the user's email is verified (Google auth is pre-verified)
-    if (!authLoading && user && user.emailVerified && !showOnboarding) {
-      if (role === "admin") {
+    if (!authLoading && user) {
+      if (!user.emailVerified) {
+        router.push(`/u/verify?email=${encodeURIComponent(user.email || "")}`);
+      } else if (role === "admin") {
         router.push("/admin");
       } else if (role === "member") {
         router.push("/member/dashboard");
@@ -80,10 +81,10 @@ export default function UserLoginPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#050505] flex flex-row">
+      <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#0c0c0e]">
         {/* Left Side - Branding (Hidden on mobile) */}
-        <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
-          <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
+        <div className="hidden lg:flex w-1/2 relative flex-col items-center pt-24 border-r border-white/5 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
           
           {/* Animated Orbs */}
@@ -98,19 +99,20 @@ export default function UserLoginPage() {
             className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" 
           />
 
-          <div className="relative z-10 flex items-center mb-8">
-            <img 
-              src="/logo/logo-transparent.png" 
-              alt="Connect Club" 
-              className="h-32 md:h-40 w-auto object-contain brightness-0 invert"
-            />
-          </div>
+          <div className="relative z-10 w-full max-w-xl px-12 flex-1 flex flex-col justify-start">
+            <div className="-mb-2 relative z-20 -ml-4 md:-ml-6">
+              <img 
+                src="/logo/logo-transparent.png" 
+                alt="Connect Club" 
+                className="h-32 md:h-48 w-auto object-contain object-left brightness-0 invert"
+              />
+            </div>
 
-          <div className="relative z-10 max-w-lg mt-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
+              className="max-w-lg"
             >
               <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-white/70 mb-6">
                 <GraduationCap className="w-3 h-3 text-blue-400" />
@@ -125,7 +127,7 @@ export default function UserLoginPage() {
             </motion.div>
           </div>
 
-          <div className="relative z-10 flex">
+          <div className="relative z-10 w-full max-w-xl px-12 pb-12 shrink-0 mt-auto">
             <div className="flex items-center space-x-2 text-sm text-white/40">
               <Sparkles className="w-4 h-4" />
               <span>Built for Students, by Students</span>
@@ -134,8 +136,8 @@ export default function UserLoginPage() {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-          <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative min-h-screen">
+          <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
           
           <div className="w-full max-w-md relative z-10">
             {/* Mobile Logo */}

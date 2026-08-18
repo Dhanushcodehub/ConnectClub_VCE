@@ -144,18 +144,28 @@ export default function ImageUploader({ onUpload, className, defaultImage }: Ima
       )}
 
       {!preview && !isUploading && (
-        <form onSubmit={handleManualSubmit} className="absolute bottom-4 left-4 right-4 flex gap-2">
+        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
           <input
             type="url"
             value={manualUrl}
             onChange={(e) => setManualUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleManualSubmit(e);
+              }
+            }}
             placeholder="Or paste image URL..."
             className="flex-1 bg-black/50 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-primary backdrop-blur-md"
           />
-          <button type="submit" className="bg-primary text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors">
+          <button 
+            type="button" 
+            onClick={handleManualSubmit}
+            className="bg-primary text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
             Set
           </button>
-        </form>
+        </div>
       )}
 
       {error && (

@@ -81,13 +81,7 @@ export default function UserRegisterPage() {
 
       const userCred = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       
-      // Send verification email
-      await sendEmailVerification(userCred.user);
-      
-      // Sign out immediately so they can't access the app until verified
-      await auth.signOut();
-      
-      router.push("/u/verify");
+      router.push(`/u/verify?email=${encodeURIComponent(formData.email)}`);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to create account. Please try again.");
@@ -112,10 +106,10 @@ export default function UserRegisterPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#050505] flex flex-row">
+      <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#0c0c0e]">
         {/* Left Side - Branding (Hidden on mobile) */}
-        <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
-          <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
+        <div className="hidden lg:flex w-1/2 relative flex-col items-center pt-24 border-r border-white/5 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
           
           <motion.div 
@@ -129,19 +123,20 @@ export default function UserRegisterPage() {
             className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" 
           />
 
-          <div className="relative z-10 flex items-center mb-8">
-            <img 
-              src="/logo/logo-transparent.png" 
-              alt="Connect Club" 
-              className="h-32 md:h-40 w-auto object-contain brightness-0 invert"
-            />
-          </div>
+          <div className="relative z-10 w-full max-w-xl px-12 flex-1 flex flex-col justify-start">
+            <div className="-mb-2 relative z-20 -ml-4 md:-ml-6">
+              <img 
+                src="/logo/logo-transparent.png" 
+                alt="Connect Club" 
+                className="h-32 md:h-48 w-auto object-contain object-left brightness-0 invert"
+              />
+            </div>
 
-          <div className="relative z-10 max-w-lg mt-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
+              className="max-w-lg"
             >
               <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-white/70 mb-6">
                 <GraduationCap className="w-3 h-3 text-blue-400" />
@@ -156,7 +151,7 @@ export default function UserRegisterPage() {
             </motion.div>
           </div>
 
-          <div className="relative z-10 flex">
+          <div className="relative z-10 w-full max-w-xl px-12 pb-12 shrink-0 mt-auto">
             <div className="flex items-center space-x-2 text-sm text-white/40">
               <Sparkles className="w-4 h-4" />
               <span>Built for Students, by Students</span>
@@ -165,8 +160,8 @@ export default function UserRegisterPage() {
         </div>
 
         {/* Right Side - Register Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-y-auto">
-          <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative min-h-screen overflow-y-auto">
+          <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
           
           <div className="w-full max-w-md relative z-10 py-10">
             <div className="lg:hidden flex items-center justify-center mb-8">
@@ -303,15 +298,16 @@ export default function UserRegisterPage() {
                 <button
                   type="submit"
                   disabled={loading || googleLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-6 group/btn"
+                  className="w-full relative group/btn overflow-hidden bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 shadow-[0_0_20px_rgba(0,85,255,0.3)] hover:shadow-[0_0_30px_rgba(0,85,255,0.5)] border border-blue-400/30"
                 >
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
                   {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin relative z-10" />
                   ) : (
-                    <>
+                    <div className="relative z-10 flex items-center">
                       Create Account
                       <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                    </>
+                    </div>
                   )}
                 </button>
               </form>

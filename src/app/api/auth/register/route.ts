@@ -55,6 +55,46 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       });
 
+      // 4. Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // 5. Store OTP in Firestore
+      await adminDb.collection('email_otps').doc(email.toLowerCase()).set({
+        otp,
+        expiresAt,
+        createdAt: new Date()
+      });
+
+      // 6. Send OTP Email using Nodemailer
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_APP_PASSWORD,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Connect Club" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Connect Club - Verification Code',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
+            <h2 style="color: #2563eb;">Verify Your Email</h2>
+            <p style="font-size: 16px; color: #4b5563;">Thank you for registering with Connect Club! Please use the verification code below to complete your registration:</p>
+            <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">${otp}</span>
+            </div>
+            <p style="font-size: 14px; color: #6b7280;">This code will expire in 10 minutes.</p>
+            <p style="font-size: 14px; color: #ef4444; margin-top: 20px;"><strong>Note:</strong> If you did not request this, please ignore this email.</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
     } catch (firebaseError: any) {
       if (firebaseError.code === 'auth/email-already-exists') {
         return NextResponse.json(

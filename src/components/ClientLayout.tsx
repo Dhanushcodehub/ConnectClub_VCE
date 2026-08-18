@@ -5,8 +5,6 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { GlobalChatListener } from "./chat/GlobalChatListener";
-import { ProfileButton } from "./ProfileButton";
-
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +15,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       <NotificationProvider>
         {!isPortal && <Navbar />}
-        {!isPortal && <ProfileButton />}
         
         <main className="flex-1 flex flex-col relative z-0">
           {!isPortal && <GlobalChatListener />}

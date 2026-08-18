@@ -193,15 +193,29 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
                   {/* CTA & Stats */}
                   <div className={`flex items-center justify-between mt-auto lg:mt-0 ${isFeatured ? "w-full" : "w-full"}`}>
                     
+                    {/* Left side: Stats & Author */}
                     <div className="flex items-center gap-4 text-white/50">
-                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors" title={`${project.likes || 0} likes`}>
                         <Heart className="w-4 h-4" />
                         <span className="text-xs font-medium">{project.likes || 0}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                      <div className="flex items-center gap-1.5 hover:text-primary transition-colors" title={`${project.commentsCount || 0} comments`}>
                         <MessageCircle className="w-4 h-4" />
                         <span className="text-xs font-medium">{project.commentsCount || 0}</span>
                       </div>
+                      
+                      {/* Author Snippet */}
+                      {((project as any).authorName || (project as any).userId) && (
+                        <>
+                          <div className="w-px h-4 bg-white/10 hidden sm:block" />
+                          <div className="hidden sm:flex items-center gap-2 hover:text-white transition-colors">
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
+                              {((project as any).authorName || "U").charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-xs truncate max-w-[100px]">{(project as any).authorName || "Community"}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div className="flex items-center text-primary text-label font-bold uppercase tracking-[0.2em] gap-2 group-hover:gap-4 transition-all">

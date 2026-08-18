@@ -45,11 +45,23 @@ export function ProfileButton() {
   const photoURL = profile?.photoURL || user?.photoURL;
 
   return (
-    <div className="fixed top-[26px] right-6 md:right-10 z-[60] flex items-center justify-end">
+    <div className="flex items-center justify-end gap-3 relative">
       {loading ? (
         <div className="w-10 h-10 rounded-full bg-white/5 animate-pulse border border-white/10 shadow-lg backdrop-blur-md" />
       ) : user ? (
-        <div className="relative" ref={dropdownRef}>
+        <>
+          {/* Notification Bell */}
+          <Link 
+            href="/u/notifications"
+            className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-lg backdrop-blur-md group"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            {/* Notification Indicator Dot */}
+            <span className="absolute top-[8px] right-[10px] w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+          </Link>
+
+          <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
             className="relative flex items-center justify-center w-10 h-10 rounded-full bg-primary/20 text-primary border border-primary/30 text-sm font-bold uppercase hover:bg-primary/30 transition-all shrink-0 overflow-hidden shadow-lg backdrop-blur-md"
@@ -108,13 +120,17 @@ export function ProfileButton() {
             )}
           </AnimatePresence>
         </div>
+        </>
       ) : (
         <Link
           href="/u/login"
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-lg backdrop-blur-md border border-white/5 bg-black/20"
+          className="group relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] text-white overflow-hidden bg-primary/10 border border-primary/30 transition-all duration-300 hover:bg-primary/20 hover:border-primary/50 hover:shadow-[0_0_25px_rgba(0,102,255,0.3)] hover:scale-[1.02] active:scale-[0.98]"
         >
-          <UserCircle className="w-4 h-4" />
-          <span>Login</span>
+          {/* Shimmer sweep effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+          
+          <UserCircle className="w-4 h-4 text-primary group-hover:text-white transition-colors z-10" />
+          <span className="z-10 mt-[1px] text-primary group-hover:text-white transition-colors">Login</span>
         </Link>
       )}
     </div>

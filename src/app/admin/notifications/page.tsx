@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bell, Send, User, Link as LinkIcon, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, Send, User, Link as LinkIcon, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { getAllUsers, createNotification, ConnectUser } from "@/lib/firebase/users";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function AdminNotificationsPage() {
   const [users, setUsers] = useState<ConnectUser[]>([]);
@@ -17,6 +18,7 @@ export default function AdminNotificationsPage() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [actionUrl, setActionUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     async function fetchUsers() {
@@ -50,6 +52,9 @@ export default function AdminNotificationsPage() {
       if (actionUrl) {
         payload.actionUrl = actionUrl;
       }
+      if (imageUrl) {
+        payload.imageUrl = imageUrl;
+      }
 
       if (targetUser === "all") {
         // Broadcast to all users
@@ -74,6 +79,7 @@ export default function AdminNotificationsPage() {
       setTitle("");
       setMessage("");
       setActionUrl("");
+      setImageUrl("");
     } catch (error) {
       console.error("Error sending notification:", error);
       setStatus({ type: "error", message: "Failed to send notification. Please try again." });
@@ -179,6 +185,17 @@ export default function AdminNotificationsPage() {
               onChange={(e) => setActionUrl(e.target.value)}
               placeholder="https://connectclubvce.in/events"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/70 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" /> Cover Image (Optional)
+            </label>
+            <ImageUploader 
+              onUpload={setImageUrl} 
+              defaultImage={imageUrl}
+              className="h-32 w-full max-w-sm"
             />
           </div>
 

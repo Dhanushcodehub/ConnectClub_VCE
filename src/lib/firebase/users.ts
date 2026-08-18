@@ -32,6 +32,7 @@ export interface UserNotification {
   message: string;
   read: boolean;
   actionUrl?: string;
+  imageUrl?: string;
   metadata?: Record<string, any>;
   createdAt: any;
 }
@@ -68,6 +69,7 @@ export interface UserProject {
   githubUrl?: string;
   demoUrl?: string;
   banner?: string;
+  screenshots?: string[];
   status: "pending" | "approved" | "rejected";
   likes: number;
   commentsCount: number;
@@ -160,15 +162,20 @@ export async function getUserNotifications(userId: string): Promise<UserNotifica
   try {
     const q = query(
       collection(db, NOTIFICATIONS_COLLECTION),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(50)
+      where("userId", "==", userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const notifs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as UserNotification[];
+
+    // Sort in memory (descending by createdAt)
+    return notifs.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+      return timeB - timeA;
+    }).slice(0, 50);
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return [];
@@ -340,14 +347,20 @@ export async function getUserProjects(userId: string): Promise<UserProject[]> {
   try {
     const q = query(
       collection(db, USER_PROJECTS_COLLECTION),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
+      where("userId", "==", userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const projects = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as UserProject[];
+    
+    // In-memory sorting to avoid composite index requirements
+    return projects.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis?.() || 0;
+      const timeB = b.createdAt?.toMillis?.() || 0;
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching user projects:", error);
     return [];

@@ -118,16 +118,38 @@ export default function NotificationsPage() {
           <div className="divide-y divide-white/[0.06]">
             {notifications.map((notif, i) => {
               const NotificationContent = (
-                <div className={`p-6 flex items-start gap-4 hover:bg-white/[0.02] transition-colors ${!notif.read ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'}`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getIconBg(notif.type)}`}>
-                    {getIcon(notif.type)}
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <div className="flex items-start justify-between gap-4 mb-1">
-                      <h4 className="text-white font-medium">{notif.title}</h4>
-                      <span className="text-white/40 text-xs whitespace-nowrap shrink-0">{getTimeAgo(notif.createdAt)}</span>
+                <div className={`p-6 hover:bg-white/[0.02] transition-colors relative overflow-hidden ${!notif.read ? 'bg-primary/5' : ''}`}>
+                  {/* Read indicator line */}
+                  {!notif.read && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary z-10" />
+                  )}
+
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getIconBg(notif.type)} shadow-lg`}>
+                      {getIcon(notif.type)}
                     </div>
-                    <p className="text-white/60 text-sm leading-relaxed">{notif.message}</p>
+                    <div className="flex-1 pt-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-1">
+                        <h4 className="text-white font-medium text-base sm:text-lg tracking-tight truncate">{notif.title}</h4>
+                        <span className="text-white/40 text-xs font-medium whitespace-nowrap shrink-0 bg-white/5 px-2 py-1 rounded-md">{getTimeAgo(notif.createdAt)}</span>
+                      </div>
+                      <p className="text-white/60 text-sm leading-relaxed mb-4">{notif.message}</p>
+                      
+                      {/* Image Attachment (Event-style container) */}
+                      {notif.imageUrl && (
+                        <div className="w-full max-w-2xl rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0C] relative aspect-[16/9] mt-2">
+                          <div 
+                            className="absolute inset-0 w-full h-full bg-cover bg-center blur-2xl opacity-40 scale-110 pointer-events-none"
+                            style={{ backgroundImage: `url(${notif.imageUrl})` }}
+                          />
+                          <img 
+                            src={notif.imageUrl} 
+                            alt="Notification attachment" 
+                            className="absolute inset-0 w-full h-full object-contain p-2 z-10 drop-shadow-2xl" 
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

@@ -10,6 +10,8 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
+import { ProfileButton } from "./ProfileButton";
+
 const navLinks = [
   { name: "Events",    href: "/events" },
   { name: "Projects",  href: "/projects" },
@@ -32,7 +34,7 @@ export function Navbar() {
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
   // Size transformations: starts small and widens slightly on scroll
-  const navMaxWidth = useTransform(scrollY, [0, 150], ["835px", "900px"]);
+  const navMaxWidth = useTransform(scrollY, [0, 150], ["1000px", "1100px"]);
 
   // Premium Smooth scroll transformations
   const navBg = useTransform(scrollY, [0, 100], ["rgba(9,9,11,0.4)", "rgba(9,9,11,0.85)"]);
@@ -143,11 +145,13 @@ export function Navbar() {
             <div className="flex items-center gap-3">
               <Link
                 href="/connect-ai"
-                className="hidden md:flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider whitespace-nowrap shrink-0 btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group"
+                className="hidden md:flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] whitespace-nowrap shrink-0 btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group"
               >
-                <Sparkles className="w-3.5 h-3.5 text-current group-hover:animate-pulse shrink-0" />
-                <span>Connect AI</span>
+                <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse shrink-0" />
+                <span className="mt-[1px]">Connect AI</span>
               </Link>
+              
+              <ProfileButton />
 
 
               <button
@@ -214,8 +218,8 @@ export function Navbar() {
                 <div className="p-2 mt-2 border-t border-white/10 flex flex-col gap-2">
 
                   <Link href="/connect-ai"
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider w-full btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group">
-                    <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" /> Connect AI
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] w-full btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group">
+                    <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" /> <span className="mt-[1px]">Connect AI</span>
                   </Link>
                 </div>
               </div>

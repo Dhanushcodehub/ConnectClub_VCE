@@ -55,6 +55,13 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       // Force token refresh to get updated custom claims
       await getIdTokenResult(user, true);
       
+      // Fire-and-forget background sync for external events (e.g. InspireX registrations done before CC account creation)
+      fetch("/api/users/retroactive-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid, rollNo: formData.rollNo })
+      }).catch(err => console.error("Retroactive sync failed:", err));
+
       router.push("/u/dashboard");
       onClose();
     } catch (err: any) {

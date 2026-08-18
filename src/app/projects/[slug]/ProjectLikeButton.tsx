@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { toggleProjectLike } from "@/lib/firebase/api";
 
-export default function ProjectLikeButton({ projectId, initialLikes }: { projectId: string, initialLikes: number }) {
+export default function ProjectLikeButton({ 
+  projectId, 
+  initialLikes,
+  collectionName
+}: { 
+  projectId: string; 
+  initialLikes: number;
+  collectionName: string;
+}) {
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -37,7 +45,7 @@ export default function ProjectLikeButton({ projectId, initialLikes }: { project
     localStorage.setItem("likedProjects", JSON.stringify(likedProjects));
 
     // Send to Firebase
-    const success = await toggleProjectLike(projectId, !currentlyLiked);
+    const success = await toggleProjectLike(projectId, !currentlyLiked, collectionName);
     
     if (!success) {
       // Revert if failed

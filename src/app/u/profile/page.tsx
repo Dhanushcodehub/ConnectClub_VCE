@@ -170,13 +170,16 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:border-primary focus:outline-none transition-colors appearance-none"
               >
-                <option value="">Select Department</option>
-                <option value="CSE">Computer Science</option>
-                <option value="IT">Information Technology</option>
-                <option value="ECE">Electronics & Communication</option>
-                <option value="EEE">Electrical & Electronics</option>
-                <option value="MECH">Mechanical</option>
-                <option value="CIVIL">Civil</option>
+                <option value="" className="bg-[#0C0C0E]">Select Department</option>
+                <option value="CSE" className="bg-[#0C0C0E]">CSE</option>
+                <option value="ECE" className="bg-[#0C0C0E]">ECE</option>
+                <option value="EEE" className="bg-[#0C0C0E]">EEE</option>
+                <option value="MECH" className="bg-[#0C0C0E]">MECH</option>
+                <option value="CIVIL" className="bg-[#0C0C0E]">CIVIL</option>
+                <option value="IT" className="bg-[#0C0C0E]">IT</option>
+                <option value="AI&ML" className="bg-[#0C0C0E]">AI&ML</option>
+                <option value="DS" className="bg-[#0C0C0E]">DS</option>
+                <option value="Other" className="bg-[#0C0C0E]">Other</option>
               </select>
             </div>
 
@@ -188,11 +191,11 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:border-primary focus:outline-none transition-colors appearance-none"
               >
-                <option value="">Select Year</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
+                <option value="" className="bg-[#0C0C0E]">Select Year</option>
+                <option value="1st Year" className="bg-[#0C0C0E]">1st Year</option>
+                <option value="2nd Year" className="bg-[#0C0C0E]">2nd Year</option>
+                <option value="3rd Year" className="bg-[#0C0C0E]">3rd Year</option>
+                <option value="4th Year" className="bg-[#0C0C0E]">4th Year</option>
               </select>
             </div>
 

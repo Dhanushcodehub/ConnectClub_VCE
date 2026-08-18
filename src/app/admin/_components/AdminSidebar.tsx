@@ -19,7 +19,8 @@ import {
   Mail,
   Menu,
   X,
-  Bell
+  Bell,
+  Ticket
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,6 +34,7 @@ const navItems = [
   { name: "Inquiries", path: "/admin/messages", icon: Mail },
   { name: "Notifications", path: "/admin/notifications", icon: Bell },
   { name: "Club Chat", path: "/admin/chat", icon: MessageSquare },
+  { name: "Event Management", path: "/admin/event-management", icon: Ticket },
   { name: "Settings", path: "/admin/settings", icon: Settings },
 ];
 

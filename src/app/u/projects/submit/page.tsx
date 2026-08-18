@@ -21,6 +21,7 @@ export default function SubmitProjectPage() {
     githubUrl: "",
     demoUrl: "",
     bannerUrl: "",
+    screenshots: [] as string[],
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -65,7 +66,13 @@ export default function SubmitProjectPage() {
     setLoading(true);
     try {
       await submitUserProject({
-        ...formData,
+        title: formData.title,
+        description: formData.description,
+        technologies: formData.technologies,
+        githubUrl: formData.githubUrl,
+        demoUrl: formData.demoUrl,
+        banner: formData.bannerUrl,
+        screenshots: formData.screenshots,
         userId: user.uid,
         authorName: profile?.name || user.displayName || "Anonymous",
         status: "pending"
@@ -186,6 +193,32 @@ export default function SubmitProjectPage() {
                 defaultImage={formData.bannerUrl}
                 className="h-full w-full rounded-2xl"
               />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/70 ml-1">Project Screenshots (Optional)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {formData.screenshots.map((url, index) => (
+                <div key={index} className="relative h-32 rounded-2xl overflow-hidden group border border-white/10 bg-white/5">
+                  <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData(prev => ({ ...prev, screenshots: prev.screenshots.filter((_, i) => i !== index) }))}
+                    className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 rounded-full text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {formData.screenshots.length < 6 && (
+                <div className="h-32">
+                  <ImageUploader 
+                    onUpload={(url) => setFormData(prev => ({ ...prev, screenshots: [...prev.screenshots, url] }))} 
+                    className="h-full w-full rounded-2xl"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
