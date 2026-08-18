@@ -42,7 +42,7 @@ export async function getProjects(): Promise<ConnectProject[]> {
       id: doc.id,
       ...doc.data(),
       collectionName: "projects"
-    })) as ConnectProject[];
+    })) as unknown as ConnectProject[];
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
@@ -55,7 +55,7 @@ export async function getProjectBySlug(slug: string): Promise<ConnectProject | n
     let docRef = doc(db, "projects", slug);
     let docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data(), collectionName: "projects" } as ConnectProject;
+      return { id: docSnap.id, ...docSnap.data(), collectionName: "projects" } as unknown as ConnectProject;
     }
 
     // 2. Check user projects

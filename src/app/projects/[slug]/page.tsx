@@ -263,7 +263,7 @@ export default async function ProjectDetailPage({
           
           {/* Comments Section */}
           <div className="max-w-4xl mx-auto mt-12">
-            <ProjectComments projectId={project.id} collectionName={project.collectionName || "projects"} />
+            <ProjectComments projectId={project.id} collectionName={(project as any).collectionName || "projects"} />
           </div>
         </div>
       </article>
