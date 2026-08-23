@@ -20,7 +20,9 @@ import {
   Menu,
   X,
   Bell,
-  Ticket
+  Ticket,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,6 +44,7 @@ export default function AdminSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleSignOut = () => {
     signOut(auth);
@@ -88,23 +91,33 @@ export default function AdminSidebar() {
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:translate-x-0 md:relative
-        group w-72 md:w-20 lg:w-72 border-r border-white/5 bg-background md:bg-card/50 md:backdrop-blur-xl flex flex-col shrink-0 shadow-2xl md:hover:w-72 h-[100svh]
+        group ${isCollapsed ? 'w-20' : 'w-72 md:w-20 lg:w-72 md:hover:w-72'} 
+        border-r border-white/5 bg-background md:bg-card/50 md:backdrop-blur-xl flex flex-col shrink-0 shadow-2xl h-[100svh]
       `}>
+        {/* Collapse Toggle (Desktop only) */}
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="hidden md:flex absolute -right-3 top-6 w-6 h-6 bg-primary text-white rounded-full items-center justify-center shadow-lg border border-white/10 z-50 hover:scale-110 transition-transform"
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
+
         <div className="p-6 border-b border-white/5 flex flex-col items-center">
 
   <Link href="/admin">
     <img
       src="/logo/logo-transparent.png"
       alt="Connect Club"
-      className="w-16 h-16 lg:w-20 lg:h-20 object-contain brightness-0 invert"
+      className={`transition-all duration-300 object-contain brightness-0 invert ${isCollapsed ? 'w-10 h-10' : 'w-16 h-16 lg:w-20 lg:h-20'}`}
     />
   </Link>
 
-  {/* Hide text on mobile */}
-  <div className="hidden lg:flex flex-col items-center mt-3">
+  {/* Hide text on mobile and when collapsed */}
+  <div className={`${isCollapsed ? 'hidden' : 'hidden lg:flex'} flex-col items-center mt-3`}>
     <h2 className="text-lg font-bold text-white">
       CONNECT CLUB
     </h2>
@@ -134,7 +147,7 @@ export default function AdminSidebar() {
                 key={item.name}
                 href={item.path}
                 onClick={() => setIsOpen(false)} // Close on mobile navigation
-                className="relative flex items-center px-3 py-3 rounded-xl transition-all hover:bg-white/5 overflow-hidden whitespace-nowrap"
+                className={`relative flex items-center px-3 py-3 rounded-xl transition-all hover:bg-white/5 overflow-hidden whitespace-nowrap ${isCollapsed ? 'justify-center' : ''}`}
               >
                 {isActive && (
                   <motion.div
@@ -153,7 +166,7 @@ export default function AdminSidebar() {
                   />
                 </div>
                 <span 
-                  className={`ml-3 text-sm font-medium transition-colors relative z-10 block md:hidden lg:block group-hover:block ${
+                  className={`ml-3 text-sm font-medium transition-colors relative z-10 ${isCollapsed ? 'hidden' : 'block md:hidden lg:block group-hover:block'} ${
                     isActive ? "text-primary font-semibold" : "text-white/60 group-hover:text-white"
                   }`}
                 >
@@ -171,7 +184,7 @@ export default function AdminSidebar() {
                 {user?.email?.charAt(0).toUpperCase() || "A"}
               </span>
             </div>
-            <div className="overflow-hidden block md:hidden lg:block group-hover:block transition-opacity duration-300">
+            <div className={`overflow-hidden transition-opacity duration-300 ${isCollapsed ? 'hidden' : 'block md:hidden lg:block group-hover:block'}`}>
               <div className="text-xs font-semibold text-white truncate max-w-[140px]">{user?.email}</div>
               <div className="text-[10px] text-green-400 font-medium flex items-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
@@ -181,10 +194,10 @@ export default function AdminSidebar() {
           </div>
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center justify-start md:justify-center lg:justify-start group-hover:justify-start px-3 py-2.5 text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 rounded-lg transition-all"
+            className={`w-full flex items-center px-3 py-2.5 text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 rounded-lg transition-all ${isCollapsed ? 'justify-center' : 'justify-start md:justify-center lg:justify-start group-hover:justify-start'}`}
           >
-            <LogOut className="w-4 h-4 shrink-0 mr-2 md:mr-0 lg:mr-2 group-hover:mr-2 transition-all" />
-            <span className="block md:hidden lg:block group-hover:block">Sign Out</span>
+            <LogOut className={`w-4 h-4 shrink-0 transition-all ${isCollapsed ? 'mr-0' : 'mr-2 md:mr-0 lg:mr-2 group-hover:mr-2'}`} />
+            <span className={isCollapsed ? 'hidden' : 'block md:hidden lg:block group-hover:block'}>Sign Out</span>
           </button>
         </div>
       </aside>

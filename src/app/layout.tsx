@@ -5,6 +5,7 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { ClientLayout } from "@/components/ClientLayout";
 import { GridBackground } from "@/components/GridBackground";
 import { ConnectAIChat } from "@/components/ai/ConnectAIChat";
+import { Toaster } from 'sonner';
 
 const unbounded = Unbounded({
   variable: "--font-unbounded",
@@ -147,6 +148,7 @@ export default function RootLayout({
         </SmoothScroll>
 
         <ConnectAIChat />
+        <Toaster theme="dark" position="top-center" richColors />
       </body>
     </html>
   );

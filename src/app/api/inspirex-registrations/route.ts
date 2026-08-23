@@ -68,7 +68,9 @@ export async function GET() {
         year: data.year || "Unknown",
         email: data.email || "",
         registeredAt: data.registeredAt ? data.registeredAt.toDate().toISOString() : null,
-        isConnectClubMember: ccRollNumbers.has(cleanRollNo)
+        isConnectClubMember: ccRollNumbers.has(cleanRollNo),
+        morningAttendance: data.morningAttendance || false,
+        afternoonAttendance: data.afternoonAttendance || false,
       };
     });
 

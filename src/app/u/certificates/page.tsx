@@ -89,20 +89,12 @@ export default function MyCertificatesPage() {
 
                 <div className="flex items-center gap-3 mt-auto">
                   <a
-                    href={cert.certificateUrl}
+                    href={`/certificate/${cert.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 bg-white/5 hover:bg-white/10 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm"
                   >
-                    <Download className="w-4 h-4" /> Download PDF
-                  </a>
-                  <a
-                    href={`/verify/${cert.id}`}
-                    target="_blank"
-                    className="w-12 h-12 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors shrink-0"
-                    title="Verify Certificate"
-                  >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-4 h-4" /> View Certificate
                   </a>
                 </div>
               </div>

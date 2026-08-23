@@ -5,11 +5,13 @@ import { Calendar, LayoutGrid, Image as ImageIcon, ArrowRight, Sparkles } from "
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import { getMemberByEmail, ConnectMember } from "@/lib/firebase/members";
 
 export default function MemberDashboard() {
   const { user } = useAuth();
   const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; date: string }[]>([]);
+  const [profile, setProfile] = useState<ConnectMember | null>(null);
 
   useEffect(() => {
     const fetchUpcomingEvents = async () => {
@@ -30,11 +32,27 @@ export default function MemberDashboard() {
     fetchUpcomingEvents();
   }, []);
 
-  const quickLinks = [
-    { title: "Manage Events", icon: <Calendar className="w-8 h-8 text-primary" />, href: "/member/events", desc: "View and edit club events" },
-    { title: "Manage Projects", icon: <LayoutGrid className="w-8 h-8 text-blue-400" />, href: "/member/projects", desc: "Update project showcase" },
-    { title: "Manage Gallery", icon: <ImageIcon className="w-8 h-8 text-purple-400" />, href: "/member/gallery", desc: "Upload event photos" },
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.email) {
+        try {
+          const p = await getMemberByEmail(user.email);
+          setProfile(p);
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  const allQuickLinks = [
+    { title: "Manage Events", icon: <Calendar className="w-8 h-8 text-primary" />, href: "/member/events", desc: "View and edit club events", permission: "events" },
+    { title: "Manage Projects", icon: <LayoutGrid className="w-8 h-8 text-blue-400" />, href: "/member/projects", desc: "Update project showcase", permission: "projects" },
+    { title: "Manage Gallery", icon: <ImageIcon className="w-8 h-8 text-purple-400" />, href: "/member/gallery", desc: "Upload event photos", permission: "gallery" },
   ];
+
+  const quickLinks = allQuickLinks.filter(link => profile?.permissions?.includes(link.permission));
 
   return (
     <div className="p-8 md:p-12">
@@ -51,7 +69,7 @@ export default function MemberDashboard() {
         
         {/* Quick Links */}
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {quickLinks.map((link, idx) => (
+          {quickLinks.length > 0 ? quickLinks.map((link, idx) => (
             <Link 
               key={idx} 
               href={link.href}
@@ -66,7 +84,11 @@ export default function MemberDashboard() {
                 Open <ArrowRight className="w-4 h-4 ml-1" />
               </div>
             </Link>
-          ))}
+          )) : (
+            <div className="col-span-1 md:col-span-3 p-8 rounded-3xl bg-white/5 border border-white/5 border-dashed flex items-center justify-center text-white/50">
+              You do not have any active write permissions for modules.
+            </div>
+          )}
         </div>
 
         {/* Sidebar / Upcoming */}

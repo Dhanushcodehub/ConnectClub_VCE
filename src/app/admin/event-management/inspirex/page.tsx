@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck, Grip, Settings2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Registration {
   id: string;
@@ -46,6 +47,31 @@ export default function InspirexAdminPage() {
     }
   };
 
+  const [isIssuing, setIsIssuing] = useState(false);
+
+  const handleIssueCertificates = async () => {
+    setIsIssuing(true);
+    try {
+      const { issueInspirexCertificates } = await import("./issue-action");
+      
+      toast.promise(issueInspirexCertificates(), {
+        loading: 'Issuing certificates to eligible participants...',
+        success: (data) => {
+          setIsIssuing(false);
+          return data.message;
+        },
+        error: (err) => {
+          setIsIssuing(false);
+          return "Failed to issue certificates: " + err.message;
+        }
+      });
+      
+    } catch (e: any) {
+      setIsIssuing(false);
+      toast.error("Error: " + e.message);
+    }
+  };
+
   const filteredRegistrations = registrations.filter(reg => {
     const query = searchQuery.toLowerCase();
     return (
@@ -58,8 +84,10 @@ export default function InspirexAdminPage() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative">
+        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none z-0">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
+        </div>
         
         <div className="relative z-10">
           <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
@@ -69,13 +97,55 @@ export default function InspirexAdminPage() {
           <p className="text-white/60">Manage and view participants from the external InspireX database.</p>
         </div>
         
-        <button 
-          onClick={() => alert("Certificate Generation phase coming soon! This will match these Roll Numbers with Connect Club users.")}
-          className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all flex items-center gap-2 relative z-10"
-        >
-          <FileCheck className="w-5 h-5" />
-          Issue Certificates
-        </button>
+        <div className="flex items-center gap-4 relative z-10 w-full md:w-auto">
+          {/* Quick Access Menu */}
+          <div className="relative group">
+            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 flex items-center justify-center">
+              <Grip className="w-5 h-5 text-white/70 group-hover:text-white" />
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden z-50">
+              
+              <div className="px-3 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Tools</div>
+              
+              <a 
+                href="/admin/event-management/inspirex/attendance"
+                className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Users className="w-4 h-4 text-green-400" /> Attendance System
+              </a>
+              
+              <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Certificates</div>
+              
+              <a 
+                href="/admin/event-management/inspirex/certificates"
+                className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Settings2 className="w-4 h-4 text-primary" /> Certificate Studio
+              </a>
+              
+              <button 
+                onClick={handleIssueCertificates}
+                disabled={isIssuing || registrations.length === 0}
+                className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 border-b border-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isIssuing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <FileCheck className="w-4 h-4 text-primary" />}
+                {isIssuing ? "Issuing..." : "Issue Certificates"}
+              </button>
+
+              <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Quick Links</div>
+              
+              <a href="http://localhost:3001" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                Live Event Site
+              </a>
+              <a href="/events" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                Connect Club Events
+              </a>
+              <a href="/u/dashboard" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                My Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats */}

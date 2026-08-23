@@ -12,6 +12,14 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const getRequiredPermission = (path: string) => {
+    if (path.startsWith("/member/events")) return "events";
+    if (path.startsWith("/member/projects")) return "projects";
+    if (path.startsWith("/member/timeline")) return "timeline";
+    if (path.startsWith("/member/gallery")) return "gallery";
+    return null;
+  };
+
   const [memberProfile, setMemberProfile] = useState<ConnectMember | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -32,8 +40,20 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
 
         if (user.email) {
           try {
-            const profile = await getMemberByEmail(user.email);
-            setMemberProfile(profile);
+            let currentProfile = memberProfile;
+            if (!currentProfile) {
+              currentProfile = await getMemberByEmail(user.email);
+              setMemberProfile(currentProfile);
+            }
+
+            // RBAC Enforcement
+            if (currentProfile) {
+              const reqPerm = getRequiredPermission(pathname);
+              if (reqPerm && (!currentProfile.permissions || !currentProfile.permissions.includes(reqPerm))) {
+                router.replace("/member/dashboard");
+                return; // Keep profileLoading true to prevent UI flash during redirect
+              }
+            }
           } catch (error) {
             console.error("Error fetching member profile:", error);
           }
@@ -43,6 +63,7 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
     };
 
     checkAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, role, loading, pathname, router]);
 
   if (loading || (user && profileLoading && pathname !== "/member/login")) {
@@ -61,6 +82,14 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   // If user is an admin and not on login page, render nothing while redirecting
   if (role === "admin" && pathname !== "/member/login") {
     return null;
+  }
+
+  // Synchronous RBAC fallback (prevents rendering before redirect)
+  if (memberProfile) {
+    const reqPerm = getRequiredPermission(pathname);
+    if (reqPerm && (!memberProfile.permissions || !memberProfile.permissions.includes(reqPerm))) {
+      return null;
+    }
   }
 
   return (

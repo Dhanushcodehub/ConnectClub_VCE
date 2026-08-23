@@ -8,25 +8,35 @@ import { Calendar, Award, FolderGit2, Heart, Bell, ChevronRight, User } from "lu
 import Link from "next/link";
 import Image from "next/image";
 
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+
 export default function UserDashboard() {
   const { user, profile } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchNotifications() {
+    async function fetchDashboardData() {
       if (user?.uid) {
         try {
           const notifs = await getUserNotifications(user.uid);
           setNotifications(notifs.slice(0, 5));
+          
+          const regsRef = collection(db, "event_registrations");
+          const q = query(regsRef, where("userId", "==", user.uid));
+          const snap = await getDocs(q);
+          const regs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setRegistrations(regs);
         } catch (error) {
-          console.error("Failed to fetch notifications:", error);
+          console.error("Failed to fetch dashboard data:", error);
         } finally {
           setLoading(false);
         }
       }
     }
-    fetchNotifications();
+    fetchDashboardData();
   }, [user]);
 
   useEffect(() => {
@@ -112,18 +122,35 @@ export default function UserDashboard() {
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-2xl font-display font-bold text-white">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href="/events" className="group bg-[#0C0C0E] border border-white/[0.06] hover:border-primary/50 transition-colors rounded-2xl p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <Calendar className="w-5 h-5" />
+            
+            {/* Conditional Ticket Button */}
+            {registrations.find(r => r.eventId === "inspirex-s2" && r.ticketId) ? (
+              <a href={`http://localhost:3001/ticket/${registrations.find(r => r.eventId === "inspirex-s2").ticketId}`} target="_blank" rel="noreferrer" className="group bg-[#0C0C0E] border border-ember/50 hover:border-ember transition-colors rounded-2xl p-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-ember/10 text-ember flex items-center justify-center">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">View InspireX Ticket</h3>
+                    <p className="text-white/50 text-sm">You're registered!</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-medium">Register for Events</h3>
-                  <p className="text-white/50 text-sm">Browse upcoming events</p>
+                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-ember transition-colors" />
+              </a>
+            ) : (
+              <Link href="/events" className="group bg-[#0C0C0E] border border-white/[0.06] hover:border-primary/50 transition-colors rounded-2xl p-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">Register for Events</h3>
+                    <p className="text-white/50 text-sm">Browse upcoming events</p>
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-primary transition-colors" />
-            </Link>
+                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-primary transition-colors" />
+              </Link>
+            )}
             
             <Link href="/u/projects/submit" className="group bg-[#0C0C0E] border border-white/[0.06] hover:border-primary/50 transition-colors rounded-2xl p-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
