@@ -30,6 +30,19 @@ export default function InspirexAttendancePage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanSession, setScanSession] = useState<"morning" | "afternoon">("morning");
   
+  // Refs to avoid scanner restart on state changes
+  const registrationsRef = useRef(registrations);
+  const scanSessionRef = useRef(scanSession);
+  const lastScanRef = useRef<{text: string, time: number} | null>(null);
+
+  useEffect(() => {
+    registrationsRef.current = registrations;
+  }, [registrations]);
+
+  useEffect(() => {
+    scanSessionRef.current = scanSession;
+  }, [scanSession]);
+  
   // Audio for scan beep
   const beepRef = useRef<HTMLAudioElement | null>(null);
 
@@ -65,17 +78,27 @@ export default function InspirexAttendancePage() {
         { facingMode: "environment" },
         config,
         async (decodedText) => {
-          // Success callback
-          const reg = registrations.find(r => r.rollNo === decodedText || r.id === decodedText);
+          // Debounce: prevent same scan within 4 seconds
+          const now = Date.now();
+          if (lastScanRef.current && lastScanRef.current.text === decodedText && (now - lastScanRef.current.time) < 4000) {
+            return;
+          }
+          lastScanRef.current = { text: decodedText, time: now };
+
+          // Use refs to get latest state without triggering re-renders of the scanner
+          const currentRegs = registrationsRef.current;
+          const currentSession = scanSessionRef.current;
+
+          const reg = currentRegs.find(r => r.rollNo === decodedText || r.id === decodedText);
           
           if (reg) {
             if (beepRef.current) beepRef.current.play().catch(e => console.log(e));
             
-            const isAlreadyPresent = scanSession === "morning" ? reg.morningAttendance : reg.afternoonAttendance;
+            const isAlreadyPresent = currentSession === "morning" ? reg.morningAttendance : reg.afternoonAttendance;
             if (isAlreadyPresent) {
-              toast.info(`${reg.name} is already marked Present for ${scanSession}`);
+              toast.info(`${reg.name} is already marked Present for ${currentSession}`);
             } else {
-              await handleToggleAttendance(reg.id, scanSession, false);
+              await handleToggleAttendance(reg.id, currentSession, false);
               toast.success(`Scanned: ${reg.name} marked Present!`, {
                 style: { background: '#22c55e', color: 'black', border: 'none' }
               });
@@ -122,7 +145,7 @@ export default function InspirexAttendancePage() {
         html5QrCode.clear();
       }
     };
-  }, [isScanning, scanSession, registrations]);
+  }, [isScanning]);
 
   useEffect(() => {
     fetchRegistrations(true);

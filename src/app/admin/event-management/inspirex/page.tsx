@@ -20,9 +20,19 @@ export default function InspirexAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchRegistrations();
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.quick-access-menu')) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchRegistrations = async () => {
@@ -99,57 +109,65 @@ export default function InspirexAdminPage() {
         
         <div className="flex items-center gap-4 relative z-10 w-full md:w-auto">
           {/* Quick Access Menu */}
-          <div className="relative group">
-            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 flex items-center justify-center">
-              <Grip className="w-5 h-5 text-white/70 group-hover:text-white" />
+          <div className="relative quick-access-menu z-50">
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 flex items-center justify-center"
+            >
+              <Grip className={`w-5 h-5 transition-colors ${isMenuOpen ? "text-white" : "text-white/70"}`} />
             </button>
-            <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden z-50">
-              
-              <div className="px-3 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Tools</div>
-              
-              <a 
-                href="/admin/event-management/inspirex/attendance"
-                className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <Users className="w-4 h-4 text-green-400" /> Attendance System
-              </a>
-              
-              <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Certificates</div>
-              
-              <a 
-                href="/admin/event-management/inspirex/certificates"
-                className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <Settings2 className="w-4 h-4 text-primary" /> Certificate Studio
-              </a>
-              
-              <button 
-                onClick={handleIssueCertificates}
-                disabled={isIssuing || registrations.length === 0}
-                className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 border-b border-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isIssuing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <FileCheck className="w-4 h-4 text-primary" />}
-                {isIssuing ? "Issuing..." : "Issue Certificates"}
-              </button>
-
-              <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Quick Links</div>
-              
-              <a href="http://localhost:3001" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                Live Event Site
-              </a>
-              <a href="/events" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                Connect Club Events
-              </a>
-              <a href="/u/dashboard" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                My Dashboard
-              </a>
-            </div>
+            
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-3 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Tools</div>
+                
+                <a 
+                  href="/admin/event-management/inspirex/attendance"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Users className="w-4 h-4 text-green-400" /> Attendance System
+                </a>
+                
+                <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Certificates</div>
+                
+                <a 
+                  href="/admin/event-management/inspirex/certificates"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Settings2 className="w-4 h-4 text-primary" /> Certificate Studio
+                </a>
+                
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleIssueCertificates();
+                  }}
+                  disabled={isIssuing || registrations.length === 0}
+                  className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 border-b border-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isIssuing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <FileCheck className="w-4 h-4 text-primary" />}
+                  {isIssuing ? "Issuing..." : "Issue Certificates"}
+                </button>
+  
+                <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Quick Links</div>
+                
+                <a href="http://localhost:3001" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                  Live Event Site
+                </a>
+                <a href="/events" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                  Connect Club Events
+                </a>
+                <a href="/u/dashboard" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
+                  My Dashboard
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Users className="w-7 h-7 text-primary" />
@@ -203,8 +221,46 @@ export default function InspirexAdminPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile View: Card List */}
+        <div className="block md:hidden divide-y divide-white/5">
+          {isLoading ? (
+            <div className="p-12 text-center text-white/50">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+              Fetching data...
+            </div>
+          ) : filteredRegistrations.length === 0 ? (
+            <div className="p-12 text-center text-white/50">
+              {searchQuery ? "No matching registrations found." : "No registrations found in the database yet."}
+            </div>
+          ) : (
+            filteredRegistrations.map((reg) => (
+              <div key={reg.id} className="p-5 flex flex-col gap-3 hover:bg-white/[0.02] transition-colors">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-white text-base truncate flex items-center gap-2">
+                      {reg.name}
+                      {reg.isConnectClubMember && (
+                        <ShieldCheck className="w-4 h-4 text-green-400 shrink-0" title="Connect Club Member" />
+                      )}
+                    </div>
+                    <div className="text-sm text-white/50 mt-1">{reg.branch} · {reg.year}</div>
+                  </div>
+                  <div className="px-2.5 py-1 bg-primary/10 rounded-md text-primary font-mono text-xs font-bold border border-primary/20 whitespace-nowrap">
+                    {reg.rollNo}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs text-white/40 mt-1">
+                   <div className="truncate flex-1">{reg.email || "No email"}</div>
+                   <div className="shrink-0">{reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : "Unknown"}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/5">
