@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Search, Loader2, AlertCircle, ArrowLeft, Sun, Moon, CheckCircle2, QrCode, X, Camera } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 interface Registration {
   id: string;
@@ -41,56 +41,86 @@ export default function InspirexAttendancePage() {
   useEffect(() => {
     if (!isScanning) return;
 
-    const scanner = new Html5QrcodeScanner(
-      "qr-reader",
-      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
-      /* verbose= */ false
-    );
+    let html5QrCode: Html5Qrcode | null = null;
+    let isComponentMounted = true;
 
-    scanner.render(
-      async (decodedText) => {
-        // Find user by rollNo or registrationId
-        const reg = registrations.find(r => r.rollNo === decodedText || r.id === decodedText);
-        
-        if (reg) {
-          if (beepRef.current) beepRef.current.play().catch(e => console.log(e));
+    // Small delay to ensure the modal DOM is fully rendered
+    const initScanner = setTimeout(() => {
+      if (!isComponentMounted) return;
+      
+      html5QrCode = new Html5Qrcode("qr-reader");
+      
+      const config = { 
+        fps: 10, 
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdgePercentage = 0.7; // 70% of the smallest edge
+          const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          return { width: qrboxSize, height: qrboxSize };
+        },
+        aspectRatio: 1.0,
+      };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        async (decodedText) => {
+          // Success callback
+          const reg = registrations.find(r => r.rollNo === decodedText || r.id === decodedText);
           
-          // Check if already present
-          const isAlreadyPresent = scanSession === "morning" ? reg.morningAttendance : reg.afternoonAttendance;
-          if (isAlreadyPresent) {
-            toast.info(`${reg.name} is already marked Present for ${scanSession}`);
+          if (reg) {
+            if (beepRef.current) beepRef.current.play().catch(e => console.log(e));
+            
+            const isAlreadyPresent = scanSession === "morning" ? reg.morningAttendance : reg.afternoonAttendance;
+            if (isAlreadyPresent) {
+              toast.info(`${reg.name} is already marked Present for ${scanSession}`);
+            } else {
+              await handleToggleAttendance(reg.id, scanSession, false);
+              toast.success(`Scanned: ${reg.name} marked Present!`, {
+                style: { background: '#22c55e', color: 'black', border: 'none' }
+              });
+            }
+            
+            // Pause scanner to prevent double scanning
+            if (html5QrCode && html5QrCode.getState() === 2) {
+              html5QrCode.pause();
+              setTimeout(() => {
+                if (html5QrCode && html5QrCode.getState() === 3) {
+                  html5QrCode.resume();
+                }
+              }, 2000);
+            }
           } else {
-            await handleToggleAttendance(reg.id, scanSession, false);
-            toast.success(`Scanned: ${reg.name} marked Present!`, {
-              style: { background: '#22c55e', color: 'black', border: 'none' }
-            });
+            toast.error(`Roll Number ${decodedText} not found in registrations.`);
+            if (html5QrCode && html5QrCode.getState() === 2) {
+              html5QrCode.pause();
+              setTimeout(() => {
+                if (html5QrCode && html5QrCode.getState() === 3) {
+                  html5QrCode.resume();
+                }
+              }, 2000);
+            }
           }
-          
-          // Briefly pause scanner to prevent double scanning the same code instantly
-          scanner.pause(true);
-          setTimeout(() => {
-            if (document.getElementById("qr-reader")) {
-              scanner.resume();
-            }
-          }, 2000);
-          
-        } else {
-          toast.error(`Roll Number ${decodedText} not found in registrations.`);
-          scanner.pause(true);
-          setTimeout(() => {
-            if (document.getElementById("qr-reader")) {
-              scanner.resume();
-            }
-          }, 2000);
+        },
+        (error) => {
+          // Ignore normal scanning frame errors
         }
-      },
-      (error) => {
-        // Ignore normal scanning errors (e.g. no QR code found in current frame)
-      }
-    );
+      ).catch(err => {
+        console.error("Error starting scanner", err);
+        toast.error("Failed to start camera. Please check permissions.");
+      });
+    }, 100);
 
     return () => {
-      scanner.clear().catch(console.error);
+      isComponentMounted = false;
+      clearTimeout(initScanner);
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+          html5QrCode?.clear();
+        }).catch(console.error);
+      } else if (html5QrCode) {
+        html5QrCode.clear();
+      }
     };
   }, [isScanning, scanSession, registrations]);
 
@@ -220,39 +250,53 @@ export default function InspirexAttendancePage() {
 
       {/* QR Scanner Modal */}
       {isScanning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4">
-          <div className="bg-[#111114] border border-white/10 rounded-3xl p-6 w-full max-w-lg relative">
-            <button 
-              onClick={() => setIsScanning(false)}
-              className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Camera className="w-5 h-5 text-green-400" />
-              Scan Participant QR
-            </h2>
+        <div className="fixed inset-0 z-[100] flex flex-col bg-[#0C0C0E] md:p-6 md:items-center md:justify-center">
+          <div className="bg-[#111114] md:border border-white/10 md:rounded-3xl p-4 md:p-6 w-full max-w-md mx-auto flex flex-col h-full md:h-auto relative overflow-hidden shadow-2xl">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 pt-2 md:pt-0">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-green-400" />
+                Scan QR Code
+              </h2>
+              <button 
+                onClick={() => setIsScanning(false)}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Toggles */}
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setScanSession("morning")}
-                className={`flex-1 py-3 rounded-xl font-bold transition-colors ${scanSession === "morning" ? "bg-green-500 text-black" : "bg-white/5 text-white/50"}`}
+                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "morning" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)]" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}
               >
                 Morning
               </button>
               <button
                 onClick={() => setScanSession("afternoon")}
-                className={`flex-1 py-3 rounded-xl font-bold transition-colors ${scanSession === "afternoon" ? "bg-blue-500 text-black" : "bg-white/5 text-white/50"}`}
+                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "afternoon" ? "bg-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.3)]" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}
               >
                 Afternoon
               </button>
             </div>
             
-            <div className="bg-black rounded-2xl overflow-hidden min-h-[300px] flex items-center justify-center">
-              <div id="qr-reader" className="w-full"></div>
+            {/* Camera Viewport */}
+            <div className="flex-1 md:h-[400px] bg-black rounded-2xl overflow-hidden relative flex items-center justify-center border border-white/10 shadow-inner">
+              <div id="qr-reader" className="w-full h-full [&>video]:object-cover [&>video]:w-full [&>video]:h-full"></div>
+              
+              {/* Custom CSS overrides for html5-qrcode injected elements */}
+              <style dangerouslySetInnerHTML={{__html: `
+                #qr-reader { border: none !important; }
+                #qr-reader__scan_region { background: black; }
+                #qr-reader__dashboard { display: none !important; } /* Hide the default UI completely */
+              `}} />
             </div>
             
-            <p className="text-center text-white/40 text-sm mt-4">
-              Scanning for: <strong className="text-white">{scanSession === "morning" ? "Morning Session" : "Afternoon Session"}</strong>
+            <p className="text-center text-white/50 text-sm mt-6 font-medium">
+              Point camera at ticket.<br />Scanning for <strong className="text-white">{scanSession === "morning" ? "Morning Session" : "Afternoon Session"}</strong>
             </p>
           </div>
         </div>
@@ -271,8 +315,71 @@ export default function InspirexAttendancePage() {
 
       {/* Main Content */}
       <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl overflow-hidden flex flex-col">
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile View: Card List */}
+        <div className="block md:hidden divide-y divide-white/5">
+          {isLoading ? (
+            <div className="p-12 text-center text-white/50">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-400" />
+              Fetching data...
+            </div>
+          ) : filteredRegistrations.length === 0 ? (
+            <div className="p-12 text-center text-white/50">
+              {searchQuery ? "No matching registrations found." : "No registrations found in the database yet."}
+            </div>
+          ) : (
+            filteredRegistrations.map((reg) => (
+              <div key={reg.id} className="p-5 flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-white text-base truncate">{reg.name}</div>
+                    <div className="text-sm text-white/50 truncate mt-0.5">{reg.branch}</div>
+                  </div>
+                  <div className="px-2.5 py-1 bg-white/5 rounded-md text-white/80 font-mono text-xs font-bold border border-white/10 whitespace-nowrap">
+                    {reg.rollNo}
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleToggleAttendance(reg.id, "morning", reg.morningAttendance)}
+                    disabled={updatingId === reg.id + "morning"}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
+                      reg.morningAttendance
+                        ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.15)]"
+                        : "bg-white/5 text-white/50 border border-white/10"
+                    }`}
+                  >
+                    {updatingId === reg.id + "morning" ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sun className="w-3.5 h-3.5" />
+                    )}
+                    {reg.morningAttendance ? "Present" : "Mark AM"}
+                  </button>
+                  <button
+                    onClick={() => handleToggleAttendance(reg.id, "afternoon", reg.afternoonAttendance)}
+                    disabled={updatingId === reg.id + "afternoon"}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
+                      reg.afternoonAttendance
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                        : "bg-white/5 text-white/50 border border-white/10"
+                    }`}
+                  >
+                    {updatingId === reg.id + "afternoon" ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Moon className="w-3.5 h-3.5" />
+                    )}
+                    {reg.afternoonAttendance ? "Present" : "Mark PM"}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/5">
