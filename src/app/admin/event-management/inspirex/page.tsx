@@ -240,7 +240,9 @@ export default function InspirexAdminPage() {
                     <div className="font-bold text-white text-base truncate flex items-center gap-2">
                       {reg.name}
                       {reg.isConnectClubMember && (
-                        <ShieldCheck className="w-4 h-4 text-green-400 shrink-0" title="Connect Club Member" />
+                        <span title="Connect Club Member" className="flex items-center">
+                          <ShieldCheck className="w-4 h-4 text-green-400 shrink-0" />
+                        </span>
                       )}
                     </div>
                     <div className="text-sm text-white/50 mt-1">{reg.branch} · {reg.year}</div>
