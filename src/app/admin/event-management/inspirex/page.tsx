@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck, Grip, Settings2 } from "lucide-react";
+import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck, Grip, Settings2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
 interface Registration {
@@ -125,6 +125,13 @@ export default function InspirexAdminPage() {
                   className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
                 >
                   <Users className="w-4 h-4 text-green-400" /> Attendance System
+                </a>
+
+                <a 
+                  href="/admin/event-management/inspirex/member-lists"
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-amber-400" /> Member Lists
                 </a>
                 
                 <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Certificates</div>

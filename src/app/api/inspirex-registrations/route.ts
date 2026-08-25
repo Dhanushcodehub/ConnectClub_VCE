@@ -66,6 +66,7 @@ export async function GET() {
         branch: data.branch || "Unknown",
         rollNo: rawRollNo || "Unknown",
         year: data.year || "Unknown",
+        section: (data.section || "").toUpperCase().trim() || "–",
         email: data.email || "",
         registeredAt: data.registeredAt ? data.registeredAt.toDate().toISOString() : null,
         isConnectClubMember: ccRollNumbers.has(cleanRollNo),
