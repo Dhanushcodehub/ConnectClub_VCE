@@ -24,6 +24,9 @@ export default function InspirexAttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("All");
+  const [selectedYear, setSelectedYear] = useState("All");
+  const [selectedSection, setSelectedSection] = useState("All");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   
   // Scanner State
@@ -223,51 +226,102 @@ export default function InspirexAttendancePage() {
 
   const filteredRegistrations = registrations.filter(reg => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       reg.name.toLowerCase().includes(query) ||
       reg.rollNo.toLowerCase().includes(query) ||
       reg.branch.toLowerCase().includes(query)
     );
+    
+    const matchesBranch = selectedBranch === "All" || reg.branch === selectedBranch;
+    const matchesYear = selectedYear === "All" || reg.year === selectedYear;
+    
+    // For section, since it's not explicitly in DB, we try to see if branch contains it (e.g. "CSE - A")
+    // or if the user selected "All", we just pass it.
+    let matchesSection = true;
+    if (selectedSection !== "All") {
+      matchesSection = reg.branch.toLowerCase().includes(selectedSection.toLowerCase()) || 
+                       reg.name.toLowerCase().includes(` ${selectedSection.toLowerCase()}`) ||
+                       reg.rollNo.toLowerCase().endsWith(selectedSection.toLowerCase()); // simple heuristics
+    }
+
+    return matchesSearch && matchesBranch && matchesYear && matchesSection;
   });
+
+  // Extract unique values for filters
+  const branches = Array.from(new Set(registrations.map(r => r.branch).filter(Boolean))).sort();
+  const years = Array.from(new Set(registrations.map(r => r.year).filter(Boolean))).sort();
+  const sections = ["A", "B", "C", "D"]; // Common sections
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative overflow-hidden">
+      <div className="bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative overflow-hidden flex flex-col gap-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="relative z-10">
-          <Link href="/admin/event-management/inspirex" className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to InspireX
-          </Link>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
-                Attendance System
-              </h1>
-              <p className="text-white/60">Mark morning and afternoon attendance for participants.</p>
-            </div>
-            <button
-              onClick={() => setIsScanning(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-xl transition-colors"
-            >
-              <QrCode className="w-5 h-5" />
-              Scan QR
-            </button>
+        {/* Top Header Row */}
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <Link href="/admin/event-management/inspirex" className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to InspireX
+            </Link>
+            <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
+              <CheckCircle2 className="w-8 h-8 text-green-400" />
+              Attendance System
+            </h1>
+            <p className="text-white/60">Mark morning and afternoon attendance for participants.</p>
           </div>
+          <button
+            onClick={() => setIsScanning(true)}
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-8 py-4 bg-green-500 hover:bg-green-600 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+          >
+            <QrCode className="w-6 h-6" />
+            Scan QR
+          </button>
         </div>
         
-        <div className="relative z-10 w-full mt-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search by name, roll no, or branch..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-green-500/50 transition-colors"
-          />
+        {/* Filters Row */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="md:col-span-2 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search by name or roll no..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-green-500/50 transition-colors"
+            />
+          </div>
+          
+          <select 
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
+          >
+            <option value="All">All Branches</option>
+            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+
+          <select 
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
+          >
+            <option value="All">All Years</option>
+            {years.map(y => <option key={y} value={y}>{y} Year</option>)}
+          </select>
+
+          <select 
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value)}
+            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
+          >
+            <option value="All">All Sections</option>
+            {sections.map(s => <option key={s} value={s}>Section {s}</option>)}
+          </select>
         </div>
       </div>
 
