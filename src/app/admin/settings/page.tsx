@@ -210,7 +210,7 @@ export default function AdminSettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Change Password */}
-          <div className="bg-card border border-white/5 rounded-3xl p-8">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-8">
             <h2 className="text-xl font-bold text-white mb-6">Change Password</h2>
             
             {pwdError && (
@@ -260,7 +260,7 @@ export default function AdminSettingsPage() {
           </div>
 
           {/* Two-Factor Authentication */}
-          <div className="bg-card border border-white/5 rounded-3xl p-8">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-8">
             <h2 className="text-xl font-bold text-white mb-2">Two-Factor Authentication</h2>
             <p className="text-white/50 text-sm mb-6">
               Add an extra layer of security to your account using an Authenticator app (like Google Authenticator or Authy).
@@ -339,7 +339,7 @@ export default function AdminSettingsPage() {
       )}
 
       {activeTab === "history" && (
-        <div className="bg-card border border-white/5 rounded-3xl p-8">
+        <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-8">
           <h2 className="text-xl font-bold text-white mb-6">Recent Login History</h2>
           
           {loadingHistory ? (

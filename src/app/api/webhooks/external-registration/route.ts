@@ -71,11 +71,13 @@ export async function POST(request: Request) {
 
       // 6. Create Event Registration Document
       const registrationRef = db.collection("event_registrations").doc();
+      const generatedTicketId = ticketId || `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
       batch.set(registrationRef, {
         userId,
         eventId,
         eventTitle,
-        ticketId: ticketId || null,
+        ticketId: generatedTicketId,
         registeredAt: FieldValue.serverTimestamp(),
         attended: false,
         certificateIssued: false

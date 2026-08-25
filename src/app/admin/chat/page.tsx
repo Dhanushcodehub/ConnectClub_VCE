@@ -1,22 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import GlobalChat from "@/components/chat/GlobalChat";
 import { getMembers, ConnectMember } from "@/lib/firebase/members";
-import { Users, Globe, MessageSquare } from "lucide-react";
+import { Globe, Search, Edit } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { subscribeToUnreadCounts } from "@/lib/firebase/chat";
+import { subscribeToUnreadCounts, subscribeToLastMessages } from "@/lib/firebase/chat";
+import { motion } from "framer-motion";
+
+const AVATAR_GRADIENTS = [
+  ['#FF6B6B', '#EE5A24'], ['#A3CB38', '#009432'], ['#12CBC4', '#1289A7'],
+  ['#FDA7DF', '#D980FA'], ['#F79F1F', '#EE5A24'], ['#6C5CE7', '#A29BFE'],
+  ['#00CEFF', '#0055FF'], ['#FF9FF3', '#F368E0'],
+];
+
+function getAvatarGradient(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+}
+
+function formatRelativeTime(dateInput: Date | { seconds: number } | number | string) {
+  if (!dateInput) return '';
+  let date: Date;
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else if (typeof dateInput === 'object' && 'seconds' in dateInput) {
+    date = new Date(dateInput.seconds * 1000);
+  } else {
+    date = new Date(dateInput);
+  }
+  
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMins = Math.floor(diffInMs / 60000);
+  const diffInHours = Math.floor(diffInMins / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInMins < 1) return 'now';
+  if (diffInMins < 60) return `${diffInMins}m`;
+  if (diffInHours < 24) return `${diffInHours}h`;
+  if (diffInDays === 1) return 'Yesterday';
+  if (diffInDays < 7) {
+    return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
+  }
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+}
 
 export default function AdminChatPage() {
   const { user, role } = useAuth();
   const [members, setMembers] = useState<ConnectMember[]>([]);
-  const [activeRoom, setActiveRoom] = useState<string>("global"); // "global" or member.email
+  const [activeRoom, setActiveRoom] = useState<string>("global");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   
-  // Unread message tracking
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [lastMessages, setLastMessages] = useState<Record<string, {text: string, timestamp: Date, senderName: string}>>({});
   
-  // Mobile responsiveness
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   useEffect(() => {
@@ -28,10 +70,21 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     if (user?.email && role) {
-      const unsubscribe = subscribeToUnreadCounts(user.email, role as "admin" | "member", setUnreadCounts);
-      return () => unsubscribe();
+      const unsubscribeUnread = subscribeToUnreadCounts(user.email, role as "admin" | "member", setUnreadCounts);
+      const unsubscribeLast = subscribeToLastMessages((data) => {
+        setLastMessages(data);
+      });
+      return () => {
+        unsubscribeUnread();
+        unsubscribeLast();
+      };
     }
   }, [user, role]);
+
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) return members;
+    return members.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [members, searchQuery]);
 
   const getActiveMember = () => {
     return members.find(m => m.email === activeRoom);
@@ -43,79 +96,145 @@ export default function AdminChatPage() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-background">
-      {/* DM Sidebar - Hidden on mobile if chat is open */}
-      <aside className={`w-full md:w-80 border-r border-white/5 bg-[#0C0C0E]/90 flex-col shrink-0 z-10 shadow-2xl ${isMobileChatOpen ? 'hidden md:flex' : 'flex'}`}>
-        <div className="p-5 border-b border-white/5 flex items-center bg-white/[0.02]">
-          <h2 className="text-lg font-black text-white flex items-center tracking-tight">
-            <MessageSquare className="w-5 h-5 mr-2.5 text-primary" />
-            Messages
+    <div className="flex h-full overflow-hidden bg-transparent">
+      {/* Sidebar - Hidden on mobile if chat is open */}
+      <aside className={`w-full md:w-[350px] lg:w-[400px] border-r border-white/5 bg-[#0c0c0e] flex-col shrink-0 z-10 shadow-2xl ${isMobileChatOpen ? 'hidden md:flex' : 'flex'}`}>
+        
+        {/* Header */}
+        <div className="p-4 flex items-center justify-between bg-white/[0.02]">
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            Chats
           </h2>
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white">
+            <Edit className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-4 pb-3 pt-1 border-b border-white/5 bg-transparent">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-white/30" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search or start a new chat"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-all"
+            />
+          </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-transparent">
+          {/* Global Chat */}
           <button
             onClick={() => handleRoomSelect("global")}
-            className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all text-left ${
-              activeRoom === "global" 
-                ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_20px_rgba(0,85,255,0.1)]" 
-                : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+            className={`w-full flex items-center px-4 py-2 hover:bg-white/5 transition-colors text-left ${
+              activeRoom === "global" ? "bg-white/10" : ""
             }`}
           >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 mr-3 ${activeRoom === "global" ? "bg-primary/20 text-primary" : "bg-white/5 text-white/50"}`}>
-              <Globe className="w-5 h-5" />
+            <div className="relative shrink-0 mr-3 pt-1">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-white shadow-lg">
+                <Globe className="w-6 h-6" />
+              </div>
             </div>
-            <span className="font-bold text-[14px] tracking-wide truncate">Global Chat</span>
+            <div className="overflow-hidden flex-1 border-b border-white/5 pb-3 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[15px] text-white truncate">Global Chat</span>
+                {lastMessages["global"] && (
+                  <span className="text-white/40 text-[10px] shrink-0 ml-2">
+                    {formatRelativeTime(lastMessages["global"].timestamp)}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-[13px] text-white/50 truncate max-w-[85%]">
+                   {lastMessages["global"] ? `${lastMessages["global"].senderName}: ${lastMessages["global"].text}` : "All members"}
+                </span>
+                {unreadCounts["global"] > 0 && activeRoom !== "global" && (
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#25D366] flex items-center justify-center shrink-0 ml-2"
+                  >
+                    <span className="text-[10px] font-bold text-white">{unreadCounts["global"] > 9 ? "9+" : unreadCounts["global"]}</span>
+                  </motion.div>
+                )}
+              </div>
+            </div>
           </button>
 
-          <div className="pt-6 pb-2 px-2 flex items-center gap-3">
-            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Direct Messages</span>
-            <div className="h-px bg-white/5 flex-1" />
-          </div>
-
           {loading ? (
-            <div className="text-center text-white/30 text-xs py-4 flex flex-col items-center gap-2">
-              <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
-              Loading...
+            <div className="flex flex-col items-center justify-center h-40 gap-3">
+              <div className="w-6 h-6 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
+              <span className="text-white/40 text-sm">Loading chats...</span>
             </div>
-          ) : members.length === 0 ? (
-            <div className="text-center text-white/30 text-xs py-4 px-2">No members found.</div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 gap-3 px-4 text-center mt-4">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <Search className="w-5 h-5 text-white/30" />
+              </div>
+              <p className="text-white/40 text-sm">No chats found for "{searchQuery}"</p>
+            </div>
           ) : (
-            members.map(member => {
+            filteredMembers.map(member => {
               const unreadCount = member.email ? (unreadCounts[member.email] || 0) : 0;
+              const lastMsg = member.email ? lastMessages[member.email] : null;
+              const [color1, color2] = getAvatarGradient(member.name);
               
               return (
                 <button
                   key={member.id}
                   onClick={() => handleRoomSelect(member.email!)}
-                  className={`w-full flex items-center px-3.5 py-3 rounded-2xl transition-all text-left group relative ${
-                    activeRoom === member.email 
-                      ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_20px_rgba(0,85,255,0.1)]" 
-                      : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  className={`w-full flex items-center px-4 py-2 hover:bg-white/5 transition-colors text-left group ${
+                    activeRoom === member.email ? "bg-white/10" : ""
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 mr-3 transition-colors ${
-                    activeRoom === member.email 
-                      ? "bg-primary text-white shadow-lg shadow-primary/30" 
-                      : "bg-white/10 text-white/70 group-hover:bg-white/20 group-hover:text-white"
-                  }`}>
-                    <span className="text-sm font-black uppercase tracking-wider">
-                      {member.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="overflow-hidden flex-1">
-                    <div className={`font-bold text-[14px] truncate transition-colors ${activeRoom === member.email ? "text-primary" : "text-white/90 group-hover:text-white"}`}>
-                      {member.name}
+                  <div className="relative shrink-0 mr-3 pt-1">
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg"
+                      style={{ background: `linear-gradient(135deg, ${color1}, ${color2})` }}
+                    >
+                      <span className="text-lg font-bold uppercase">
+                        {member.name.charAt(0)}
+                      </span>
                     </div>
-                    <div className="text-[11px] opacity-60 truncate font-medium mt-0.5">{member.tier}</div>
+                    {/* Online Status Dot */}
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#25D366] border-2 border-[#0C0C0E] rounded-full z-10" />
                   </div>
                   
-                  {/* Unread Badge */}
-                  {unreadCount > 0 && activeRoom !== member.email && (
-                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30 shrink-0 ml-2">
-                      <span className="text-[9px] font-black text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                  <div className="overflow-hidden flex-1 border-b border-white/5 pb-3 pt-2">
+                    <div className="flex justify-between items-center">
+                      <div className={`font-semibold text-[15px] truncate ${activeRoom === member.email ? "text-white" : "text-white/90 group-hover:text-white"}`}>
+                        {member.name}
+                      </div>
+                      {lastMsg && (
+                        <div className="text-white/40 text-[10px] shrink-0 ml-2">
+                          {formatRelativeTime(lastMsg.timestamp)}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    
+                    <div className="flex justify-between items-center mt-0.5">
+                      <div className="text-[13px] text-white/50 truncate max-w-[85%]">
+                        {lastMsg ? lastMsg.text : "Start a conversation"}
+                      </div>
+                      
+                      {/* Unread Badge */}
+                      {unreadCount > 0 && activeRoom !== member.email && (
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#25D366] flex items-center justify-center shrink-0 ml-2"
+                        >
+                          <span className="text-[10px] font-bold text-white">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
                 </button>
               );
             })

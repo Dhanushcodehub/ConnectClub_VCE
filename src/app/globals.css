@@ -212,19 +212,17 @@
     display: none;
   }
   .bg-grid-pattern-light {
-    background-size: 50px 50px;
+    background-size: 32px 32px;
     background-image: 
       linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   }
   /* ── Background Grid Pattern ─────────────────────────── */
   .bg-grid-pattern {
-    background-size: 50px 50px;
+    background-size: 32px 32px;
     background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
-    -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   }
 }
 

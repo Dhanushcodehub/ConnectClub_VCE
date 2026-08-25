@@ -74,7 +74,7 @@ export default function AdminMessagesPage() {
       </header>
 
       <div className="p-8">
-        <div className="bg-card border border-white/5 rounded-3xl overflow-hidden">
+        <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-white/5 text-white/50 text-sm">

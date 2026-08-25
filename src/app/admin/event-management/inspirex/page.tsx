@@ -94,22 +94,21 @@ export default function InspirexAdminPage() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative">
+      <div className="bg-[#0C0C0E] p-6 md:p-8 rounded-3xl border border-white/5 relative">
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none z-0">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
         </div>
         
-        <div className="relative z-10">
-          <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
-            <Ticket className="w-8 h-8 text-primary" />
+        <div className="relative z-10 pr-14 md:pr-16">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-white mb-2 flex items-center gap-2 md:gap-3 flex-wrap">
+            <Ticket className="w-6 h-6 md:w-8 md:h-8 text-primary shrink-0" />
             InspireX Registrations
           </h1>
-          <p className="text-white/60">Manage and view participants from the external InspireX database.</p>
+          <p className="text-sm md:text-base text-white/60">Manage and view participants from the external InspireX database.</p>
         </div>
         
-        <div className="flex items-center gap-4 relative z-10 w-full md:w-auto">
-          {/* Quick Access Menu */}
-          <div className="relative quick-access-menu z-50">
+        {/* Quick Access Menu */}
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-50 quick-access-menu">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 flex items-center justify-center"
@@ -163,7 +162,6 @@ export default function InspirexAdminPage() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* Stats */}

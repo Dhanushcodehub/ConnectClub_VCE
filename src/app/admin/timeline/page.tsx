@@ -173,7 +173,7 @@ export default function AdminTimelinePage() {
         </header>
 
         <div className="p-8">
-          <div className="bg-card border border-white/5 rounded-3xl overflow-hidden">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-white/5 bg-white/5 text-white/50 text-sm">
@@ -227,7 +227,7 @@ export default function AdminTimelinePage() {
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-card border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#0c0c0e] border border-white/10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
                 <h2 className="text-xl font-bold text-white">{editingId ? 'Edit Milestone' : 'Add Milestone'}</h2>
                 <button onClick={handleCloseModal} className="text-white/50 hover:text-white transition-colors">

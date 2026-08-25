@@ -22,7 +22,8 @@ import {
   Bell,
   Ticket,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  ClipboardList
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,6 +36,7 @@ const navItems = [
   { name: "Members", path: "/admin/members", icon: Users },
   { name: "Inquiries", path: "/admin/messages", icon: Mail },
   { name: "Notifications", path: "/admin/notifications", icon: Bell },
+  { name: "Feedback Forms", path: "/admin/feedback", icon: ClipboardList },
   { name: "Club Chat", path: "/admin/chat", icon: MessageSquare },
   { name: "Event Management", path: "/admin/event-management", icon: Ticket },
   { name: "Settings", path: "/admin/settings", icon: Settings },
@@ -95,7 +97,7 @@ export default function AdminSidebar() {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:translate-x-0 md:relative
         group ${isCollapsed ? 'w-20' : 'w-72 md:w-20 lg:w-72 md:hover:w-72'} 
-        border-r border-white/5 bg-background md:bg-card/50 md:backdrop-blur-xl flex flex-col shrink-0 shadow-2xl h-[100svh]
+        border-r border-white/5 bg-[#0c0c0e] flex flex-col shrink-0 shadow-2xl h-[100svh]
       `}>
         {/* Collapse Toggle (Desktop only) */}
         <button 

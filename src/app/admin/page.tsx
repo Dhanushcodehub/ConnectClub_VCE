@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
               {statCards.map((stat, idx) => (
-                <Link key={idx} href={stat.href} className="p-4 md:p-6 rounded-3xl bg-card border border-white/5 flex items-center space-x-4 hover:bg-white/5 hover:border-white/10 transition-all group">
+                <Link key={idx} href={stat.href} className="p-4 md:p-6 rounded-3xl bg-[#0c0c0e] border border-white/5 flex items-center space-x-4 hover:bg-white/5 hover:border-white/10 transition-all group">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     {stat.icon}
                   </div>
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
-              <div className="p-4 md:p-8 rounded-3xl bg-card border border-white/5">
+              <div className="p-4 md:p-8 rounded-3xl bg-[#0c0c0e] border border-white/5">
                 <div className="flex items-center justify-between mb-4 md:mb-6">
                   <h2 className="text-lg md:text-xl font-bold text-white">Recent Inquiries</h2>
                   <Link href="/admin/messages" className="text-primary text-xs md:text-sm font-medium hover:underline flex items-center">

@@ -111,7 +111,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
-        <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background z-10">
           <div className="flex items-center space-x-4">
             <Link href="/admin/projects" className="p-2 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-white">
               <ArrowLeft className="w-5 h-5" />
@@ -133,7 +133,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             <div className="lg:col-span-2 space-y-6">
               
               {/* Basic Information */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Basic Information</h2>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-white/80">Project Name</label>
@@ -173,7 +173,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Technologies */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Technologies</h2>
                 <div className="flex space-x-2">
                   <input
@@ -206,7 +206,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Features */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Key Features</h2>
                   <button type="button" onClick={() => handleArrayStringAdd("features")} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -229,7 +229,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Team Members */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Team Members</h2>
                   <button type="button" onClick={handleTeamMemberAdd} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -287,7 +287,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
 
             <div className="space-y-6">
               {/* Status */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Status & Links</h2>
                 <div className="space-y-1.5 mb-4">
                   <label className="text-sm font-medium text-white/80">Project Status</label>
@@ -326,7 +326,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Banner */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Banner Image</h2>
                 <ImageUploader 
                   className="h-48 rounded-md"
@@ -338,7 +338,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Screenshots */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Screenshots</h2>
                 </div>

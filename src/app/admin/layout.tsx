@@ -71,7 +71,7 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-[100svh] bg-background overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[100svh] bg-transparent overflow-hidden">
       {pathname !== "/admin/login" && <AdminSidebar />}
       <main className="flex-1 overflow-y-auto" data-lenis-prevent>
         {children}

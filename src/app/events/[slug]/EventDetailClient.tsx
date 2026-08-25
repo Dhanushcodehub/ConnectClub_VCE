@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Calendar, Clock, MapPin, ExternalLink, CheckCircle2, PlayCircle, X } from "lucide-react";
+import { ArrowLeft, Share2, Calendar, Clock, MapPin, ExternalLink, CheckCircle2, PlayCircle, X, Loader2 } from "lucide-react";
 import { ConnectEvent } from "@/lib/data/events";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { registerForEvent } from "@/lib/firebase/users";
 
 const formatText = (text?: string) => {
   if (!text) return null;
@@ -28,13 +30,41 @@ const isVideoMedia = (url: string) => {
 
 export default function EventDetailClient({ event }: { event: ConnectEvent }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
   }, []);
+
+  const handleRegister = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push(`/u/login`);
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      await registerForEvent(user.uid, event.id, event.title);
+      // If there's an external link, open it, otherwise go to dashboard
+      if (event.registrationLink && event.registrationLink !== "#") {
+        window.open(event.registrationLink, "_blank");
+      }
+      router.push("/u/dashboard");
+    } catch (err: any) {
+      if (err.message === "Already registered for this event") {
+        router.push("/u/dashboard");
+      } else {
+        alert(err.message || "Failed to register for event");
+      }
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -328,14 +358,13 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                   </div>
 
                   {event.status === "Upcoming" ? (
-                    <a 
-                      href={event.registrationLink || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
+                    <button 
+                      onClick={handleRegister}
+                      disabled={isRegistering}
+                      className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
                     >
-                      {event.registrationLink ? "Register for Free" : "Explore Event"}
-                    </a>
+                      {isRegistering ? <Loader2 className="w-5 h-5 animate-spin" /> : event.registrationLink ? "Register for Free" : "Explore Event"}
+                    </button>
                   ) : event.status === "Ongoing" ? (
                     <div className="w-full py-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold text-sm flex justify-center items-center">
                       Happening Now

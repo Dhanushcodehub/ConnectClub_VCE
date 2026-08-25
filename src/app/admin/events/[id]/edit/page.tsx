@@ -104,7 +104,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
   return (
     <div className="flex min-h-screen bg-background">
       <main className="flex-1 overflow-y-auto">
-        <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background z-10">
           <div className="flex items-center space-x-4">
             <Link href="/admin/events" className="p-2 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-white">
               <ArrowLeft className="w-5 h-5" />
@@ -126,7 +126,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
             <div className="lg:col-span-2 space-y-6">
               
               {/* Basic Information */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Basic Information</h2>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-white/80">Event Title</label>
@@ -213,7 +213,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
 
               {/* Dynamic Array Fields */}
               {/* Speakers */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Speakers</h2>
                   <button type="button" onClick={() => handleArrayStringAdd("speakers")} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -236,7 +236,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               </div>
 
               {/* Highlights */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Event Highlights</h2>
                   <button type="button" onClick={() => handleArrayStringAdd("highlights")} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -259,7 +259,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               </div>
 
               {/* Agenda */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Agenda</h2>
                   <button type="button" onClick={handleAgendaAdd} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -315,7 +315,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               </div>
 
               {/* FAQs */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">FAQs</h2>
                   <button type="button" onClick={handleFaqAdd} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-md flex items-center">
@@ -362,7 +362,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
 
             <div className="space-y-6">
               {/* Status */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Status & Registration</h2>
                 <div className="space-y-1.5 mb-4">
                   <label className="text-sm font-medium text-white/80">Event Status</label>
@@ -403,7 +403,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               </div>
 
               {/* Banner */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <h2 className="text-lg font-bold text-white mb-4">Banner Image</h2>
                 <ImageUploader 
                   className="h-48 rounded-md"
@@ -413,7 +413,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               </div>
 
               {/* Gallery Albums */}
-              <div className="bg-card border border-white/5 p-6 rounded-xl space-y-4">
+              <div className="bg-[#0c0c0e] border border-white/5 p-6 rounded-xl space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-white">Gallery Media</h2>
                 </div>

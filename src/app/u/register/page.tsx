@@ -106,249 +106,196 @@ export default function UserRegisterPage() {
 
   return (
     <>
-      <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#0c0c0e]">
-        {/* Left Side - Branding (Hidden on mobile) */}
-        <div className="hidden lg:flex w-1/2 relative flex-col items-center pt-24 border-r border-white/5 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
-          
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }} 
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-[128px]" 
-          />
-          <motion.div 
-            animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }} 
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" 
-          />
+      <div className="min-h-screen w-full bg-[#0c0c0e] flex flex-col items-center justify-center pt-20 pb-12 px-6 sm:px-12 relative overflow-hidden font-sans">
+        
+        {/* Background elements */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+        <div className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
+        <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
 
-          <div className="relative z-10 w-full max-w-xl px-12 flex-1 flex flex-col justify-start">
-            <div className="-mb-2 relative z-20 -ml-4 md:-ml-6">
-              <img 
-                src="/logo/logo-transparent.png" 
-                alt="Connect Club" 
-                className="h-32 md:h-48 w-auto object-contain object-left brightness-0 invert"
+        <div className="w-full max-w-[500px] relative z-10 mt-4">
+          
+          <div className="flex justify-center mb-0">
+            <img src="/logo/logo-transparent.png" alt="Connect Club" className="h-28 sm:h-32 w-auto object-contain brightness-0 invert" />
+          </div>
+
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Create Account</span>
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl font-black font-heading text-white leading-[1.1] tracking-tight mb-4 uppercase">
+              Build Your <span className="text-primary">Network.</span>
+            </h1>
+            
+            <p className="text-sm text-white/50 leading-relaxed max-w-[400px] mx-auto font-medium">
+              Connect Club - 2026. Elevate your engineering journey. Create a student account to apply.
+            </p>
+          </div>
+
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold text-center">
+              {error}
+            </motion.div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Full Name</label>
+              <input
+                type="text"
+                required
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
+                placeholder="Your name"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Roll Number</label>
+                <input
+                  type="text"
+                  required
+                  name="rollNo"
+                  value={formData.rollNo}
+                  onChange={handleInputChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium uppercase"
+                  placeholder="21881A0500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Phone</label>
+                <input
+                  type="tel"
+                  required
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
+                  placeholder="+91"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Email</label>
+              <input
+                type="email"
+                required
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
+                placeholder="you@example.com"
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Password</label>
+              <input
+                type="password"
+                required
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
+                placeholder="At least 6 characters"
               />
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="max-w-lg"
-            >
-              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-white/70 mb-6">
-                <GraduationCap className="w-3 h-3 text-blue-400" />
-                <span>Student Portal Access</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Department</label>
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleInputChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none"
+                >
+                  <option value="" disabled className="text-black">Select Dept</option>
+                  <option value="CSE" className="text-black">CSE</option>
+                  <option value="ECE" className="text-black">ECE</option>
+                  <option value="EEE" className="text-black">EEE</option>
+                  <option value="MECH" className="text-black">MECH</option>
+                  <option value="CIVIL" className="text-black">CIVIL</option>
+                  <option value="IT" className="text-black">IT</option>
+                  <option value="AI&ML" className="text-black">AI&ML</option>
+                  <option value="DS" className="text-black">DS</option>
+                  <option value="Other" className="text-black">Other</option>
+                </select>
               </div>
-              <h1 className="text-5xl md:text-6xl font-black font-heading text-white leading-[1.1] tracking-tight mb-6 whitespace-pre-line">
-                Join the{"\n"}<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-primary">Connect Club</span>.
-              </h1>
-              <p className="text-lg text-white/50 leading-relaxed max-w-md">
-                Create your student account to register for events, showcase your projects, and more.
-              </p>
-            </motion.div>
-          </div>
-
-          <div className="relative z-10 w-full max-w-xl px-12 pb-12 shrink-0 mt-auto">
-            <div className="flex items-center space-x-2 text-sm text-white/40">
-              <Sparkles className="w-4 h-4" />
-              <span>Built for Students, by Students</span>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Year</label>
+                <select
+                  name="yearOfStudy"
+                  value={formData.yearOfStudy}
+                  onChange={handleInputChange}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none"
+                >
+                  <option value="" disabled className="text-black">Select Year</option>
+                  <option value="1st Year" className="text-black">1st Year</option>
+                  <option value="2nd Year" className="text-black">2nd Year</option>
+                  <option value="3rd Year" className="text-black">3rd Year</option>
+                  <option value="4th Year" className="text-black">4th Year</option>
+                </select>
+              </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={loading || googleLoading}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-6 shadow-[0_0_20px_rgba(0,85,255,0.3)] hover:shadow-[0_0_30px_rgba(0,85,255,0.5)] uppercase tracking-[0.2em] text-xs"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  Create Account
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={loading || googleLoading}
+            className="w-full mt-4 bg-white text-black font-bold py-4 px-6 rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center space-x-3 shadow-sm uppercase tracking-[0.2em] text-xs"
+          >
+            {googleLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span>Sign up with Google</span>
+              </>
+            )}
+          </button>
+
+          <div className="mt-8 text-center">
+            <p className="text-white/50 text-[11px] font-bold uppercase tracking-wider">
+              Already have an account?{" "}
+              <Link href="/u/login" className="text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-4">
+                Login
+              </Link>
+            </p>
           </div>
         </div>
 
-        {/* Right Side - Register Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative min-h-screen overflow-y-auto">
-          <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/10 via-transparent to-primary/5" />
-          
-          <div className="w-full max-w-md relative z-10 py-10">
-            <div className="lg:hidden flex items-center justify-center mb-8">
-              <img 
-                src="/logo/logo-transparent.png" 
-                alt="Connect Club" 
-                className="h-20 w-auto object-contain brightness-0 invert"
-              />
-            </div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-[#0C0C0E]/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-3xl shadow-2xl relative overflow-hidden group hover:border-white/20 transition-colors"
-            >
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="mb-8">
-                <h2 className="text-3xl font-black font-heading text-white mb-2">Create Account</h2>
-                <p className="text-white/50 text-sm">Join the Connect Club community</p>
-              </div>
-
-              {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center">
-                  {error}
-                </motion.div>
-              )}
-
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                    placeholder="John Doe"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Roll Number</label>
-                    <input
-                      type="text"
-                      required
-                      name="rollNo"
-                      value={formData.rollNo}
-                      onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all uppercase"
-                      placeholder="21881A0500"
-                    />
-                  </div>
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Phone Number</label>
-                    <input
-                      type="tel"
-                      required
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                      placeholder="+91 9876543210"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Email</label>
-                  <input
-                    type="email"
-                    required
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                    placeholder="student@vardhaman.org"
-                  />
-                </div>
-                
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                    placeholder="••••••••••••"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Department</label>
-                    <select
-                      name="department"
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
-                    >
-                      <option value="" disabled className="bg-[#0C0C0E] text-white">Select Dept</option>
-                      <option value="CSE" className="bg-[#0C0C0E] text-white">CSE</option>
-                      <option value="ECE" className="bg-[#0C0C0E] text-white">ECE</option>
-                      <option value="EEE" className="bg-[#0C0C0E] text-white">EEE</option>
-                      <option value="MECH" className="bg-[#0C0C0E] text-white">MECH</option>
-                      <option value="CIVIL" className="bg-[#0C0C0E] text-white">CIVIL</option>
-                      <option value="IT" className="bg-[#0C0C0E] text-white">IT</option>
-                      <option value="AI&ML" className="bg-[#0C0C0E] text-white">AI&ML</option>
-                      <option value="DS" className="bg-[#0C0C0E] text-white">DS</option>
-                      <option value="Other" className="bg-[#0C0C0E] text-white">Other</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Year</label>
-                    <select
-                      name="yearOfStudy"
-                      value={formData.yearOfStudy}
-                      onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
-                    >
-                      <option value="" disabled className="bg-[#0C0C0E] text-white">Select Year</option>
-                      <option value="1st Year" className="bg-[#0C0C0E] text-white">1st Year</option>
-                      <option value="2nd Year" className="bg-[#0C0C0E] text-white">2nd Year</option>
-                      <option value="3rd Year" className="bg-[#0C0C0E] text-white">3rd Year</option>
-                      <option value="4th Year" className="bg-[#0C0C0E] text-white">4th Year</option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  className="w-full relative group/btn overflow-hidden bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 shadow-[0_0_20px_rgba(0,85,255,0.3)] hover:shadow-[0_0_30px_rgba(0,85,255,0.5)] border border-blue-400/30"
-                >
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin relative z-10" />
-                  ) : (
-                    <div className="relative z-10 flex items-center">
-                      Create Account
-                      <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                    </div>
-                  )}
-                </button>
-              </form>
-
-              <div className="flex items-center my-6 space-x-2 text-white/20">
-                <div className="flex-1 h-px bg-white/10"></div>
-                <span className="text-xs font-medium uppercase text-white/40">── OR ──</span>
-                <div className="flex-1 h-px bg-white/10"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={loading || googleLoading}
-                className="w-full bg-white text-black font-bold py-4 px-4 rounded-2xl hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
-              >
-                {googleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    <span>Sign up with Google</span>
-                  </>
-                )}
-              </button>
-
-              <div className="mt-8 text-center">
-                <p className="text-white/50 text-sm">
-                  Already have an account?{" "}
-                  <Link href="/u/login" className="text-blue-400 hover:text-blue-300 font-medium">
-                    Sign in
-                  </Link>
-                </p>
-              </div>
-            </motion.div>
-          </div>
+        {/* Branding Footer */}
+        <div className="relative z-10 mt-8 text-center flex items-center gap-2 text-white/30 text-[10px] font-bold uppercase tracking-[0.2em]">
+          <Sparkles className="w-3 h-3" />
+          Built by Connect Club
         </div>
       </div>
 

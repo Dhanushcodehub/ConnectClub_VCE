@@ -9,7 +9,7 @@ import { AuthProvider } from "@/lib/contexts/AuthContext";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isPortal = pathname.startsWith("/admin") || pathname.startsWith("/member") || pathname.startsWith("/connect-ai");
+  const isPortal = pathname.startsWith("/admin") || pathname.startsWith("/member") || pathname.startsWith("/connect-ai") || pathname.startsWith("/feedback");
 
   return (
     <AuthProvider>

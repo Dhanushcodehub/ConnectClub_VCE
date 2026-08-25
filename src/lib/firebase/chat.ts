@@ -1,4 +1,4 @@
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, limit, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, limit, where, getDocs, writeBatch, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./config";
 
 export interface ChatMessage {
@@ -9,9 +9,12 @@ export interface ChatMessage {
   senderRole: "admin" | "member";
   timestamp: any; // Firestore server timestamp or JS Date
   read?: boolean;
+  replyTo?: { id: string; text: string; senderName: string };
+  reactions?: Record<string, string[]>;
 }
 
 const CHAT_COLLECTION = "messages";
+const TYPING_COLLECTION = "typing_status";
 
 /**
  * Send a new chat message to the global channel.
@@ -54,6 +57,8 @@ export function subscribeToMessages(callback: (messages: ChatMessage[]) => void)
         senderRole: data.senderRole,
         timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
         read: data.read ?? true, // default old messages to read
+        replyTo: data.replyTo,
+        reactions: data.reactions,
       } as ChatMessage;
     });
 
@@ -114,6 +119,8 @@ export function subscribeToDirectMessages(roomId: string, callback: (messages: D
         senderRole: data.senderRole,
         roomId: data.roomId,
         read: data.read ?? true,
+        replyTo: data.replyTo,
+        reactions: data.reactions,
         timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
       } as DirectMessage;
     });
@@ -200,4 +207,112 @@ export function subscribeToUnreadCounts(
   });
 
   return unsubscribe;
+}
+
+/**
+ * Set the typing status of a user in a specific room.
+ */
+export async function setTypingStatus(roomId: string, userEmail: string, userName: string, isTyping: boolean) {
+  if (typeof window === "undefined") throw new Error("Client only");
+  try {
+    const docRef = doc(db, TYPING_COLLECTION, `${roomId}_${userEmail}`);
+    if (isTyping) {
+      await setDoc(docRef, {
+        roomId,
+        userEmail,
+        userName,
+        timestamp: serverTimestamp(),
+      });
+    } else {
+      await deleteDoc(docRef);
+    }
+  } catch (error) {
+    console.error("Error setting typing status:", error);
+  }
+}
+
+/**
+ * Subscribe to typing statuses in a specific room, excluding the current user.
+ */
+export function subscribeToTypingStatus(roomId: string, currentUserEmail: string, callback: (typingUsers: {email: string, name: string}[]) => void) {
+  if (typeof window === "undefined") return () => {};
+
+  const q = query(
+    collection(db, TYPING_COLLECTION),
+    where("roomId", "==", roomId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const typingUsers = snapshot.docs
+      .map(doc => doc.data())
+      .filter(data => data.userEmail !== currentUserEmail)
+      .map(data => ({ email: data.userEmail, name: data.userName }));
+    
+    callback(typingUsers);
+  }, (error) => {
+    console.error("Error subscribing to typing status:", error);
+  });
+}
+
+/**
+ * Add a reaction to a specific message.
+ */
+export async function addReaction(messageId: string, collectionName: string, emoji: string, userEmail: string) {
+  if (typeof window === "undefined") throw new Error("Client only");
+  try {
+    const docRef = doc(db, collectionName, messageId);
+    await updateDoc(docRef, {
+      [`reactions.${emoji}`]: arrayUnion(userEmail)
+    });
+  } catch (error) {
+    console.error("Error adding reaction:", error);
+  }
+}
+
+/**
+ * Remove a reaction from a specific message.
+ */
+export async function removeReaction(messageId: string, collectionName: string, emoji: string, userEmail: string) {
+  if (typeof window === "undefined") throw new Error("Client only");
+  try {
+    const docRef = doc(db, collectionName, messageId);
+    await updateDoc(docRef, {
+      [`reactions.${emoji}`]: arrayRemove(userEmail)
+    });
+  } catch (error) {
+    console.error("Error removing reaction:", error);
+  }
+}
+
+/**
+ * Subscribe to the latest message for each direct message room.
+ */
+export function subscribeToLastMessages(callback: (lastMessages: Record<string, {text: string, timestamp: Date, senderName: string}>) => void) {
+  if (typeof window === "undefined") return () => {};
+
+  const q = query(
+    collection(db, DM_COLLECTION),
+    orderBy("timestamp", "desc")
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const lastMessages: Record<string, {text: string, timestamp: Date, senderName: string}> = {};
+    
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const roomId = data.roomId;
+      
+      if (!lastMessages[roomId]) {
+        lastMessages[roomId] = {
+          text: data.text,
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          senderName: data.senderName
+        };
+      }
+    });
+    
+    callback(lastMessages);
+  }, (error) => {
+    console.error("Error subscribing to last messages:", error);
+  });
 }

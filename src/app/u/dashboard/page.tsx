@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { getUserNotifications } from "@/lib/firebase/users";
 import { motion } from "framer-motion";
-import { Calendar, Award, FolderGit2, Heart, Bell, ChevronRight, User } from "lucide-react";
+import { Calendar, Award, FolderGit2, Heart, Bell, ChevronRight, User, Ticket, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { TicketCard } from "@/app/u/_components/TicketCard";
 
 export default function UserDashboard() {
   const { user, profile } = useAuth();
@@ -21,14 +22,26 @@ export default function UserDashboard() {
     async function fetchDashboardData() {
       if (user?.uid) {
         try {
+          // Silent sync if profile is available - DO NOT AWAIT THIS, it should run in the background
+          if (profile?.rollNo) {
+            fetch("/api/users/sync-inspirex", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: user.uid, rollNo: profile.rollNo })
+            }).catch(e => console.error("Silent sync failed", e));
+          }
+
           const notifs = await getUserNotifications(user.uid);
           setNotifications(notifs.slice(0, 5));
           
           const regsRef = collection(db, "event_registrations");
           const q = query(regsRef, where("userId", "==", user.uid));
           const snap = await getDocs(q);
-          const regs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setRegistrations(regs);
+          const regs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+          
+          // Deduplicate by eventId to handle race condition duplicates
+          const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
+          setRegistrations(uniqueRegs);
         } catch (error) {
           console.error("Failed to fetch dashboard data:", error);
         } finally {
@@ -37,7 +50,7 @@ export default function UserDashboard() {
       }
     }
     fetchDashboardData();
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     if (user && !profile && !loading) {
@@ -96,7 +109,7 @@ export default function UserDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {[
-          { label: "Events Attended", value: (profile as any).eventsCount || 0, icon: Calendar, color: "text-blue-400", bg: "bg-blue-400/10" },
+          { label: "Events Registered", value: registrations.length || 0, icon: Calendar, color: "text-blue-400", bg: "bg-blue-400/10" },
           { label: "Certificates", value: profile.certificatesCount || 0, icon: Award, color: "text-yellow-400", bg: "bg-yellow-400/10" },
           { label: "Projects Shared", value: profile.projectsCount || 0, icon: FolderGit2, color: "text-purple-400", bg: "bg-purple-400/10" },
           { label: "Likes Received", value: profile.likesReceived || 0, icon: Heart, color: "text-red-400", bg: "bg-red-400/10" },
@@ -117,26 +130,49 @@ export default function UserDashboard() {
         ))}
       </div>
 
+      {/* Event Tickets Banner */}
+      {registrations.filter(r => r.ticketId).length > 0 && (
+        <div className="space-y-6 mb-12">
+          <h2 className="text-2xl font-display font-bold text-white">Your Tickets</h2>
+          <Link href="/u/tickets" className="block relative overflow-hidden rounded-[2rem] bg-[#0c0c0e] border border-white/10 p-8 md:p-10 group hover:border-primary/50 transition-colors shadow-2xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/20 transition-colors" />
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
+                  <Ticket className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-display font-bold text-white mb-1 tracking-tight">View My Tickets</h3>
+                  <p className="text-white/60 font-medium">You have {registrations.filter(r => r.ticketId).length} active event passes</p>
+                </div>
+              </div>
+              <div className="hidden sm:flex w-12 h-12 rounded-full bg-white/5 items-center justify-center group-hover:bg-primary group-hover:-rotate-45 text-white/50 group-hover:text-white transition-all duration-300">
+                <ArrowRight className="w-6 h-6" />
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Quick Actions */}
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-2xl font-display font-bold text-white">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
-            {/* Conditional Ticket Button */}
-            {registrations.find(r => r.eventId === "inspirex-s2" && r.ticketId) ? (
-              <a href={`http://localhost:3001/ticket/${registrations.find(r => r.eventId === "inspirex-s2").ticketId}`} target="_blank" rel="noreferrer" className="group bg-[#0C0C0E] border border-ember/50 hover:border-ember transition-colors rounded-2xl p-6 flex items-center justify-between">
+            {registrations.length > 0 ? (
+              <Link href="/u/tickets" className="group bg-[#0C0C0E] border border-white/[0.06] hover:border-primary/50 transition-colors rounded-2xl p-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-ember/10 text-ember flex items-center justify-center">
-                    <Award className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Ticket className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">View InspireX Ticket</h3>
-                    <p className="text-white/50 text-sm">You're registered!</p>
+                    <div className="font-bold text-white mb-0.5">View Registered Events</div>
+                    <div className="text-xs text-white/50">Access your event passes</div>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-ember transition-colors" />
-              </a>
+                <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
+              </Link>
             ) : (
               <Link href="/events" className="group bg-[#0C0C0E] border border-white/[0.06] hover:border-primary/50 transition-colors rounded-2xl p-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -144,11 +180,11 @@ export default function UserDashboard() {
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Register for Events</h3>
-                    <p className="text-white/50 text-sm">Browse upcoming events</p>
+                    <div className="font-bold text-white mb-0.5">Register for Events</div>
+                    <div className="text-xs text-white/50">Browse upcoming events</div>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-primary transition-colors" />
+                <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
               </Link>
             )}
             

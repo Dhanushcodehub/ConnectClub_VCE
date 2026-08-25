@@ -75,10 +75,13 @@ export async function POST(request: Request) {
     const batch = ccDb.batch();
 
     const registrationRef = ccDb.collection("event_registrations").doc();
+    const generatedTicketId = `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
     batch.set(registrationRef, {
       userId,
       eventId,
       eventTitle,
+      ticketId: generatedTicketId,
       registeredAt: FieldValue.serverTimestamp(),
       attended: false,
       certificateIssued: false

@@ -281,8 +281,8 @@ export default function InspirexAttendancePage() {
         </div>
         
         {/* Filters Row */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <div className="md:col-span-2 relative">
+        <div className="relative z-10 flex flex-col md:flex-row gap-4">
+          <div className="relative w-full md:flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               type="text"
@@ -293,35 +293,37 @@ export default function InspirexAttendancePage() {
             />
           </div>
           
-          <select 
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
-          >
-            <option value="All">All Branches</option>
-            {branches.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
+          <div className="grid grid-cols-3 md:flex gap-2 md:gap-4 shrink-0">
+            <select 
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className="w-full md:w-40 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+            >
+              <option value="All">All Branches</option>
+              {branches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
 
-          <select 
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
-          >
-            <option value="All">All Years</option>
-            {years.map(y => <option key={y} value={y}>{y} Year</option>)}
-          </select>
+            <select 
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full md:w-32 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+            >
+              <option value="All">All Years</option>
+              {years.map(y => <option key={y} value={y}>{y} Year</option>)}
+            </select>
 
-          <select 
-            value={selectedSection}
-            onChange={(e) => setSelectedSection(e.target.value)}
-            className="w-full bg-[#111114] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
-          >
-            <option value="All">All Sections</option>
-            {sections.map(s => <option key={s} value={s}>Section {s}</option>)}
-          </select>
+            <select 
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="w-full md:w-36 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+            >
+              <option value="All">All Sections</option>
+              {sections.map(s => <option key={s} value={s}>Section {s}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 

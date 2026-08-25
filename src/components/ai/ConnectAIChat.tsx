@@ -122,7 +122,8 @@ export function ConnectAIChat() {
   if (
     pathname?.startsWith("/connect-ai") ||
     pathname?.startsWith("/admin") ||
-    pathname?.startsWith("/member")
+    pathname?.startsWith("/member") ||
+    pathname?.startsWith("/feedback")
   ) {
     return null;
   }

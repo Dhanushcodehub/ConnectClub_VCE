@@ -199,7 +199,7 @@ export default function AdminGalleryPage() {
 
   return (
     <div className="pb-12">
-      <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-xl z-20">
+      <header className="px-8 py-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background z-20">
         <h1 className="text-2xl font-bold text-white">Gallery Management</h1>
       </header>
 
@@ -207,7 +207,7 @@ export default function AdminGalleryPage() {
         
         {/* Upload Form - 1 Column on Desktop */}
         <div className="xl:col-span-1 space-y-6">
-          <div className="bg-card border border-white/5 rounded-3xl p-6">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6">
             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <UploadCloud className="w-5 h-5 text-primary" />
               Upload New Media
@@ -344,7 +344,7 @@ export default function AdminGalleryPage() {
 
         {/* Existing Media - 2 Columns on Desktop */}
         <div className="xl:col-span-2 space-y-6">
-          <div className="bg-card border border-white/5 rounded-3xl p-6 min-h-[600px]">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 min-h-[600px]">
             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Images className="w-5 h-5 text-primary" />
               Manage Gallery Items

@@ -271,13 +271,27 @@ export async function registerForEvent(userId: string, eventId: string, eventTit
       throw new Error("Already registered for this event");
     }
 
+    const ticketId = `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
     await addDoc(collection(db, REGISTRATIONS_COLLECTION), {
       userId,
       eventId,
       eventTitle,
+      ticketId,
       registeredAt: serverTimestamp(),
       attended: false,
       certificateIssued: false,
+    });
+
+    // Also send a notification to the user
+    await addDoc(collection(db, "notifications"), {
+      userId,
+      title: "Registration Successful",
+      message: `You have successfully registered for ${eventTitle}.`,
+      type: "event_registration",
+      read: false,
+      createdAt: serverTimestamp(),
+      link: `/events/${eventId}`
     });
   } catch (error) {
     console.error("Error registering for event:", error);

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { UserCircle, LayoutDashboard, Calendar, FolderGit2, Bell, Settings, LogOut } from "lucide-react";
+import { UserCircle, LayoutDashboard, Calendar, FolderGit2, Bell, Settings, LogOut, Ticket } from "lucide-react";
 
 export function ProfileButton() {
   const { user, role, profile, loading } = useAuth();
@@ -97,6 +97,9 @@ export function ProfileButton() {
                     <>
                       <Link href="/u/dashboard" onClick={() => setUserDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
+                      </Link>
+                      <Link href="/u/tickets" onClick={() => setUserDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                        <Ticket className="w-4 h-4" /> My Tickets
                       </Link>
                       <Link href="/u/events" onClick={() => setUserDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                         <Calendar className="w-4 h-4" /> My Events

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,7 +10,9 @@ function VerifyForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
 
-  const [otp, setOtp] = useState("");
+  const [otpVals, setOtpVals] = useState<string[]>(Array(6).fill(""));
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const otp = otpVals.join("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,6 +64,45 @@ function VerifyForm() {
     }
   };
 
+  const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, "");
+    if (!value && e.target.value !== "") return;
+
+    const newOtp = [...otpVals];
+    newOtp[index] = value.substring(value.length - 1);
+    setOtpVals(newOtp);
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (!otpVals[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+      const newOtp = [...otpVals];
+      newOtp[index] = "";
+      setOtpVals(newOtp);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text/plain").replace(/[^0-9]/g, "").substring(0, 6);
+    const newOtp = [...otpVals];
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
+    }
+    setOtpVals(newOtp);
+    
+    if (pastedData.length > 0) {
+      const focusIndex = Math.min(pastedData.length, 5);
+      inputRefs.current[focusIndex]?.focus();
+    }
+  };
+
   const handleResend = async () => {
     if (!email) {
       setError("Email address is missing. Please register again.");
@@ -97,19 +138,22 @@ function VerifyForm() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-lg bg-[#0C0C0E]/80 backdrop-blur-2xl border border-white/10 p-10 md:p-12 rounded-3xl shadow-2xl relative overflow-hidden group text-center"
+      className="w-full max-w-[450px] relative z-10 mt-8 mx-auto"
     >
-      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
-      
-      <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-blue-500/20">
-        <Mail className="w-10 h-10 text-blue-400" />
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Verify Email</span>
+        </div>
+        
+        <h1 className="text-4xl sm:text-5xl font-black font-heading text-white leading-[1.1] tracking-tight mb-4 uppercase">
+          Check Your <span className="text-primary">Inbox.</span>
+        </h1>
+        
+        <p className="text-sm text-white/50 leading-relaxed max-w-[300px] mx-auto font-medium">
+          We've sent a 6-digit verification code to <strong className="text-white">{email || "your email"}</strong>.
+        </p>
       </div>
-
-      <h2 className="text-3xl font-black font-heading text-white mb-4">Check your inbox</h2>
-      
-      <p className="text-white/60 text-lg mb-8 leading-relaxed">
-        We've sent a 6-digit verification code to <strong className="text-white">{email || "your email"}</strong>.
-      </p>
 
       {error && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium">
@@ -124,21 +168,28 @@ function VerifyForm() {
       )}
 
       <form onSubmit={handleVerify} className="space-y-6">
-        <div>
-          <input
-            type="text"
-            maxLength={6}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="000000"
-            className="w-full text-center text-4xl tracking-[0.5em] bg-black/50 border border-white/10 rounded-2xl px-5 py-6 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-          />
+        <div className="flex gap-3 sm:gap-4 justify-center" onPaste={handlePaste}>
+          {otpVals.map((val, index) => (
+            <input
+              key={index}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={val}
+              onChange={(e) => handleChange(index, e)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-bold bg-black/50 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            />
+          ))}
         </div>
 
         <button 
           type="submit"
           disabled={loading || otp.length !== 6 || resendLoading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-2xl transition-all flex items-center justify-center group/btn shadow-[0_0_20px_rgba(0,85,255,0.3)] border border-blue-400/30"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center group/btn shadow-[0_0_20px_rgba(0,85,255,0.3)] hover:shadow-[0_0_30px_rgba(0,85,255,0.5)] uppercase tracking-[0.2em] text-xs"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -151,7 +202,7 @@ function VerifyForm() {
         </button>
       </form>
 
-      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 mt-8 text-left flex items-start space-x-4">
+      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-5 mt-8 text-left flex items-start space-x-4">
         <AlertCircle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
           <h4 className="text-yellow-500 font-bold mb-1">Didn't receive it?</h4>
@@ -179,14 +230,18 @@ function VerifyForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 pt-24 relative overflow-hidden bg-[#0c0c0e]">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay" />
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 sm:px-12 pt-20 pb-12 relative overflow-hidden bg-[#0c0c0e]">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+      <div className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
+      <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
+      
       <Suspense fallback={
-        <div className="text-white/50 flex items-center justify-center relative z-10">
+        <div className="text-white/50 flex items-center justify-center relative z-10 mt-20">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
       }>
-        <div className="relative z-10 w-full max-w-lg">
+        <div className="relative z-10 w-full max-w-[450px]">
           <VerifyForm />
         </div>
       </Suspense>
