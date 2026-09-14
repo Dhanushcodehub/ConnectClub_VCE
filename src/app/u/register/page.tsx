@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { checkUserExists } from "@/lib/firebase/users";
 import OnboardingModal from "@/components/user/OnboardingModal";
 import Link from "next/link";
+import { getFirebaseErrorMessage } from "@/lib/utils";
 
 export default function UserRegisterPage() {
   const [formData, setFormData] = useState({
@@ -84,7 +85,7 @@ export default function UserRegisterPage() {
       router.push(`/u/verify?email=${encodeURIComponent(formData.email)}`);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to create account. Please try again.");
+      setError(getFirebaseErrorMessage(err) || "Failed to create account. Please try again.");
       setLoading(false);
     }
   };
@@ -99,7 +100,7 @@ export default function UserRegisterPage() {
       // Popup resolves and local useEffect catches the new user and routes them.
     } catch (err: any) {
       console.error(err);
-      setError("Failed to sign in with Google. Please try again.");
+      setError(getFirebaseErrorMessage(err) || "Failed to sign in with Google. Please try again.");
       setGoogleLoading(false);
     }
   };

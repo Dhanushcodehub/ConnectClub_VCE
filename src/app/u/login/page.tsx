@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { checkUserExists } from "@/lib/firebase/users";
 import OnboardingModal from "@/components/user/OnboardingModal";
 import Link from "next/link";
+import { getFirebaseErrorMessage } from "@/lib/utils";
 
 export default function UserLoginPage() {
   const [email, setEmail] = useState("");
@@ -59,7 +60,7 @@ export default function UserLoginPage() {
       // If verified, useEffect will handle routing
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Invalid email or password. Please try again.");
+      setError(getFirebaseErrorMessage(err));
       setLoading(false);
     }
   };
@@ -74,7 +75,7 @@ export default function UserLoginPage() {
       // Popup resolves and local useEffect catches the new user and routes them.
     } catch (err: any) {
       console.error(err);
-      setError("Failed to sign in with Google. Please try again.");
+      setError(getFirebaseErrorMessage(err) || "Failed to sign in with Google. Please try again.");
       setGoogleLoading(false);
     }
   };

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Lock, ShieldCheck, ArrowRight, Activity, Terminal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { authenticator } from "otplib";
-
+import { getFirebaseErrorMessage } from "@/lib/utils";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -58,7 +58,8 @@ export default function AdminLoginPage() {
       await logLoginHistory(user);
       router.push("/admin");
     } catch (err: any) {
-      setError("Invalid email or password.");
+      console.error(err);
+      setError(getFirebaseErrorMessage(err));
       setLoading(false);
     }
   };
