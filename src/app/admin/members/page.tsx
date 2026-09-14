@@ -134,9 +134,13 @@ export default function AdminMembersPage() {
       // If creating a new member AND an email + password is provided,
       // Create their Firebase Auth account first.
       if (!editingId && formData.email && newPassword) {
+        const token = await user?.getIdToken();
         const res = await fetch('/api/admin/create-member', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          },
           body: JSON.stringify({
             email: formData.email,
             password: newPassword,
@@ -411,26 +415,63 @@ export default function AdminMembersPage() {
                   <div>
                     <label className="text-sm font-medium text-white/70">Member Permissions</label>
                     <p className="text-xs text-white/40 mb-3">Select which sections this member can access in their dashboard. (Chat is accessible by default).</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {["events", "projects", "timeline", "gallery"].map(permission => (
-                        <label key={permission} className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded text-primary focus:ring-primary/50 bg-black/50 border-white/20"
-                            checked={formData.permissions?.includes(permission) || false}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setFormData(prev => ({
-                                ...prev,
-                                permissions: checked 
-                                  ? [...(prev.permissions || []), permission]
-                                  : (prev.permissions || []).filter(p => p !== permission)
-                              }));
-                            }}
-                          />
-                          <span className="text-sm font-medium text-white capitalize">{permission}</span>
-                        </label>
-                      ))}
+                    <div className="space-y-4">
+                      {/* General Access */}
+                      <div>
+                        <h4 className="text-[10px] uppercase tracking-wider text-white/50 mb-2 font-bold">General Access</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {["events", "projects", "timeline", "gallery"].map(permission => (
+                            <label key={permission} className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                              <input 
+                                type="checkbox" 
+                                className="w-4 h-4 rounded text-primary focus:ring-primary/50 bg-black/50 border-white/20"
+                                checked={formData.permissions?.includes(permission) || false}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    permissions: checked 
+                                      ? [...(prev.permissions || []), permission]
+                                      : (prev.permissions || []).filter(p => p !== permission)
+                                  }));
+                                }}
+                              />
+                              <span className="text-sm font-medium text-white capitalize">{permission}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* InspireX Management */}
+                      <div>
+                        <h4 className="text-[10px] uppercase tracking-wider text-white/50 mb-2 font-bold">InspireX Event Management</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { id: "inspirex_feedback", label: "Feedback Form" },
+                            { id: "inspirex_attendance", label: "Attendance" },
+                            { id: "inspirex_members_list", label: "Members List" },
+                            { id: "inspirex_certificates", label: "Certificates" }
+                          ].map(perm => (
+                            <label key={perm.id} className="flex items-center space-x-3 bg-blue-900/10 p-3 rounded-xl border border-blue-500/20 cursor-pointer hover:bg-blue-900/30 transition-colors">
+                              <input 
+                                type="checkbox" 
+                                className="w-4 h-4 rounded text-blue-500 focus:ring-blue-500/50 bg-black/50 border-blue-500/30"
+                                checked={formData.permissions?.includes(perm.id) || false}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    permissions: checked 
+                                      ? [...(prev.permissions || []), perm.id]
+                                      : (prev.permissions || []).filter(p => p !== perm.id)
+                                  }));
+                                }}
+                              />
+                              <span className="text-sm font-medium text-blue-100">{perm.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -14,6 +14,7 @@ import {
   Type
 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 interface TemplateConfig {
   imageUrl: string;
@@ -28,6 +29,7 @@ const DEFAULT_CONFIG: TemplateConfig = {
 };
 
 export default function CertificateStudio() {
+  const { user } = useAuth();
   const [config, setConfig] = useState<TemplateConfig>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,7 +59,12 @@ export default function CertificateStudio() {
         }
 
         // Fetch Participants
-        const res = await fetch("/api/inspirex-registrations");
+        const token = await user?.getIdToken();
+        const res = await fetch("/api/inspirex-registrations", {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          }
+        });
         const data = await res.json();
         if (data.registrations && data.registrations.length > 0) {
           setParticipants(data.registrations);

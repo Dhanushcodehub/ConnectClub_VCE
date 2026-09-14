@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck, Grip, Settings2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/lib/contexts/AuthContext";
+
 interface Registration {
   id: string;
   name: string;
@@ -16,6 +18,7 @@ interface Registration {
 }
 
 export default function InspirexAdminPage() {
+  const { user } = useAuth();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,13 +36,19 @@ export default function InspirexAdminPage() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [user]);
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/inspirex-registrations", { cache: "no-store" });
+      const token = await user?.getIdToken();
+      const res = await fetch("/api/inspirex-registrations", { 
+        cache: "no-store",
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
       const data = await res.json();
       
       if (!res.ok) {

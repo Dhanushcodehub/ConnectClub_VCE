@@ -23,7 +23,7 @@ const app: FirebaseApp | null =
     : (getApps()[0] ?? null);
 
 export const db: Firestore = (app
-  ? initializeFirestore(app, { experimentalForceLongPolling: true })
+  ? initializeFirestore(app, {})
   : null) as unknown as Firestore;
 export const auth: Auth = (app ? getAuth(app) : null) as unknown as Auth;
 export const storage: FirebaseStorage = (app ? getStorage(app) : null) as unknown as FirebaseStorage;

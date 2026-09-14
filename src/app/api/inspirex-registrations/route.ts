@@ -5,11 +5,27 @@ import { getAdminApp } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // 1. Initialize the primary Connect Club Admin SDK to cross-reference users
+    // 0. Verify Authentication and Admin Role
     const primaryApp = getAdminApp();
     const primaryDb = getFirestore(primaryApp);
+    const getAdminAuth = (await import('@/lib/firebase/admin')).getAdminAuth;
+    const adminAuth = getAdminAuth();
+    
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
+    }
+    
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    
+    if (decodedToken.role !== 'admin' && decodedToken.email !== 'admin@connectclubvce.in') {
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
+    // 1. Initialize the primary Connect Club Admin SDK to cross-reference users
     
     // Fetch all Connect Club users' roll numbers to cross-reference
     const ccUsersSnapshot = await primaryDb.collection("users").select("rollNo").get();

@@ -4,24 +4,26 @@ import "./globals.css";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { ClientLayout } from "@/components/ClientLayout";
 import { GridBackground } from "@/components/GridBackground";
-import { ConnectAIChat } from "@/components/ai/ConnectAIChat";
 import { Toaster } from 'sonner';
 
 const unbounded = Unbounded({
   variable: "--font-unbounded",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["700", "800", "900"],
+  display: "swap",
 });
 
 const syne = Syne({
   variable: "--font-syne",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["700"],
+  display: "swap",
 });
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -147,7 +149,6 @@ export default function RootLayout({
           </ClientLayout>
         </SmoothScroll>
 
-        <ConnectAIChat />
         <Toaster theme="dark" position="top-center" richColors />
       </body>
     </html>

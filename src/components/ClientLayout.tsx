@@ -6,6 +6,12 @@ import { Footer } from "./Footer";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { GlobalChatListener } from "./chat/GlobalChatListener";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
+import dynamic from "next/dynamic";
+
+const ConnectAIChat = dynamic(
+  () => import("@/components/ai/ConnectAIChat").then((m) => m.ConnectAIChat),
+  { ssr: false }
+);
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -22,6 +28,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
         </main>
         
         {!isPortal && <Footer />}
+        <ConnectAIChat />
       </NotificationProvider>
     </AuthProvider>
   );

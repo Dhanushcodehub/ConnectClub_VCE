@@ -26,9 +26,13 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (user && pathname !== "/admin/login") {
-        // Strict Role Check: Members cannot access /admin
-        if (role === "member") {
-          router.replace("/member/dashboard");
+        // Strict Role Check: Only Admins can access /admin
+        if (role !== "admin") {
+          if (role === "member") {
+            router.replace("/member/dashboard");
+          } else {
+            router.replace("/u/login");
+          }
           return;
         }
 
@@ -65,8 +69,8 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
   
-  // If user is a member and not on login page, render nothing while redirecting
-  if (role === "member" && pathname !== "/admin/login") {
+  // If user is not admin and not on login page, render nothing while redirecting
+  if (role !== "admin" && pathname !== "/admin/login") {
     return null;
   }
 

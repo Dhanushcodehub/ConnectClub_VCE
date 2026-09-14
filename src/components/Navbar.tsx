@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence, useScroll, useSpring, useTransform } from "framer-motion";
 import { Menu, X, Sparkles, UserCircle, LayoutDashboard, FolderGit2, Bell, Settings, LogOut, Calendar, Award } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,7 +35,7 @@ export function Navbar() {
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
   // Size transformations: starts small and widens slightly on scroll
-  const navMaxWidth = useTransform(scrollY, [0, 150], ["1000px", "1100px"]);
+  const navMaxWidth = useTransform(scrollY, [0, 150], ["1200px", "1300px"]);
 
   // Premium Smooth scroll transformations
   const navBg = useTransform(scrollY, [0, 100], ["rgba(9,9,11,0.4)", "rgba(9,9,11,0.85)"]);
@@ -97,12 +98,15 @@ export function Navbar() {
           >
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 z-50 relative">
-              <img 
+              <Image 
                 src="/logo/navbarlogo.png" 
                 alt="Connect Club Logo" 
+                width={120}
+                height={32}
+                priority
                 className="h-8 w-auto object-contain brightness-0 invert transition-transform duration-300 group-hover:scale-105"
               />
-              <div className="flex items-baseline">
+              <div className="hidden sm:flex items-baseline">
                 <span className="font-display font-black text-[15px] tracking-tighter text-white uppercase group-hover:text-white transition-colors">
                   Connect Club
                 </span>

@@ -84,7 +84,7 @@ export default function UserLoginPage() {
       <div className="min-h-screen w-full bg-[#0c0c0e] flex flex-col items-center justify-center pt-20 pb-12 px-6 sm:px-12 relative overflow-hidden font-sans">
         
         {/* Background elements */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
+        <div className="absolute inset-0 bg-grid-pattern pointer-events-none" />
         <div className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
         <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
 
@@ -100,8 +100,9 @@ export default function UserLoginPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Student Portal</span>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl font-black font-heading text-white leading-[1.1] tracking-tight mb-4 uppercase">
-              Welcome <span className="text-primary">Back.</span>
+            <h1 className="text-4xl sm:text-5xl font-black font-heading text-white leading-[1.1] tracking-tight mb-4 uppercase flex justify-center gap-2 sm:gap-3">
+              <span>Welcome</span>
+              <span className="text-primary">Back.</span>
             </h1>
             
             <p className="text-sm text-white/50 leading-relaxed max-w-[300px] mx-auto font-medium">

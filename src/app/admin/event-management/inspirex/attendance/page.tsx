@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Html5Qrcode } from "html5-qrcode";
 
+import { useAuth } from "@/lib/contexts/AuthContext";
+
 interface Registration {
   id: string;
   name: string;
@@ -20,6 +22,7 @@ interface Registration {
 }
 
 export default function InspirexAttendancePage() {
+  const { user, role } = useAuth();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +168,13 @@ export default function InspirexAttendancePage() {
     if (showLoader) setIsLoading(true);
     
     try {
-      const res = await fetch("/api/inspirex-registrations", { cache: "no-store" });
+      const token = await user?.getIdToken();
+      const res = await fetch("/api/inspirex-registrations", { 
+        cache: "no-store",
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
       const data = await res.json();
       
       if (!res.ok) {
@@ -261,7 +270,7 @@ export default function InspirexAttendancePage() {
         {/* Top Header Row */}
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <Link href="/admin/event-management/inspirex" className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
+            <Link href={role === "admin" ? "/admin/event-management/inspirex" : "/member/dashboard"} className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to InspireX
             </Link>

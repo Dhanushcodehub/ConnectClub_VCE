@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAdminApp } from "@/lib/firebase/admin";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import fs from "fs";
@@ -10,26 +7,69 @@ import JSZip from "jszip";
 
 export const dynamic = "force-dynamic";
 
-// CSE cluster definitions
-const CSE_CLUSTERS: Record<string, string[]> = {
-  "Cluster 1": ["A", "B", "C"],
-  "Cluster 2": ["D", "E", "F"],
-  "Cluster 3": ["G", "H", "I"],
-};
-
-function getCSECluster(section: string): string | null {
-  for (const [cluster, sections] of Object.entries(CSE_CLUSTERS)) {
-    if (sections.includes(section.toUpperCase())) return cluster;
-  }
-  return null;
+function buildTopText(para1: string, para2: string): string {
+  return `
+    <w:p><w:pPr><w:spacing w:after="240"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="26"/></w:rPr><w:t>${escapeXml(para1)}</w:t></w:r></w:p>
+    <w:p><w:pPr><w:spacing w:after="240"/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="26"/></w:rPr><w:t>${escapeXml(para2)}</w:t></w:r></w:p>
+  `;
 }
 
-function buildTable(rows: any[]): any {
+function buildHeading(label: string, year: string): string {
+  const headingText = `${label.replace("CSE – ", "CSE - ")} - ${year}`.toUpperCase();
+  return `
+    <w:p><w:pPr><w:spacing w:before="240" w:after="240"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="32"/></w:rPr><w:t>${escapeXml(headingText)}</w:t></w:r></w:p>
+  `;
+}
+
+function buildSignatureBlock(): string {
+  return `
+    <w:p><w:pPr><w:spacing w:before="800"/></w:pPr></w:p>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="9000" w:type="dxa"/>
+        <w:tblLayout w:type="fixed"/>
+        <w:tblBorders>
+          <w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          <w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          <w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          <w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+          <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>
+        </w:tblBorders>
+      </w:tblPr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr>
+          <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="22"/></w:rPr><w:t>Signature of Dean (SAC)</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr>
+          <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="22"/></w:rPr><w:t>Signature of Secretary (Connect Club)</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr>
+          <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="22"/></w:rPr><w:t>Signature of HOD</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  `;
+}
+
+function buildTable(rows: any[], columns: Record<string, boolean>): any {
+  const activeHeaders = [];
+  if (columns.sno) activeHeaders.push("S.NO");
+  if (columns.name) activeHeaders.push("STUDENT NAME");
+  if (columns.branch) activeHeaders.push("DEPARTMENT");
+  if (columns.year) activeHeaders.push("YEAR");
+  if (columns.section) activeHeaders.push("SECTION");
+  if (columns.rollNo) activeHeaders.push("ROLL NUMBER");
+  if (columns.signature) activeHeaders.push("SIGNATURE");
+
   // Build a OOXML table that matches the template styling
   const headerRow = `
     <w:tr>
       <w:trPr><w:tblHeader/><w:trHeight w:val="400"/></w:trPr>
-      ${["S.NO", "STUDENT NAME", "DEPARTMENT", "YEAR", "SECTION", "ROLL NUMBER"]
+      ${activeHeaders
         .map(
           (h) => `
         <w:tc>
@@ -49,16 +89,19 @@ function buildTable(rows: any[]): any {
 
   const dataRows = rows
     .map(
-      (row, i) => `
+      (row, i) => {
+        const activeCells = [];
+        if (columns.sno) activeCells.push(String(i + 1));
+        if (columns.name) activeCells.push(row.name);
+        if (columns.branch) activeCells.push(row.branch);
+        if (columns.year) activeCells.push(row.year);
+        if (columns.section) activeCells.push(row.section);
+        if (columns.rollNo) activeCells.push(row.rollNo);
+        if (columns.signature) activeCells.push("");
+        
+        return `
     <w:tr>
-      ${[
-        String(i + 1),
-        row.name,
-        row.branch,
-        row.year,
-        row.section,
-        row.rollNo,
-      ]
+      ${activeCells
         .map(
           (cell) => `
         <w:tc>
@@ -74,7 +117,8 @@ function buildTable(rows: any[]): any {
         </w:tc>`
         )
         .join("")}
-    </w:tr>`
+    </w:tr>`;
+      }
     )
     .join("");
 
@@ -97,6 +141,7 @@ function buildTable(rows: any[]): any {
 }
 
 function escapeXml(str: string): string {
+  if (!str) return "";
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -107,7 +152,10 @@ function escapeXml(str: string): string {
 
 async function generateDocx(
   rows: any[],
-  groupName: string,
+  columns: Record<string, boolean>,
+  label: string,
+  para1: string,
+  para2: string,
   templateBuffer: Buffer
 ): Promise<Buffer> {
   const zip = new PizZip(templateBuffer);
@@ -115,15 +163,31 @@ async function generateDocx(
   // Inject table into document.xml by replacing {{TABLE}} placeholder
   let docXml = zip.file("word/document.xml")!.asText();
   
-  // Replace the placeholder paragraph containing {{TABLE}}
-  const tableXml = buildTable(rows);
+  // Build the complete content: top text + table + signature
+  const topTextXml = buildTopText(para1, para2);
+  const sigXml = buildSignatureBlock();
+  
+  const years = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Unknown"];
+  let tablesXml = "";
+  
+  for (const year of years) {
+    const yearRows = rows.filter(r => (r.year || "Unknown") === year);
+    if (yearRows.length === 0) continue;
+    
+    tablesXml += buildHeading(label, year);
+    tablesXml += buildTable(yearRows, columns);
+    // Add empty paragraph between tables for spacing
+    tablesXml += `<w:p><w:pPr><w:spacing w:after="240"/></w:pPr></w:p>`;
+  }
+  
+  const fullContent = `${topTextXml}${tablesXml}${sigXml}`;
   
   // Try to replace {{TABLE}} placeholder if it exists
   if (docXml.includes("{{TABLE}}")) {
-    docXml = docXml.replace(/\{\{TABLE\}\}/, tableXml);
+    docXml = docXml.replace(/\{\{TABLE\}\}/, fullContent);
   } else {
     // Find the last paragraph before </w:body> and inject after it
-    docXml = docXml.replace(/<\/w:body>/, `${tableXml}</w:body>`);
+    docXml = docXml.replace(/<\/w:body>/, `${fullContent}</w:body>`);
   }
   
   zip.file("word/document.xml", docXml);
@@ -139,13 +203,19 @@ async function generateDocx(
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const {
-      branches = [],
-      year,
-      sections,
-      rollNumbers,
-      sortBy = "rollNo",
-    } = body;
+    const { documents, columns, para1, para2 } = body;
+
+    if (!documents || !Array.isArray(documents) || documents.length === 0) {
+       return NextResponse.json(
+        { error: "No documents provided to generate." },
+        { status: 400 }
+      );
+    }
+    
+    // Default columns if not provided
+    const cols = columns || { sno: true, rollNo: true, name: true, branch: true, year: true, section: true, signature: false };
+    const p1 = para1 || "";
+    const p2 = para2 || "";
 
     // 1. Load template
     const templatePath = path.join(
@@ -161,165 +231,33 @@ export async function POST(request: Request) {
     }
     const templateBuffer = fs.readFileSync(templatePath);
 
-    // 2. Fetch registrations from InspireX
-    const projectId = process.env.INSPIREX_FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.INSPIREX_FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.INSPIREX_FIREBASE_PRIVATE_KEY?.replace(
-      /\\n/g,
-      "\n"
-    );
-
-    if (!projectId || !clientEmail || !privateKey) {
-      return NextResponse.json(
-        { error: "Missing InspireX Firebase credentials." },
-        { status: 500 }
-      );
-    }
-
-    const appName = "inspirex-admin";
-    let inspirexApp: admin.app.App;
-    const existingApp = admin.apps.find((app) => app && app.name === appName);
-    if (existingApp) {
-      inspirexApp = existingApp;
-    } else {
-      inspirexApp = admin.initializeApp(
-        {
-          credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    // 2. Generate .docx per document group
+    // If only one document, we can just return that .docx file directly
+    if (documents.length === 1) {
+       const doc = documents[0];
+       const docBuffer = await generateDocx(doc.rows, cols, doc.label || "", p1, p2, templateBuffer);
+       
+       return new NextResponse(docBuffer as any, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "Content-Disposition": `attachment; filename=${doc.filename}`,
         },
-        appName
-      );
-    }
-
-    const db = getFirestore(inspirexApp);
-    const snapshot = await db.collection("registrations").get();
-    
-    let allRegistrations = snapshot.docs.map((doc) => {
-      const d = doc.data();
-      return {
-        id: doc.id,
-        name: d.name || d.fullName || "Unknown",
-        branch: (d.branch || "Unknown").toUpperCase().trim(),
-        rollNo: (d.rollNo || "Unknown").toUpperCase().trim(),
-        year: d.year || "Unknown",
-        section: (d.section || "").toUpperCase().trim() || "–",
-        email: d.email || "",
-      };
-    });
-
-    // 3. Filter by roll numbers if provided (exact roster)
-    const notFoundRolls: string[] = [];
-    if (rollNumbers && rollNumbers.length > 0) {
-      const normalizedList = [...new Set(rollNumbers.map((r: string) => r.toUpperCase().trim()))];
-      const foundSet = new Set(allRegistrations.map((r) => r.rollNo));
-      normalizedList.forEach((r) => { if (!foundSet.has(r)) notFoundRolls.push(r); });
-      allRegistrations = allRegistrations.filter((r) => normalizedList.includes(r.rollNo));
-    }
-
-    // 4. Filter by year
-    if (year && year !== "All") {
-      allRegistrations = allRegistrations.filter((r) => r.year === year);
-    }
-
-    // 5. Filter by sections
-    if (sections && sections.length > 0) {
-      allRegistrations = allRegistrations.filter((r) =>
-        sections.includes(r.section)
-      );
-    }
-
-    // 6. Filter by branches
-    const targetBranches = branches.length > 0
-      ? branches.map((b: string) => b.toUpperCase().trim())
-      : [...new Set(allRegistrations.map((r) => r.branch))];
-
-    allRegistrations = allRegistrations.filter((r) =>
-      targetBranches.includes(r.branch)
-    );
-
-    // 7. Sort
-    const sorted = [...allRegistrations].sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      return a.rollNo.localeCompare(b.rollNo);
-    });
-
-    // 8. Group by branch and CSE cluster
-    const groups: Record<string, { label: string; rows: typeof sorted; filename: string }> = {};
-
-    for (const reg of sorted) {
-      if (reg.branch === "CSE" || reg.branch.includes("CSE")) {
-        const cluster = getCSECluster(reg.section);
-        const key = cluster ? `CSE_${cluster}` : "CSE_Unknown";
-        const label = cluster ? `CSE – ${cluster}` : "CSE – Unknown Section";
-        const clusterNum = cluster ? cluster.replace("Cluster ", "") : "X";
-        const sections = cluster ? CSE_CLUSTERS[cluster].join("") : "X";
-        if (!groups[key]) {
-          groups[key] = {
-            label,
-            rows: [],
-            filename: `CSE_CLUSTER_${clusterNum}_${sections}_LIST.docx`,
-          };
-        }
-        groups[key].rows.push(reg);
-      } else {
-        const key = reg.branch;
-        if (!groups[key]) {
-          groups[key] = {
-            label: reg.branch,
-            rows: [],
-            filename: `${reg.branch}_LIST.docx`,
-          };
-        }
-        groups[key].rows.push(reg);
-      }
-    }
-
-    const groupList = Object.entries(groups).map(([key, g]) => ({
-      key,
-      label: g.label,
-      rowCount: g.rows.length,
-      filename: g.filename,
-      preview: g.rows.slice(0, 5).map((r, i) => ({
-        sno: i + 1,
-        name: r.name,
-        branch: r.branch,
-        year: r.year,
-        section: r.section,
-        rollNo: r.rollNo,
-      })),
-    }));
-
-    // 9. If preview=true, return just the preview
-    const url = new URL(request.url);
-    if (url.searchParams.get("preview") === "true") {
-      return NextResponse.json({
-        success: true,
-        groups: groupList,
-        total: sorted.length,
-        notFound: notFoundRolls,
       });
     }
 
-    // 10. Generate .docx per group and zip
+    // 3. Multiple documents, return a zip
     const outputZip = new JSZip();
-    let hasFiles = false;
 
-    for (const [key, group] of Object.entries(groups)) {
-      if (group.rows.length === 0) continue;
-      const docBuffer = await generateDocx(group.rows, group.label, templateBuffer);
-      outputZip.file(group.filename, docBuffer);
-      hasFiles = true;
-    }
-
-    if (!hasFiles) {
-      return NextResponse.json(
-        { error: "No matching registrations found for selected filters." },
-        { status: 400 }
-      );
+    for (const doc of documents) {
+      if (!doc.rows || doc.rows.length === 0) continue;
+      const docBuffer = await generateDocx(doc.rows, cols, doc.label || "", p1, p2, templateBuffer);
+      outputZip.file(doc.filename, docBuffer);
     }
 
     const zipBuffer = await outputZip.generateAsync({ type: "nodebuffer" });
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipBuffer as any, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

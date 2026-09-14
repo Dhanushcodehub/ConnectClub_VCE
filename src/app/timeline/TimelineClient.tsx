@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
+import Image from "next/image";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { getMilestones, ConnectMilestone } from "@/lib/firebase/timeline";
 import { Loader2 } from "lucide-react";
@@ -175,10 +176,12 @@ export default function TimelinePage() {
                         className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
                       />
                     ) : (
-                      <img 
+                      <Image 
                         src={event.mediaUrl} 
                         alt={event.title}
-                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-105"
                       />
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />

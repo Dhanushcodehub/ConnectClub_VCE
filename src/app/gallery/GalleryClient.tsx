@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X, ZoomIn, Play, Film, Images } from "lucide-react";
@@ -134,10 +135,13 @@ export default function GalleryPage() {
                 onClick={() => setSelectedMedia(item)}
               >
                 <div className="absolute inset-0 bg-[#0C0C0E]">
-                  <img 
+                  <Image 
                     src={item.type === "video" && item.src.match(/\.(mp4|mov|webm|avi)$/i) ? item.src.replace(/\.(mp4|mov|webm|avi)$/i, ".jpg") : item.src} 
                     alt={item.alt} 
-                    className="w-full h-full object-cover transition-transform duration-[2s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.05]" 
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={index < 4}
+                    className="object-cover transition-transform duration-[2s] ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.05]" 
                   />
                 </div>
                 

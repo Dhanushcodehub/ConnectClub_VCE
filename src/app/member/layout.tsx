@@ -17,6 +17,10 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
     if (path.startsWith("/member/projects")) return "projects";
     if (path.startsWith("/member/timeline")) return "timeline";
     if (path.startsWith("/member/gallery")) return "gallery";
+    if (path.startsWith("/member/event-management/inspirex/attendance")) return "inspirex_attendance";
+    if (path.startsWith("/member/event-management/inspirex/member-lists")) return "inspirex_members_list";
+    if (path.startsWith("/member/event-management/inspirex/certificates")) return "inspirex_certificates";
+    if (path.startsWith("/member/event-management/inspirex/feedback")) return "inspirex_feedback";
     return null;
   };
 

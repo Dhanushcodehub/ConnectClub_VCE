@@ -18,6 +18,19 @@ export async function POST(req: Request) {
       const getAdminAuth = adminModule.getAdminAuth;
       const adminAuth = getAdminAuth();
       
+      // 0. Verify Authentication and Admin Role
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
+      }
+      
+      const token = authHeader.split('Bearer ')[1];
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      
+      if (decodedToken.role !== 'admin' && decodedToken.email !== 'admin@connectclubvce.in') {
+        return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
+      
       // 1. Create the user
       const userRecord = await adminAuth.createUser({
         email,

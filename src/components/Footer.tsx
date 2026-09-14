@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowUpRight, ExternalLink, Mail, GitBranch } from "lucide-react";
 
 const footerLinks = {
@@ -26,9 +27,11 @@ export function Footer() {
           {/* Brand - spans both columns on mobile */}
           <div className="col-span-2 md:col-span-6 lg:col-span-5 flex flex-col lg:flex-row items-center md:items-start gap-6 lg:gap-8 text-center md:text-left">
             <Link href="/" className="inline-flex shrink-0 group">
-              <img 
+              <Image 
                 src="/logo/logo-transparent.svg" 
                 alt="Connect Club Logo" 
+                width={160}
+                height={64}
                 className="w-32 lg:w-40 h-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-all group-hover:scale-105 origin-center md:origin-left"
               />
             </Link>

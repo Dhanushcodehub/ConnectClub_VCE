@@ -16,9 +16,9 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
+  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [totpSecret, setTotpSecret] = useState("");
   const [tempUser, setTempUser] = useState<User | null>(null);
 
@@ -88,7 +88,53 @@ export default function AdminLoginPage() {
     await signOut(auth);
     setRequires2FA(false);
     setTotpCode("");
+    setOtpValues(["", "", "", "", "", ""]);
     setTempUser(null);
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newOtpValues = [...otpValues];
+    newOtpValues[index] = value;
+    setOtpValues(newOtpValues);
+    setTotpCode(newOtpValues.join(""));
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      prevInput?.focus();
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      prevInput?.focus();
+    } else if (e.key === "ArrowRight" && index < 5) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pastedData) return;
+
+    const newOtpValues = [...otpValues];
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtpValues[i] = pastedData[i];
+    }
+    setOtpValues(newOtpValues);
+    setTotpCode(newOtpValues.join(""));
+
+    const nextIndex = Math.min(pastedData.length, 5);
+    const nextInput = document.getElementById(`otp-input-${nextIndex}`);
+    nextInput?.focus();
   };
 
   return (
@@ -246,17 +292,21 @@ export default function AdminLoginPage() {
                 )}
 
                 <form onSubmit={handle2FAVerify} className="space-y-6">
-                  <div>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={totpCode}
-                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-5 text-white text-center text-3xl tracking-[0.75em] font-mono focus:outline-none focus:border-green-500 focus:bg-white/5 transition-all shadow-inner"
-                      placeholder="000000"
-                      autoFocus
-                    />
+                  <div className="flex justify-between gap-2" onPaste={handleOtpPaste}>
+                    {otpValues.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`otp-input-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="w-12 h-14 bg-black/50 border border-white/10 rounded-xl text-white text-center text-2xl font-bold font-mono focus:outline-none focus:border-green-500 focus:bg-white/5 focus:ring-1 focus:ring-green-500/50 transition-all shadow-inner"
+                        autoFocus={idx === 0}
+                      />
+                    ))}
                   </div>
 
                   <div className="flex flex-col space-y-3 mt-8">

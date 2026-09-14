@@ -49,12 +49,16 @@ export default function Home() {
         }}
       />
       <Hero />
-      <StickyStats />
-      <Mission />
-      <FeaturedEvent />
-      <FeaturedProject />
-      <WhyConnect />
-      <CTA />
+      <div className="relative">
+        {/* Grid background behind all sections */}
+        <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0" />
+        <StickyStats />
+        <Mission />
+        <FeaturedEvent />
+        <FeaturedProject />
+        <WhyConnect />
+        <CTA />
+      </div>
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { getMembers, ConnectMember, MemberTier } from "@/lib/firebase/members";
 import { Loader2 } from "lucide-react";
@@ -54,7 +55,7 @@ export default function TeamPage() {
               {/* Background Image if available */}
               {member.imageUrl && (
                 <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-60 transition-opacity duration-500">
-                  <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" />
+                  <Image src={member.imageUrl} alt={member.name} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover filter grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0C0C0E] via-[#0C0C0E]/90 to-[#0C0C0E]/20" />
                 </div>
               )}

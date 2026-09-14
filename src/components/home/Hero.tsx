@@ -4,17 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 import { BackgroundClient } from "../three/BackgroundClient";
 
-// Lazy-load 3D canvas (no SSR)
 const LogoCanvas = dynamic(
   () => import("@/components/three/HeroCanvas"),
   { ssr: false, loading: () => null }
 );
 
-// ─── Typing effect ────────────────────────────────────────────────────────────
 const PHRASES = [
   "Engineering Excellence.",
   "Building the Future.",
@@ -48,24 +46,22 @@ function TypingEffect() {
   );
 }
 
+const TECH_TAGS = ["Next.js", "Firebase", "Gemini AI", "TypeScript", "DevOps", "Open Source"];
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const leftY  = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
   const rightY = useTransform(scrollYProgress, [0, 1], ["0%", "5%"]);
-  
-  // Adjusted opacity fade so it doesn't disappear too quickly on mobile scrolling
   const opacity = useTransform(scrollYProgress, [0, 0.9], [1, 0]);
 
   return (
     <section ref={ref} className="relative min-h-[100svh] flex items-center overflow-hidden pt-20 pb-10 md:pt-0 md:pb-0">
       
-      {/* 3D Moving Grid & Stars Background - Scoped explicitly to Hero */}
+      {/* Background */}
       <BackgroundClient />
 
-      {/* Ambient right-side glow that complements the logo */}
+      {/* Ambient glows */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-[55%] h-full bg-[radial-gradient(ellipse_at_center,rgba(0,85,255,0.15),transparent_65%)] md:bg-[radial-gradient(ellipse_at_60%_50%,rgba(0,85,255,0.1),transparent_65%)]" />
         <div className="absolute right-[5%] md:right-[15%] top-[20%] md:top-[30%] w-[250px] md:w-[300px] h-[250px] md:h-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(0,229,255,0.07),transparent_70%)]" />
@@ -83,13 +79,13 @@ export function Hero() {
           >
             {/* Eyebrow */}
             <motion.div variants={fadeUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-accent-glow/20 bg-accent-glow/10 text-[10px] md:text-label font-bold tracking-widest uppercase text-accent-glow">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-glow animate-pulse" />
+              <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Student Technology Club · VCE
               </span>
             </motion.div>
 
-            {/* Heading */}
+            {/* Heading — word-by-word stagger */}
             <motion.h1
               variants={fadeUp}
               className="text-h1 font-black uppercase tracking-tighter text-white mb-4 md:mb-6 leading-[1.05]"
@@ -99,10 +95,10 @@ export function Hero() {
               We Connect.
             </motion.h1>
 
-            {/* Typing */}
+            {/* Typing subline */}
             <motion.p
               variants={fadeUp}
-              className="font-display font-semibold uppercase tracking-widest text-white/20 mb-4 md:mb-6 text-[10px] md:text-label"
+              className="font-display font-semibold uppercase tracking-widest text-white/30 mb-4 md:mb-6 text-[10px] md:text-label"
             >
               <TypingEffect />
             </motion.p>
@@ -110,28 +106,40 @@ export function Hero() {
             {/* Description */}
             <motion.p
               variants={fadeUp}
-              className="text-sm md:text-body text-white/50 md:text-white/40 mb-8 max-w-sm md:max-w-md"
+              className="text-sm md:text-body text-white/40 mb-8 max-w-sm md:max-w-md"
             >
               The official technology community at Vardhaman College of
               Engineering. Real software, epic events, and real career outcomes.
             </motion.p>
 
             {/* CTAs */}
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0">
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
               <Link
                 href="/events"
                 className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs md:text-label font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto"
               >
                 Explore Events
-                <ArrowRight className="w-4 h-4 text-current group-hover:animate-pulse group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/connect-ai"
-                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs md:text-label font-bold uppercase tracking-widest transition-all border bg-white/5 text-white/80 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto"
+                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs md:text-label font-bold uppercase tracking-widest transition-all border bg-[#0D0F1A] text-white/70 border-white/10 hover:bg-[#13151F] hover:text-white hover:border-white/30 w-full sm:w-auto"
               >
                 <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" />
                 Connect AI
               </Link>
+            </motion.div>
+
+            {/* Tech stack tags */}
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-2 justify-center md:justify-start">
+              {TECH_TAGS.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider border border-white/[0.07] bg-[#0D0F1A] text-white/35 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
             </motion.div>
           </motion.div>
 
@@ -141,24 +149,17 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10"
+            className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10 w-full"
           >
-            {/* Globe container - Responsive sizing */}
-            <div className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[90%] lg:max-w-[580px] mx-auto">
-              <div className="relative w-full pb-[100%]">
-                {/* Ambient glow behind the sphere */}
-                <div className="absolute inset-[8%] rounded-full pointer-events-none"
-                  style={{ background: "radial-gradient(ellipse,rgba(0,85,255,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
-                />
-
-                {/* 3D canvas */}
-                <div className="absolute inset-0">
-                  <LogoCanvas />
-                </div>
+            <div className="relative w-[280px] sm:w-[320px] md:w-[90%] lg:w-[580px] md:max-w-[580px] mx-auto aspect-square">
+              <div className="absolute inset-[8%] rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(ellipse,rgba(0,85,255,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
+              />
+              <div className="absolute inset-0">
+                <LogoCanvas />
               </div>
             </div>
 
-            {/* Connect Club wordmark */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -173,6 +174,22 @@ export function Hero() {
           </motion.div>
 
         </div>
+
+      {/* Scroll hint */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.5, duration: 1 }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 hidden md:flex"
+      >
+        <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/20">Scroll</span>
+        <motion.div
+          animate={{ y: [0, 6, 0] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+        >
+          <ArrowDown className="w-4 h-4 text-white/20" />
+        </motion.div>
+      </motion.div>
 
       <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-30" />
     </section>
