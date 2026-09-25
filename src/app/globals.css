@@ -42,20 +42,20 @@
   --card-foreground: #F4F1EC;
   --popover: rgba(255, 255, 255, 0.03);
   --popover-foreground: #F4F1EC;
-  --primary: #0055FF;
+  --primary: #9333EA;
   --primary-foreground: #FFFFFF;
-  --secondary: #00E5FF;
-  --secondary-foreground: #09090B;
+  --secondary: #A855F7;
+  --secondary-foreground: #FFFFFF;
   --muted: #16161A;
   --muted-foreground: #9B98A3;
-  --accent: #0055FF;
+  --accent: #9333EA;
   --accent-foreground: #FFFFFF;
   --accent-glow: #FFFFFF;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.08);
-  --ring: #0055FF;
+  --ring: #9333EA;
   --radius: 0.75rem;
 }
 
@@ -162,27 +162,23 @@
 
   /* ── Text gradient ───────────────────────────────────── */
   .text-gradient-cyan {
-    background: linear-gradient(135deg, #ffffff 20%, #00E5FF 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: var(--primary);
   }
 
   /* ── Glow button ─────────────────────────────────────── */
   .btn-glow {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(135deg, #0055FF, #00E5FF);
+    background: var(--primary);
     color: white;
     font-weight: 700;
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
                 box-shadow 0.3s ease;
-    box-shadow: 0 0 24px rgba(0, 85, 255, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 0 24px rgba(147, 51, 234, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
   }
 
   .btn-glow:hover {
-    box-shadow: 0 0 36px rgba(0, 229, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+    box-shadow: 0 0 36px rgba(168, 85, 247, 0.55), inset 0 1px 0 rgba(255,255,255,0.25);
   }
 
   .btn-glow::after {

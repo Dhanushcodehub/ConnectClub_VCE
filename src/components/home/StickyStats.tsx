@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { animate, useInView } from "framer-motion";
@@ -88,7 +88,7 @@ export function StickyStats() {
           </motion.div>
           <motion.h2 variants={fadeUp} className="text-h2 font-black uppercase tracking-tighter text-white">
             What We've{" "}
-            <span className="text-gradient-cyan">Accomplished</span>
+            <span className="text-primary">Accomplished</span>
           </motion.h2>
         </motion.div>
 
@@ -145,3 +145,4 @@ export function StickyStats() {
     </section>
   );
 }
+

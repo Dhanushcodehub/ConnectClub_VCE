@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { staggerContainer, fadeUp, slideInLeft, viewportOnce } from "@/lib/animations";
@@ -16,7 +16,7 @@ const pillars = [
   },
   {
     label: "Learn",
-    desc: "Industry-grade stacks — Next.js, Firebase, AI/ML — before you graduate.",
+    desc: "Industry-grade stacks â€” Next.js, Firebase, AI/ML â€” before you graduate.",
     icon: <Lightbulb className="w-5 h-5" />,
     color: "text-amber-400",
     iconBg: "bg-amber-500/10 border-amber-500/20",
@@ -42,7 +42,7 @@ export function Mission() {
 
       <div className="container-grid items-start gap-y-16">
 
-          {/* Left — eyebrow + accent line */}
+          {/* Left â€” eyebrow + accent line */}
           <motion.div
             variants={slideInLeft}
             initial="hidden"
@@ -57,7 +57,7 @@ export function Mission() {
             <div className="hidden md:block w-[1px] h-32 bg-gradient-to-b from-white/10 to-transparent mt-6 ml-4" />
           </motion.div>
 
-          {/* Right — body */}
+          {/* Right â€” body */}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
@@ -70,7 +70,7 @@ export function Mission() {
               className="text-h2 font-black uppercase tracking-tighter text-white mb-6"
             >
               We bridge the gap between{" "}
-              <span className="text-gradient-cyan">
+              <span className="text-primary">
                 academic learning
               </span>{" "}
               and industry innovation.
@@ -80,7 +80,7 @@ export function Mission() {
               variants={fadeUp}
               className="text-body text-white/40 max-w-2xl mb-14"
             >
-              Connect Club is more than a tech community — it&apos;s a launchpad. We
+              Connect Club is more than a tech community â€” it&apos;s a launchpad. We
               prepare students for real-world engineering through hands-on
               projects, hackathons, and direct mentorship from industry
               professionals.
@@ -117,3 +117,4 @@ export function Mission() {
     </section>
   );
 }
+

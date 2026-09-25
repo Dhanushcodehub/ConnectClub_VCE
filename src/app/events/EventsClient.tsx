@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -203,7 +203,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
 
               {/* Featured Content */}
               <div className="flex flex-col justify-center w-full md:w-1/2 p-8 md:p-12 relative z-10 bg-[#0C0C0E]">
-                <span className="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.2em] bg-primary/20 text-primary border border-primary/20 w-fit mb-6 shadow-[0_0_15px_rgba(0,85,255,0.3)]">
+                <span className="px-4 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.2em] bg-primary/20 text-primary border border-primary/20 w-fit mb-6 shadow-[0_0_15px_rgba(255,102,0,0.3)]">
                   Featured Event
                 </span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-white uppercase tracking-tight mb-2 leading-tight">

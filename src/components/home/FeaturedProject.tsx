@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -31,7 +31,7 @@ export function FeaturedProject() {
             className="text-h2 font-black uppercase tracking-tighter text-white"
           >
             What We&apos;ve{" "}
-            <span className="text-gradient-cyan">Shipped</span>
+            <span className="text-primary">Shipped</span>
           </motion.h2>
         </motion.div>
 
@@ -48,7 +48,7 @@ export function FeaturedProject() {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse at 70% 50%, rgba(0,85,255,0.08), transparent 65%)",
+              background: "radial-gradient(ellipse at 70% 50%, rgba(255,102,0,0.08), transparent 65%)",
             }}
           />
 
@@ -70,7 +70,7 @@ export function FeaturedProject() {
 
                 <motion.h3
                   variants={fadeUp}
-                  className="text-h3 font-black uppercase tracking-tighter text-gradient-cyan mb-5"
+                  className="text-h3 font-black uppercase tracking-tighter text-primary mb-5"
                 >
                   Connect AI
                 </motion.h3>
@@ -121,7 +121,7 @@ export function FeaturedProject() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-white">connect-ai</p>
-                    <p className="text-[10px] text-white/30">v2.1.0 · Production</p>
+                    <p className="text-[10px] text-white/30">v2.1.0 Â· Production</p>
                   </div>
                   <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
                 </div>
@@ -143,3 +143,4 @@ export function FeaturedProject() {
     </section>
   );
 }
+

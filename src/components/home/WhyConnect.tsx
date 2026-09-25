@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { Code, Users, Rocket, Zap, Trophy, Globe } from "lucide-react";
@@ -19,7 +19,7 @@ const pillars = [
   {
     title: "Elite Network",
     description:
-      "Connect with the top performers on campus. Your network is your net worth — and here it's exceptional.",
+      "Connect with the top performers on campus. Your network is your net worth â€” and here it's exceptional.",
     icon: <Users className="w-6 h-6" />,
     color: "text-cyan-400",
     iconBg: "bg-cyan-500/10 border-cyan-500/20",
@@ -52,7 +52,7 @@ const pillars = [
   {
     title: "Industry Ready",
     description:
-      "Learn Next.js, Firebase, AI/ML, DevOps — real stacks, not just theory.",
+      "Learn Next.js, Firebase, AI/ML, DevOps â€” real stacks, not just theory.",
     icon: <Zap className="w-6 h-6" />,
     color: "text-emerald-400",
     iconBg: "bg-emerald-500/10 border-emerald-500/20",
@@ -96,7 +96,7 @@ export function WhyConnect() {
             className="text-h2 font-black uppercase tracking-tighter text-white"
           >
             Why{" "}
-            <span className="text-gradient-cyan">Connect?</span>
+            <span className="text-primary">Connect?</span>
           </motion.h2>
         </motion.div>
 
@@ -152,3 +152,4 @@ export function WhyConnect() {
     </section>
   );
 }
+

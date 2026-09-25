@@ -120,8 +120,8 @@ function LogoSphere() {
           >
             <sphereGeometry args={[sizes[i], 12, 12]} />
             <meshStandardMaterial
-              color={accent ? "#00E5FF" : "#1166FF"}
-              emissive={accent ? "#00E5FF" : "#0044DD"}
+              color={accent ? "#FF8800" : "#1166FF"}
+              emissive={accent ? "#FF8800" : "#0044DD"}
               emissiveIntensity={accent ? 2.2 : 1.0}
               roughness={0.2}
               metalness={0.15}
@@ -154,7 +154,7 @@ export default function LogoCanvas() {
       style={{ width: "100%", height: "100%" }}
     >
       <ambientLight intensity={0.55} color="#0a1a3a" />
-      <pointLight position={[-5, 6, 5]}  intensity={5}   color="#0055FF" />
+      <pointLight position={[-5, 6, 5]}  intensity={5}   color="#FF6600" />
       <pointLight position={[5, -4, -4]} intensity={3}   color="#00CCFF" />
       <pointLight position={[0, 5, 3]}   intensity={2}   color="#4488FF" />
       <LogoSphere />

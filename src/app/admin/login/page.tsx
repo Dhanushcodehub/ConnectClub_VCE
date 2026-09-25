@@ -173,7 +173,7 @@ export default function AdminLoginPage() {
               <span>Connect OS Administration</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-black font-heading text-white leading-[1.1] tracking-tight mb-6 whitespace-pre-line">
-              Empowering the{"\n"}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">Next Generation</span>{"\n"}of Innovators.
+              Empowering the{"\n"}<span className="text-primary">Next Generation</span>{"\n"}of Innovators.
             </h1>
             <p className="text-lg text-white/50 leading-relaxed">
               Securely access the Connect Club operating system to manage events, moderate projects, and oversee the community at Vardhaman College of Engineering.

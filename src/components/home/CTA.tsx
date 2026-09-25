@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -42,7 +42,7 @@ export function CTA() {
                 className="text-h1 font-black uppercase tracking-tighter text-white mb-5"
               >
                 Ready to{" "}
-                <span className="text-gradient-cyan">Build?</span>
+                <span className="text-primary">Build?</span>
               </motion.h2>
 
               <motion.p
@@ -79,3 +79,4 @@ export function CTA() {
     </section>
   );
 }
+

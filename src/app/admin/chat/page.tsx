@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import GlobalChat from "@/components/chat/GlobalChat";
@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 const AVATAR_GRADIENTS = [
   ['#FF6B6B', '#EE5A24'], ['#A3CB38', '#009432'], ['#12CBC4', '#1289A7'],
   ['#FDA7DF', '#D980FA'], ['#F79F1F', '#EE5A24'], ['#6C5CE7', '#A29BFE'],
-  ['#00CEFF', '#0055FF'], ['#FF9FF3', '#F368E0'],
+  ['#00CEFF', '#FF6600'], ['#FF9FF3', '#F368E0'],
 ];
 
 function getAvatarGradient(name: string) {

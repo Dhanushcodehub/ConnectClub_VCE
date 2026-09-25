@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
@@ -139,8 +139,8 @@ export function ConnectAIChat() {
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
-        className="fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[60] w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-white shadow-[0_0_30px_rgba(0,85,255,0.45)] cursor-pointer"
-        style={{ background: "linear-gradient(135deg, #0055FF, #00E5FF)" }}
+        className="fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[60] w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-white shadow-[0_0_30px_rgba(255,102,0,0.45)] cursor-pointer"
+        style={{ background: "linear-gradient(135deg, #FF6600, #FF8800)" }}
       >
         <AnimatePresence mode="wait" initial={false}>
           {isOpen ? (

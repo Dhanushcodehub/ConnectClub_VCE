@@ -58,7 +58,7 @@ export default function MemberDashboard() {
     <div className="p-8 md:p-12">
       <div className="mb-12">
         <h1 className="text-4xl md:text-5xl font-black font-heading text-white mb-4">
-          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">{user?.email?.split('@')[0]}</span>!
+          Welcome back, <span className="text-primary">{user?.email?.split('@')[0]}</span>!
         </h1>
         <p className="text-white/60 text-lg max-w-2xl">
           This is your member portal. You can manage events, projects, and the gallery from here. Your permissions are active based on your assigned role.

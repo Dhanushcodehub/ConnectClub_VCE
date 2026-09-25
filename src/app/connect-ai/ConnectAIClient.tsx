@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -125,7 +125,7 @@ export default function ConnectAIPage() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/5 flex items-center justify-center text-primary mb-6 border border-primary/20 shadow-[0_0_30px_rgba(0,85,255,0.2)]"
+                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/5 flex items-center justify-center text-primary mb-6 border border-primary/20 shadow-[0_0_30px_rgba(255,102,0,0.2)]"
               >
                 <Bot className="w-10 h-10" />
               </motion.div>
@@ -157,7 +157,7 @@ export default function ConnectAIPage() {
                   )}>
                     <div className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1",
-                      msg.role === "user" ? "bg-white/10" : "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(0,85,255,0.1)]"
+                      msg.role === "user" ? "bg-white/10" : "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(255,102,0,0.1)]"
                     )}>
                       {msg.role === "user" ? <User className="w-4 h-4 text-white" /> : <Sparkles className="w-4 h-4" />}
                     </div>
@@ -208,7 +208,7 @@ export default function ConnectAIPage() {
                 className="flex justify-start"
               >
                 <div className="flex gap-3 max-w-[85%] md:max-w-[80%]">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(0,85,255,0.1)] flex items-center justify-center shrink-0 mt-1">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(255,102,0,0.1)] flex items-center justify-center shrink-0 mt-1">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div className="px-5 py-3.5">

@@ -79,7 +79,7 @@ export default function MemberLoginPage() {
               <span>Member Portal Access</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-black font-heading text-white leading-[1.1] tracking-tight mb-6">
-              Welcome to the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-primary">Inner Circle</span>.
+              Welcome to the <span className="text-primary">Inner Circle</span>.
             </h1>
             <p className="text-lg text-white/50 leading-relaxed max-w-md">
               Log in to your member account to collaborate on projects, organize events, and manage the Connect Club community.
@@ -159,7 +159,7 @@ export default function MemberLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

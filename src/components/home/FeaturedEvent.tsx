@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -29,7 +29,7 @@ export function FeaturedEvent() {
             className="text-h2 font-black uppercase tracking-tighter text-white"
           >
             What&apos;s{" "}
-            <span className="text-gradient-cyan">Coming Up</span>
+            <span className="text-primary">Coming Up</span>
           </motion.h2>
         </motion.div>
 
@@ -77,7 +77,7 @@ export function FeaturedEvent() {
 
                 <motion.h3
                   variants={fadeUp}
-                  className="text-h3 font-black uppercase tracking-tighter text-gradient-cyan mb-5"
+                  className="text-h3 font-black uppercase tracking-tighter text-primary mb-5"
                 >
                   InspireX Season 2
                 </motion.h3>
@@ -123,3 +123,4 @@ export function FeaturedEvent() {
     </section>
   );
 }
+

@@ -40,7 +40,7 @@ function TypingEffect() {
 
   return (
     <>
-      <span className="text-gradient-cyan">{text}</span>
+      <span className="text-primary">{text}</span>
       <span className="inline-block w-[2px] h-[0.8em] bg-secondary align-middle ml-1 animate-pulse" />
     </>
   );
@@ -63,13 +63,13 @@ export function Hero() {
 
       {/* Ambient glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-[55%] h-full bg-[radial-gradient(ellipse_at_center,rgba(0,85,255,0.15),transparent_65%)] md:bg-[radial-gradient(ellipse_at_60%_50%,rgba(0,85,255,0.1),transparent_65%)]" />
-        <div className="absolute right-[5%] md:right-[15%] top-[20%] md:top-[30%] w-[250px] md:w-[300px] h-[250px] md:h-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(0,229,255,0.07),transparent_70%)]" />
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-[55%] h-full bg-[radial-gradient(ellipse_at_center,rgba(147,51,234,0.15),transparent_65%)] md:bg-[radial-gradient(ellipse_at_60%_50%,rgba(147,51,234,0.1),transparent_65%)]" />
+        <div className="absolute right-[5%] md:right-[15%] top-[20%] md:top-[30%] w-[250px] md:w-[300px] h-[250px] md:h-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.07),transparent_70%)]" />
       </div>
 
       <div className="relative z-10 container-grid items-center min-h-full md:min-h-[90vh] py-12 md:pt-24 md:pb-16 gap-y-12 md:gap-y-0">
 
-          {/* ── LEFT: content ─── */}
+          {/* â”€â”€ LEFT: content â”€â”€â”€ */}
           <motion.div
             style={{ y: leftY, opacity }}
             variants={staggerContainer}
@@ -81,17 +81,17 @@ export function Hero() {
             <motion.div variants={fadeUp} className="mb-6">
               <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Student Technology Club · VCE
+                Student Technology Club Â· VCE
               </span>
             </motion.div>
 
-            {/* Heading — word-by-word stagger */}
+            {/* Heading â€” word-by-word stagger */}
             <motion.h1
               variants={fadeUp}
               className="text-h1 font-black uppercase tracking-tighter text-white mb-4 md:mb-6 leading-[1.05]"
             >
               We Build.<br />
-              <span className="text-gradient-cyan">We Ship.</span><br />
+              <span className="text-primary">We Ship.</span><br />
               We Connect.
             </motion.h1>
 
@@ -143,7 +143,7 @@ export function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* ── RIGHT: 3D logo ─── */}
+          {/* â”€â”€ RIGHT: 3D logo â”€â”€â”€ */}
           <motion.div
             style={{ y: rightY }}
             initial={{ opacity: 0, scale: 0.92 }}
@@ -153,7 +153,7 @@ export function Hero() {
           >
             <div className="relative w-[280px] sm:w-[320px] md:w-[90%] lg:w-[580px] md:max-w-[580px] mx-auto aspect-square">
               <div className="absolute inset-[8%] rounded-full pointer-events-none"
-                style={{ background: "radial-gradient(ellipse,rgba(0,85,255,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
+                style={{ background: "radial-gradient(ellipse,rgba(147,51,234,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
               />
               <div className="absolute inset-0">
                 <LogoCanvas />
@@ -195,3 +195,4 @@ export function Hero() {
     </section>
   );
 }
+

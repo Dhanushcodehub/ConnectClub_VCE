@@ -71,7 +71,7 @@ export function Navbar() {
         className="fixed top-0 left-0 right-0 h-[2px] z-[100] origin-left"
         style={{
           scaleX,
-          background: "linear-gradient(90deg,#0055FF,#00E5FF,#0055FF)",
+          background: "var(--primary)",
         }}
       />
 
