@@ -1,78 +1,80 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { staggerContainer, fadeUp, scaleIn, viewportOnce } from "@/lib/animations";
+import { Instagram, Linkedin, Youtube, Mail } from "lucide-react";
+import { staggerContainer, fadeUp, viewportOnce } from "@/lib/animations";
 
 export function CTA() {
   return (
-    <section className="py-28 relative z-10">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+    <section className="relative z-10 bg-[#0C0E1A] pt-32 pb-24 mt-20">
+      {/* Torn paper effect using SVG mask or background */}
+      <div 
+        className="absolute top-0 left-0 w-full h-8 md:h-12 bg-repeat-x z-20 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='white' points='0,100 100,100 100,0 95,20 85,5 75,25 65,10 50,30 40,5 25,25 15,10 5,25 0,0' /%3E%3Cpolygon fill='%230C0E1A' points='0,100 100,100 100,15 95,35 85,20 75,40 65,25 50,45 40,20 25,40 15,25 5,40 0,15' /%3E%3C/svg%3E")`,
+          backgroundSize: "120px 100%",
+          transform: "translateY(-98%)" 
+        }}
+      />
 
       <div className="container-grid">
-        <div className="col-span-4 md:col-span-6 lg:col-span-12">
+        <div className="col-span-4 md:col-span-6 lg:col-span-8 lg:col-start-3">
           <motion.div
-            variants={scaleIn}
+            variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={viewportOnce}
-            className="relative rounded-2xl border border-white/[0.07] p-12 md:p-20 overflow-hidden"
-            style={{ background: "#0C0E1A" }}
+            className="flex flex-col items-center text-center"
           >
-            {/* Background glow blobs */}
-            <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-blue-600/15 blur-[100px] pointer-events-none" />
-            <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
-
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportOnce}
-              className="relative z-10 text-center flex flex-col items-center"
+            <motion.h2
+              variants={fadeUp}
+              className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white mb-6"
+              style={{ transform: "skewX(-8deg)" }}
             >
-              <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
-                <span className="w-6 h-[2px] bg-white/20 rounded-full" />
-                <span className="eyebrow text-white/40">Get Involved</span>
-                <span className="w-6 h-[2px] bg-white/20 rounded-full" />
+              Get In Touch
+            </motion.h2>
+
+            <motion.p
+              variants={fadeUp}
+              className="text-lg md:text-xl text-white/70 mb-16 max-w-2xl"
+            >
+              Have questions or need assistance? Reach out to us via our official emails or social media.
+            </motion.p>
+
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+              {/* Left Column - Socials */}
+              <motion.div variants={fadeUp} className="flex flex-col items-center md:items-start space-y-6">
+                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
+                  <Instagram className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <span className="text-lg font-medium">Instagram</span>
+                </a>
+                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
+                  <Linkedin className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <span className="text-lg font-medium">LinkedIn</span>
+                </a>
+                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
+                  <Youtube className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <span className="text-lg font-medium">YouTube</span>
+                </a>
               </motion.div>
 
-              <motion.h2
-                variants={fadeUp}
-                className="text-h1 font-black uppercase tracking-tighter text-white mb-5"
-              >
-                Ready to{" "}
-                <span className="text-primary">Build?</span>
-              </motion.h2>
-
-              <motion.p
-                variants={fadeUp}
-                className="text-body text-white/40 max-w-xl mb-12 leading-relaxed"
-              >
-                Join the community of innovators. Attend our next event, or
-                talk to Connect AI to find out how to get involved.
-              </motion.p>
-
-              <motion.div
-                variants={fadeUp}
-                className="flex flex-col sm:flex-row items-center gap-4"
-              >
-                <Link
-                  href="/events"
-                  className="group flex items-center gap-3 px-9 py-4.5 rounded-xl text-label font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto justify-center"
-                >
-                  See Upcoming Events
-                  <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  href="/connect-ai"
-                  className="flex items-center gap-3 px-9 py-4.5 rounded-xl text-label font-bold uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Chat with Connect AI
-                </Link>
+              {/* Right Column - Emails */}
+              <motion.div variants={fadeUp} className="flex flex-col items-center md:items-start space-y-8">
+                <div>
+                  <h4 className="text-primary font-bold tracking-widest uppercase text-xs mb-2">Connect Club Email</h4>
+                  <a href="mailto:connectclub@vce.ac.in" className="text-xl md:text-2xl font-bold text-white hover:text-primary transition-colors">
+                    connectclub@vce.ac.in
+                  </a>
+                </div>
+                <div>
+                  <h4 className="text-primary font-bold tracking-widest uppercase text-xs mb-2">Support Email</h4>
+                  <a href="mailto:support@connectclubvce.in" className="text-xl md:text-2xl font-bold text-white hover:text-primary transition-colors">
+                    support@connectclubvce.in
+                  </a>
+                </div>
               </motion.div>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </div>

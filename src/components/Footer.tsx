@@ -18,7 +18,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-white/[0.06] bg-background pt-16 lg:pt-24 pb-8 overflow-hidden">
+    <footer className="relative border-t border-white/[0.06] bg-[#0C0E1A] pt-16 lg:pt-24 pb-8 overflow-hidden">
       <div className="container-grid relative z-10">
 
         {/* Main grid: 12 cols desktop, 2 cols mobile */}
