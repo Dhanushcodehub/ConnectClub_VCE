@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X, ZoomIn, Play, Film, Images } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
@@ -61,6 +61,24 @@ export default function GalleryPage() {
     (img) => activeTab === "All" || img.category === activeTab
   );
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const [scrollRange, setScrollRange] = useState(0);
+
+  useEffect(() => {
+    if (ghostRef.current) {
+      setScrollRange(ghostRef.current.scrollWidth - window.innerWidth + window.innerWidth * 0.1);
+    }
+  }, [filteredImages, mounted]);
+
+  const { scrollYProgress } = useScroll({
+    target: scrollRef,
+    offset: ["start start", "end end"]
+  });
+  
+  // Animate exactly the scroll width
+  const x = useTransform(scrollYProgress, [0, 1], [0, -scrollRange]);
+
   return (
     <div className="w-full min-h-screen pt-32 pb-24 md:pt-48 md:pb-32">
       <motion.div 
@@ -101,37 +119,39 @@ export default function GalleryPage() {
         </motion.div>
       </motion.div>
 
-      {/* Grid Layout for Featured Support */}
-      <div className="w-full container-grid">
-        <motion.div 
-          layout
-          className="col-span-full"
-        >
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-primary animate-spin" />
-              <p className="text-white/50 text-sm font-medium">Loading premium media...</p>
-            </div>
-          ) : galleryItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32 border border-dashed border-white/10 rounded-3xl">
-              <Images className="w-12 h-12 text-white/20 mb-4" />
-              <p className="text-white/50 font-medium">No media items found.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-[280px]">
-              <AnimatePresence mode="popLayout">
-                {filteredImages.map((item, index) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, scale: 0.8, y: 30, filter: "blur(15px)" }}
-                    animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, scale: 0.8, y: 30, filter: "blur(15px)", transition: { duration: 0.2 } }}
-                    transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1], delay: index * 0.05 }}
-                    key={item.id}
-                className={cn(
-                  "relative group rounded-2xl overflow-hidden cursor-pointer bg-[#0C0C0E] border border-white/[0.06] hover:border-white/[0.2] shadow-xl hover:shadow-2xl transition-all duration-500",
-                  item.featured ? "md:col-span-2 md:row-span-2" : "col-span-1 row-span-1"
-                )}
+      {/* Horizontal Scroll Layout */}
+      <div ref={scrollRef} className="h-[400vh] w-full relative">
+        <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden w-full -mt-20">
+          <motion.div 
+            layout
+            className="w-full"
+          >
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-primary animate-spin" />
+                <p className="text-white/50 text-sm font-medium">Loading premium media...</p>
+              </div>
+            ) : galleryItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-32 border border-dashed border-white/10 rounded-3xl mx-12">
+                <Images className="w-12 h-12 text-white/20 mb-4" />
+                <p className="text-white/50 font-medium">No media items found.</p>
+              </div>
+            ) : (
+              <motion.div ref={ghostRef} style={{ x }} className="flex w-max px-4 md:px-12 items-center h-full">
+                <div className="grid grid-rows-2 md:grid-rows-3 gap-2 md:gap-4 auto-cols-[60vw] sm:auto-cols-[300px] md:auto-cols-[400px] h-[60vh] md:h-[75vh] ![grid-auto-flow:column_dense]">
+                  <AnimatePresence mode="popLayout">
+                    {filteredImages.map((item, index) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.8, x: 50 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                        transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1], delay: index * 0.05 }}
+                        key={item.id}
+                    className={cn(
+                      "relative group overflow-hidden cursor-pointer bg-[#0C0C0E] transition-all duration-500 rounded-xl md:rounded-2xl border border-white/10 hover:border-white/30",
+                      item.featured ? "row-span-2 col-span-2" : "row-span-1 col-span-1"
+                    )}
                 onClick={() => setSelectedMedia(item)}
               >
                 <div className="absolute inset-0 bg-[#0C0C0E]">
@@ -197,10 +217,12 @@ export default function GalleryPage() {
 
               </motion.div>
             ))}
-          </AnimatePresence>
-            </div>
-          )}
-        </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
       </div>
 
       {/* Premium Lightbox */}

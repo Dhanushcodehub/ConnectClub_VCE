@@ -24,10 +24,14 @@ export default function UserDashboard() {
         try {
           // Silent sync if profile is available - DO NOT AWAIT THIS, it should run in the background
           if (profile?.rollNo) {
-            fetch("/api/users/sync-inspirex", {
+            const token = await user.getIdToken();
+            fetch("/api/users/sync-external", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId: user.uid, rollNo: profile.rollNo })
+              headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ userId: user.uid, rollNo: profile.rollNo, email: user.email })
             }).catch(e => console.error("Silent sync failed", e));
           }
 

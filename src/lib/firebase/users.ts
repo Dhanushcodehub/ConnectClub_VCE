@@ -286,12 +286,12 @@ export async function registerForEvent(userId: string, eventId: string, eventTit
     // Also send a notification to the user
     await addDoc(collection(db, "notifications"), {
       userId,
-      title: "Registration Successful",
-      message: `You have successfully registered for ${eventTitle}.`,
-      type: "event_registration",
+      title: "🎟 Registration Confirmed!",
+      message: `You're all set for ${eventTitle}! We've saved your spot. Get ready for an amazing experience! 🚀`,
+      type: "event",
       read: false,
       createdAt: serverTimestamp(),
-      link: `/events/${eventId}`
+      actionUrl: `/events/${eventId}`
     });
   } catch (error) {
     console.error("Error registering for event:", error);

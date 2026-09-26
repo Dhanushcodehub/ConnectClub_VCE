@@ -29,7 +29,7 @@ export const eventsData: ConnectEvent[] = [
     date: "Oct 15 - 17, 2026",
     venue: "Main Auditorium, VCE",
     status: "Upcoming",
-    banner: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200",
+    banner: "/inspirex.png",
     speakers: ["John Doe (CEO, TechCorp)", "Jane Smith (Lead Engineer)"],
     registrationLink: "https://lu.ma/inspirex2026",
     agenda: [

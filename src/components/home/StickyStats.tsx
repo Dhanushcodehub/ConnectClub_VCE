@@ -86,9 +86,9 @@ export function StickyStats() {
             <span className="w-6 h-[2px] bg-white/20 rounded-full" />
             <span className="eyebrow text-white/40">By the numbers</span>
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-h2 font-black uppercase tracking-tighter text-white">
+          <motion.h2 variants={fadeUp} className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white">
             What We've{" "}
-            <span className="text-primary">Accomplished</span>
+            <span className="text-highlight">Accomplished</span>
           </motion.h2>
         </motion.div>
 

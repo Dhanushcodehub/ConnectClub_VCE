@@ -107,13 +107,14 @@ export function Navbar() {
                 className="h-8 w-auto object-contain brightness-0 invert transition-transform duration-300 group-hover:scale-105"
               />
               <div className="hidden sm:flex items-baseline">
-                <span className="font-display font-black text-[15px] tracking-tighter text-white uppercase group-hover:text-white transition-colors">
-                  Connect Club
+                <span className=" text-secondary font-black text-xl tracking-tighter text-white group-hover:text-white transition-colors">
+                  Connect<p>  </p>
                 </span>
+                <span className="text-secondary font-black text-xl leading-none ml-1.5">  Club</span>
                 <motion.span
                   animate={{ opacity: [1, 0.4, 1] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                  className="text-secondary font-black text-xl leading-none ml-0.5"
+                  className="text-secondary font-black text-xl leading-none"
                 >
                   .
                 </motion.span>
@@ -121,26 +122,23 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-4 lg:gap-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
                   className={cn(
-                    "relative px-3.5 py-2 text-[13px] font-semibold rounded-lg transition-all duration-300",
+                    "relative py-1 text-[11px] lg:text-[12px] font-display font-black uppercase tracking-wider transition-all duration-300 group",
                     pathname === link.href
                       ? "text-white"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.06]"
+                      : "text-white/60 hover:text-white"
                   )}
                 >
-                  {pathname === link.href && (
-                    <motion.span
-                      layoutId="active-pill"
-                      className="absolute inset-0 rounded-lg bg-white/[0.08] border border-white/10"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                    />
-                  )}
                   <span className="relative z-10">{link.name}</span>
+                  <span className={cn(
+                    "absolute -bottom-1 left-0 h-[2px] bg-primary transition-all duration-300 z-0",
+                    pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
+                  )} />
                 </Link>
               ))}
             </nav>
@@ -209,7 +207,7 @@ export function Navbar() {
                     <Link
                       href={link.href}
                       className={cn(
-                        "block px-4 py-3 rounded-xl text-sm font-semibold transition-all",
+                        "block px-4 py-3 rounded-xl text-[14px] font-display font-black italic uppercase tracking-widest transition-all",
                         pathname === link.href
                           ? "text-white bg-white/10 border border-white/10"
                           : "text-white/60 hover:text-white hover:bg-white/5"

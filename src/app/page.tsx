@@ -3,7 +3,7 @@ import { Hero } from "@/components/home/Hero";
 import { Mission } from "@/components/home/Mission";
 import { StickyStats } from "@/components/home/StickyStats";
 import { FeaturedEvent } from "@/components/home/FeaturedEvent";
-import { FeaturedProject } from "@/components/home/FeaturedProject";
+import { InstagramBanner } from "@/components/home/InstagramBanner";
 import { WhyConnect } from "@/components/home/WhyConnect";
 import { CTA } from "@/components/home/CTA";
 
@@ -55,7 +55,7 @@ export default function Home() {
         <StickyStats />
         <Mission />
         <FeaturedEvent />
-        <FeaturedProject />
+        <InstagramBanner />
         <WhyConnect />
         <CTA />
       </div>

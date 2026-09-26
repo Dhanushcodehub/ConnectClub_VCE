@@ -88,10 +88,10 @@ export function Hero() {
             {/* Heading â€” word-by-word stagger */}
             <motion.h1
               variants={fadeUp}
-              className="text-h1 font-black uppercase tracking-tighter text-white mb-4 md:mb-6 leading-[1.05]"
+              className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
             >
               We Build.<br />
-              <span className="text-primary">We Ship.</span><br />
+              <span className="text-highlight">We Ship.</span><br />
               We Connect.
             </motion.h1>
 
@@ -116,14 +116,14 @@ export function Hero() {
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
               <Link
                 href="/events"
-                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs md:text-label font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto"
+                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto"
               >
                 Explore Events
                 <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/connect-ai"
-                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs md:text-label font-bold uppercase tracking-widest transition-all border bg-[#0D0F1A] text-white/70 border-white/10 hover:bg-[#13151F] hover:text-white hover:border-white/30 w-full sm:w-auto"
+                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest transition-all border bg-[#0D0F1A] text-white/70 border-white/10 hover:bg-[#13151F] hover:text-white hover:border-white/30 w-full sm:w-auto"
               >
                 <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" />
                 Connect AI

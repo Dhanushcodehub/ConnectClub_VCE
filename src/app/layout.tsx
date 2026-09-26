@@ -1,10 +1,24 @@
 import type { Metadata } from "next";
-import { Inter, Unbounded, Syne } from "next/font/google";
+import { Inter, Unbounded, Syne, Sigmar_One, Anton } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { ClientLayout } from "@/components/ClientLayout";
 import { GridBackground } from "@/components/GridBackground";
 import { Toaster } from 'sonner';
+
+const anton = Anton({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-anton",
+  display: "swap",
+});
+
+const sigmarOne = Sigmar_One({
+  variable: "--font-sigmar-one",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const unbounded = Unbounded({
   variable: "--font-unbounded",
@@ -101,7 +115,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${unbounded.variable} ${syne.variable} ${inter.variable} min-h-screen antialiased dark`}
+      className={`${unbounded.variable} ${syne.variable} ${inter.variable} ${sigmarOne.variable} ${anton.variable} min-h-screen antialiased dark`}
     >
       <head>
         {/* Organization JSON-LD Structured Data */}

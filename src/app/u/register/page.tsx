@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, sendEmailVerification, GoogleAuthProvider, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, GraduationCap, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { checkUserExists } from "@/lib/firebase/users";
@@ -51,7 +51,65 @@ export default function UserRegisterPage() {
   }, [user, role, profile, authLoading, router, showOnboarding]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+
+      if (name === "rollNo") {
+        const roll = value.toUpperCase().trim();
+        newData.rollNo = roll;
+
+        // JNTUH Roll Number Parsing
+        if (roll.length >= 8) {
+          const yearPrefix = roll.substring(0, 2);
+          const entryType = roll.charAt(4);
+          const branchCode = roll.substring(6, 8);
+          
+          // 1. Calculate Year of Study
+          const admissionYear = parseInt("20" + yearPrefix);
+          if (!isNaN(admissionYear)) {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth(); // 0 = Jan, 6 = Jul
+            let academicYear = currentYear - admissionYear;
+            
+            // Academic year typically increments around July/August
+            if (currentMonth >= 6) {
+              academicYear += 1;
+            }
+            
+            // Lateral entry (5) students skip 1st year
+            if (entryType === '5') {
+              academicYear += 1;
+            }
+
+            if (academicYear === 1) newData.yearOfStudy = "1st Year";
+            else if (academicYear === 2) newData.yearOfStudy = "2nd Year";
+            else if (academicYear === 3) newData.yearOfStudy = "3rd Year";
+            else if (academicYear >= 4) newData.yearOfStudy = "4th Year";
+          }
+
+          // 2. Determine Branch
+          const branchMap: Record<string, string> = {
+            "01": "CIVIL",
+            "02": "EEE",
+            "03": "MECH",
+            "04": "ECE",
+            "05": "CSE",
+            "12": "IT",
+            "66": "AI&ML",
+            "67": "DS",
+            "72": "AI&ML"
+          };
+          
+          if (branchMap[branchCode]) {
+            newData.department = branchMap[branchCode];
+          }
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -211,38 +269,44 @@ export default function UserRegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Department</label>
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none"
-                >
-                  <option value="" disabled className="text-black">Select Dept</option>
-                  <option value="CSE" className="text-black">CSE</option>
-                  <option value="ECE" className="text-black">ECE</option>
-                  <option value="EEE" className="text-black">EEE</option>
-                  <option value="MECH" className="text-black">MECH</option>
-                  <option value="CIVIL" className="text-black">CIVIL</option>
-                  <option value="IT" className="text-black">IT</option>
-                  <option value="AI&ML" className="text-black">AI&ML</option>
-                  <option value="DS" className="text-black">DS</option>
-                  <option value="Other" className="text-black">Other</option>
-                </select>
+                <div className="relative">
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none pr-10"
+                  >
+                    <option value="" disabled className="bg-[#111113] text-white">Select Dept</option>
+                    <option value="CSE" className="bg-[#111113] text-white">CSE</option>
+                    <option value="ECE" className="bg-[#111113] text-white">ECE</option>
+                    <option value="EEE" className="bg-[#111113] text-white">EEE</option>
+                    <option value="MECH" className="bg-[#111113] text-white">MECH</option>
+                    <option value="CIVIL" className="bg-[#111113] text-white">CIVIL</option>
+                    <option value="IT" className="bg-[#111113] text-white">IT</option>
+                    <option value="AI&ML" className="bg-[#111113] text-white">AI&ML</option>
+                    <option value="DS" className="bg-[#111113] text-white">DS</option>
+                    <option value="Other" className="bg-[#111113] text-white">Other</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Year</label>
-                <select
-                  name="yearOfStudy"
-                  value={formData.yearOfStudy}
-                  onChange={handleInputChange}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none"
-                >
-                  <option value="" disabled className="text-black">Select Year</option>
-                  <option value="1st Year" className="text-black">1st Year</option>
-                  <option value="2nd Year" className="text-black">2nd Year</option>
-                  <option value="3rd Year" className="text-black">3rd Year</option>
-                  <option value="4th Year" className="text-black">4th Year</option>
-                </select>
+                <div className="relative">
+                  <select
+                    name="yearOfStudy"
+                    value={formData.yearOfStudy}
+                    onChange={handleInputChange}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium appearance-none pr-10"
+                  >
+                    <option value="" disabled className="bg-[#111113] text-white">Select Year</option>
+                    <option value="1st Year" className="bg-[#111113] text-white">1st Year</option>
+                    <option value="2nd Year" className="bg-[#111113] text-white">2nd Year</option>
+                    <option value="3rd Year" className="bg-[#111113] text-white">3rd Year</option>
+                    <option value="4th Year" className="bg-[#111113] text-white">4th Year</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                </div>
               </div>
             </div>
 

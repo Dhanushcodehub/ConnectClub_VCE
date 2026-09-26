@@ -18,17 +18,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="relative bg-[#0C0E1A] pt-16 lg:pt-24 pb-8 mt-12 overflow-x-clip overflow-y-visible">
-      {/* Torn paper effect at the top of the footer */}
-      <div 
-        className="absolute top-0 left-0 w-full h-6 md:h-8 bg-repeat-x z-20 pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='white' points='0,100 100,100 100,0 95,20 85,5 75,25 65,10 50,30 40,5 25,25 15,10 5,25 0,0' /%3E%3Cpolygon fill='%230C0E1A' points='0,100 100,100 100,15 95,35 85,20 75,40 65,25 50,45 40,20 25,40 15,25 5,40 0,15' /%3E%3C/svg%3E")`,
-          backgroundSize: "60px 100%",
-          transform: "translateY(-98%)" 
-        }}
-      />
-
+    <footer className="relative bg-background pt-16 lg:pt-24 pb-0 overflow-x-clip border-t border-white/[0.08]">
       <div className="container-grid relative z-10">
 
         {/* Main grid: 12 cols desktop, 2 cols mobile */}
@@ -104,7 +94,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="col-span-2 md:col-span-12 border-t border-white/[0.06] pt-8 pb-16 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+        <div className="col-span-2 md:col-span-12 border-t border-white/[0.06] pt-8 pb-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <p className="text-label text-white/25 text-balance">
             &copy; {new Date().getFullYear()} Connect Club, Vardhaman College of Engineering. All rights reserved.
           </p>

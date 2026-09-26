@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { Code, Users, Rocket, Zap, Trophy, Globe } from "lucide-react";
@@ -60,17 +60,7 @@ const pillars = [
     span: "col-span-1 md:col-span-4 lg:col-span-4",
     featured: false,
   },
-  {
-    title: "Global Exposure",
-    description:
-      "Participate in international competitions and gain worldwide visibility for your work.",
-    icon: <Globe className="w-6 h-6" />,
-    color: "text-orange-400",
-    iconBg: "bg-orange-500/10 border-orange-500/20",
-    glow: "#F97316",
-    span: "col-span-1 md:col-span-4 lg:col-span-4",
-    featured: false,
-  },
+  
 ];
 
 export function WhyConnect() {
@@ -93,10 +83,10 @@ export function WhyConnect() {
           </motion.div>
           <motion.h2
             variants={fadeUp}
-            className="text-h2 font-black uppercase tracking-tighter text-white"
+            className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white"
           >
             Why{" "}
-            <span className="text-primary">Connect?</span>
+            <span className="text-highlight">Connect?</span>
           </motion.h2>
         </motion.div>
 

@@ -7,17 +7,7 @@ import { staggerContainer, fadeUp, viewportOnce } from "@/lib/animations";
 
 export function CTA() {
   return (
-    <section className="relative z-10 bg-[#0C0E1A] pt-24 pb-24 mt-20">
-      {/* Torn paper effect using SVG mask or background */}
-      <div 
-        className="absolute top-0 left-0 w-full h-6 md:h-8 bg-repeat-x z-20 pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='white' points='0,100 100,100 100,0 95,20 85,5 75,25 65,10 50,30 40,5 25,25 15,10 5,25 0,0' /%3E%3Cpolygon fill='%230C0E1A' points='0,100 100,100 100,15 95,35 85,20 75,40 65,25 50,45 40,20 25,40 15,25 5,40 0,15' /%3E%3C/svg%3E")`,
-          backgroundSize: "60px 100%",
-          transform: "translateY(-98%)" 
-        }}
-      />
-
+    <section className="relative z-10 bg-transparent pt-24 pb-24 mt-20">
       <div className="container-grid">
         <div className="col-span-4 md:col-span-6 lg:col-span-8 lg:col-start-3">
           <motion.div
@@ -29,10 +19,9 @@ export function CTA() {
           >
             <motion.h2
               variants={fadeUp}
-              className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white mb-6"
-              style={{ transform: "skewX(-8deg)" }}
+              className="text-4xl md:text-6xl font-sigmar font-normal uppercase tracking-tighter text-white mb-6 whitespace-nowrap"
             >
-              Get In Touch
+              GET IN <span className="text-highlight ml-2 md:ml-4">TOUCH</span>
             </motion.h2>
 
             <motion.p
@@ -42,7 +31,7 @@ export function CTA() {
               Join the community of innovators. Attend our next event, or talk to Connect AI to find out how to get involved. Have questions or need assistance? Reach out to us via our official emails or social media.
             </motion.p>
 
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10 text-left mb-16">
+            <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-16 md:gap-32 text-left mb-16">
               {/* Left Column - Socials */}
               <motion.div variants={fadeUp} className="flex flex-col items-center md:items-start space-y-6">
                 <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
@@ -83,21 +72,21 @@ export function CTA() {
             >
               <Link
                 href="/events"
-                className="group flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto justify-center"
+                className="group flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto justify-center"
               >
                 Upcoming Events
                 <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/connect-ai"
-                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
+                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
               >
                 <Sparkles className="w-4 h-4" />
                 Connect AI
               </Link>
               <Link
                 href="/contact"
-                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
+                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
               >
                 <Mail className="w-4 h-4" />
                 Contact Us

@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, FileCheck, Loader2, AlertCircle, ShieldCheck, Grip, Settings2, FileSpreadsheet } from "lucide-react";
+import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 interface Registration {
   id: string;
   name: string;
-  branch: string;
   rollNo: string;
-  year: string;
   email: string;
+  phone: string;
+  status: "pending" | "approved";
+  ticketId: string | null;
   registeredAt: string | null;
-  isConnectClubMember?: boolean;
+  approvedAt: string | null;
+  isConnectClubMember: boolean;
 }
 
 export default function InspirexAdminPage() {
@@ -23,19 +24,9 @@ export default function InspirexAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetchRegistrations();
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.quick-access-menu')) {
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (user) fetchRegistrations();
   }, [user]);
 
   const fetchRegistrations = async () => {
@@ -51,13 +42,8 @@ export default function InspirexAdminPage() {
       });
       const data = await res.json();
       
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch registrations");
-      }
-      
-      if (data.success && data.data) {
-        setRegistrations(data.data);
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to fetch registrations");
+      if (data.success && data.data) setRegistrations(data.data);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "An unexpected error occurred.");
@@ -66,121 +52,42 @@ export default function InspirexAdminPage() {
     }
   };
 
-  const [isIssuing, setIsIssuing] = useState(false);
-
-  const handleIssueCertificates = async () => {
-    setIsIssuing(true);
-    try {
-      const { issueInspirexCertificates } = await import("./issue-action");
-      
-      toast.promise(issueInspirexCertificates(), {
-        loading: 'Issuing certificates to eligible participants...',
-        success: (data) => {
-          setIsIssuing(false);
-          return data.message;
-        },
-        error: (err) => {
-          setIsIssuing(false);
-          return "Failed to issue certificates: " + err.message;
-        }
-      });
-      
-    } catch (e: any) {
-      setIsIssuing(false);
-      toast.error("Error: " + e.message);
-    }
-  };
-
   const filteredRegistrations = registrations.filter(reg => {
     const query = searchQuery.toLowerCase();
     return (
       reg.name.toLowerCase().includes(query) ||
       reg.rollNo.toLowerCase().includes(query) ||
-      reg.branch.toLowerCase().includes(query)
+      reg.email.toLowerCase().includes(query)
     );
   });
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="bg-[#0C0C0E] p-6 md:p-8 rounded-3xl border border-white/5 relative">
-        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none z-0">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px]" />
-        </div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="relative z-10 pr-14 md:pr-16">
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-white mb-2 flex items-center gap-2 md:gap-3 flex-wrap">
-            <Ticket className="w-6 h-6 md:w-8 md:h-8 text-primary shrink-0" />
-            InspireX Registrations
+        <div className="relative z-10">
+          <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
+            <Ticket className="w-8 h-8 text-primary" />
+            InspireX Directory
           </h1>
-          <p className="text-sm md:text-base text-white/60">Manage and view participants from the external InspireX database.</p>
+          <p className="text-white/60">View external registrations for InspireX Season 2.</p>
         </div>
-        
-        {/* Quick Access Menu */}
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-50 quick-access-menu">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/10 flex items-center justify-center"
-            >
-              <Grip className={`w-5 h-5 transition-colors ${isMenuOpen ? "text-white" : "text-white/70"}`} />
-            </button>
-            
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A1A1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="px-3 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Tools</div>
-                
-                <a 
-                  href="/admin/event-management/inspirex/attendance"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <Users className="w-4 h-4 text-green-400" /> Attendance System
-                </a>
 
-                <a 
-                  href="/admin/event-management/inspirex/member-lists"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-amber-400" /> Member Lists
-                </a>
-                
-                <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Certificates</div>
-                
-                <a 
-                  href="/admin/event-management/inspirex/certificates"
-                  className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <Settings2 className="w-4 h-4 text-primary" /> Certificate Studio
-                </a>
-                
-                <button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleIssueCertificates();
-                  }}
-                  disabled={isIssuing || registrations.length === 0}
-                  className="w-full text-left flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 border-b border-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isIssuing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <FileCheck className="w-4 h-4 text-primary" />}
-                  {isIssuing ? "Issuing..." : "Issue Certificates"}
-                </button>
-  
-                <div className="px-3 py-2 mt-2 text-xs font-bold text-white/40 uppercase tracking-wider">Quick Links</div>
-                
-                <a href="http://localhost:3001" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                  Live Event Site
-                </a>
-                <a href="/events" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                  Connect Club Events
-                </a>
-                <a href="/u/dashboard" target="_blank" rel="noreferrer" className="block px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5">
-                  My Dashboard
-                </a>
-              </div>
-            )}
-          </div>
+        <div className="relative z-10">
+          <button 
+            onClick={fetchRegistrations} 
+            disabled={isLoading}
+            className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -194,13 +101,12 @@ export default function InspirexAdminPage() {
 
         <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
           <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-7 h-7 text-green-500" />
+            <CheckCircle2 className="w-7 h-7 text-green-500" />
           </div>
           <div>
-            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">CC Members</div>
-            <div className="text-3xl font-bold text-white flex items-end gap-2">
-              {registrations.filter(r => r.isConnectClubMember).length}
-              <span className="text-sm text-white/40 font-normal mb-1">/ {registrations.length}</span>
+            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Approved & Synced</div>
+            <div className="text-3xl font-bold text-white">
+              {registrations.filter(r => r.status === "approved").length}
             </div>
           </div>
         </div>
@@ -211,7 +117,7 @@ export default function InspirexAdminPage() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 flex items-start gap-4">
           <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-lg font-bold text-red-500 mb-2">Connection Error</h3>
+            <h3 className="text-lg font-bold text-red-500 mb-2">Error</h3>
             <p className="text-white/80">{error}</p>
           </div>
         </div>
@@ -227,7 +133,7 @@ export default function InspirexAdminPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               type="text"
-              placeholder="Search by name, roll no, or branch..."
+              placeholder="Search by name, roll no, or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#111114] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors"
@@ -235,70 +141,29 @@ export default function InspirexAdminPage() {
           </div>
         </div>
 
-        {/* Mobile View: Card List */}
-        <div className="block md:hidden divide-y divide-white/5">
-          {isLoading ? (
-            <div className="p-12 text-center text-white/50">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-              Fetching data...
-            </div>
-          ) : filteredRegistrations.length === 0 ? (
-            <div className="p-12 text-center text-white/50">
-              {searchQuery ? "No matching registrations found." : "No registrations found in the database yet."}
-            </div>
-          ) : (
-            filteredRegistrations.map((reg) => (
-              <div key={reg.id} className="p-5 flex flex-col gap-3 hover:bg-white/[0.02] transition-colors">
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-white text-base truncate flex items-center gap-2">
-                      {reg.name}
-                      {reg.isConnectClubMember && (
-                        <span title="Connect Club Member" className="flex items-center">
-                          <ShieldCheck className="w-4 h-4 text-green-400 shrink-0" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-white/50 mt-1">{reg.branch} · {reg.year}</div>
-                  </div>
-                  <div className="px-2.5 py-1 bg-primary/10 rounded-md text-primary font-mono text-xs font-bold border border-primary/20 whitespace-nowrap">
-                    {reg.rollNo}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-white/40 mt-1">
-                   <div className="truncate flex-1">{reg.email || "No email"}</div>
-                   <div className="shrink-0">{reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : "Unknown"}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
         {/* Desktop View: Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/5">
                 <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Student Name</th>
                 <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Roll No</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Branch & Year</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Registered</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/50">
+                  <td colSpan={4} className="px-6 py-12 text-center text-white/50">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-                    Fetching data from InspireX database...
+                    Fetching data from inbox...
                   </td>
                 </tr>
               ) : filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/50">
-                    {searchQuery ? "No matching registrations found." : "No registrations found in the database yet."}
+                  <td colSpan={4} className="px-6 py-12 text-center text-white/50">
+                    {searchQuery ? "No matching registrations found." : "No registrations found."}
                   </td>
                 </tr>
               ) : (
@@ -321,14 +186,16 @@ export default function InspirexAdminPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-white/80">{reg.branch}</div>
-                      <div className="text-xs text-white/40 mt-0.5">{reg.year}</div>
+                      <div className="text-white/80 text-sm">{reg.email || "-"}</div>
+                      <div className="text-xs text-white/40 mt-0.5">{reg.phone || "-"}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-white/60">
-                      {reg.email || "-"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-white/60">
-                      {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : "Unknown"}
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-green-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Approved
+                        </span>
+                        <span className="text-white/30 text-[10px] font-mono mt-1">{reg.ticketId || 'External'}</span>
+                      </div>
                     </td>
                   </tr>
                 ))

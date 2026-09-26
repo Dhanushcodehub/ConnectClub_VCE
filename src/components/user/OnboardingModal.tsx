@@ -25,7 +25,65 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+
+      if (name === "rollNo") {
+        const roll = value.toUpperCase().trim();
+        newData.rollNo = roll;
+
+        // JNTUH Roll Number Parsing
+        if (roll.length >= 8) {
+          const yearPrefix = roll.substring(0, 2);
+          const entryType = roll.charAt(4);
+          const branchCode = roll.substring(6, 8);
+          
+          // 1. Calculate Year of Study
+          const admissionYear = parseInt("20" + yearPrefix);
+          if (!isNaN(admissionYear)) {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth(); // 0 = Jan, 6 = Jul
+            let academicYear = currentYear - admissionYear;
+            
+            // Academic year typically increments around July/August
+            if (currentMonth >= 6) {
+              academicYear += 1;
+            }
+            
+            // Lateral entry (5) students skip 1st year
+            if (entryType === '5') {
+              academicYear += 1;
+            }
+
+            if (academicYear === 1) newData.yearOfStudy = "1st Year";
+            else if (academicYear === 2) newData.yearOfStudy = "2nd Year";
+            else if (academicYear === 3) newData.yearOfStudy = "3rd Year";
+            else if (academicYear >= 4) newData.yearOfStudy = "4th Year";
+          }
+
+          // 2. Determine Branch
+          const branchMap: Record<string, string> = {
+            "01": "CIVIL",
+            "02": "EEE",
+            "03": "MECH",
+            "04": "ECE",
+            "05": "CSE",
+            "12": "IT",
+            "66": "AI&ML",
+            "67": "DS",
+            "72": "AI&ML"
+          };
+          
+          if (branchMap[branchCode]) {
+            newData.department = branchMap[branchCode];
+          }
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,7 +209,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none pr-10"
                     >
                       <option value="" disabled className="bg-[#0C0C0E] text-white/50">Select Dept (Optional)</option>
                       <option value="CSE" className="bg-[#0C0C0E] text-white">CSE</option>
@@ -174,7 +232,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
                       name="yearOfStudy"
                       value={formData.yearOfStudy}
                       onChange={handleInputChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all appearance-none pr-10"
                     >
                       <option value="" disabled className="bg-[#0C0C0E] text-white/50">Select Year (Optional)</option>
                       <option value="1st Year" className="bg-[#0C0C0E] text-white">1st Year</option>

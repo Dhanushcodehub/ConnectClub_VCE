@@ -7,7 +7,7 @@ import { ArrowLeft, Share2, Calendar, Clock, MapPin, ExternalLink, CheckCircle2,
 import { ConnectEvent } from "@/lib/data/events";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { registerForEvent } from "@/lib/firebase/users";
+import { toast } from "sonner";
 
 const formatText = (text?: string) => {
   if (!text) return null;
@@ -33,36 +33,36 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
-  }, []);
+    
+    if (user?.uid && event?.id) {
+      import("@/lib/firebase/users").then(({ checkEventRegistration }) => {
+        checkEventRegistration(user.uid, event.id).then((isReg) => {
+          setIsRegistered(isReg);
+        });
+      });
+    }
+  }, [user?.uid, event?.id]);
 
-  const handleRegister = async (e: React.MouseEvent) => {
+  const handleRegister = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
       router.push(`/u/login`);
       return;
     }
 
-    setIsRegistering(true);
-    try {
-      await registerForEvent(user.uid, event.id, event.title);
-      // If there's an external link, open it, otherwise go to dashboard
-      if (event.registrationLink && event.registrationLink !== "#") {
-        window.open(event.registrationLink, "_blank");
-      }
-      router.push("/u/dashboard");
-    } catch (err: any) {
-      if (err.message === "Already registered for this event") {
-        router.push("/u/dashboard");
-      } else {
-        alert(err.message || "Failed to register for event");
-      }
-    } finally {
-      setIsRegistering(false);
+    // If an external registration link exists, redirect there.
+    // Internal registration (Firestore ticket + notification) happens ONLY
+    // after the external site confirms via the sync webhook — NOT here.
+    if (event.registrationLink && event.registrationLink !== "#") {
+      window.open(event.registrationLink, "_blank");
+    } else {
+      // No external link yet — show info toast, do NOT auto-register
+      toast.info("Registration link coming soon! Check back later.");
     }
   };
 
@@ -357,13 +357,18 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                     <div className="text-white font-bold text-xl">{event.price || "Free"}</div>
                   </div>
 
-                  {event.status === "Upcoming" ? (
+                  {isRegistered ? (
+                    <div className="w-full py-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold text-sm flex justify-center items-center gap-2 shadow-lg">
+                      <CheckCircle2 className="w-5 h-5" />
+                      Registered
+                    </div>
+                  ) : event.status === "Upcoming" ? (
                     <button 
                       onClick={handleRegister}
-                      disabled={isRegistering}
-                      className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+                      className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                     >
-                      {isRegistering ? <Loader2 className="w-5 h-5 animate-spin" /> : event.registrationLink ? "Register for Free" : "Explore Event"}
+                      <ExternalLink className="w-4 h-4" />
+                      {event.registrationLink ? "Register Now" : "Registration Coming Soon"}
                     </button>
                   ) : event.status === "Ongoing" ? (
                     <div className="w-full py-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold text-sm flex justify-center items-center">

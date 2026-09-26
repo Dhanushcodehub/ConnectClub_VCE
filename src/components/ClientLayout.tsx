@@ -7,6 +7,7 @@ import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { GlobalChatListener } from "./chat/GlobalChatListener";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import dynamic from "next/dynamic";
+import { Preloader } from "./Preloader";
 
 const ConnectAIChat = dynamic(
   () => import("@/components/ai/ConnectAIChat").then((m) => m.ConnectAIChat),
@@ -20,6 +21,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <NotificationProvider>
+        <Preloader />
         {!isPortal && <Navbar />}
         
         <main className="flex-1 flex flex-col relative z-0">

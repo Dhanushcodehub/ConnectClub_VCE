@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { staggerContainer, fadeUp, slideInLeft, viewportOnce } from "@/lib/animations";
@@ -67,10 +67,10 @@ export function Mission() {
           >
             <motion.h2
               variants={fadeUp}
-              className="text-h2 font-black uppercase tracking-tighter text-white mb-6"
+              className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white mb-6"
             >
               We bridge the gap between{" "}
-              <span className="text-primary">
+              <span className="text-highlight">
                 academic learning
               </span>{" "}
               and industry innovation.

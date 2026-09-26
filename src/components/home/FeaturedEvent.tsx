@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -26,10 +26,10 @@ export function FeaturedEvent() {
           </motion.div>
           <motion.h2
             variants={fadeUp}
-            className="text-h2 font-black uppercase tracking-tighter text-white"
+            className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white"
           >
             What&apos;s{" "}
-            <span className="text-primary">Coming Up</span>
+            <span className="text-highlight">Coming Up</span>
           </motion.h2>
         </motion.div>
 
@@ -46,7 +46,7 @@ export function FeaturedEvent() {
             {/* Image */}
             <div className="md:col-span-5 relative min-h-[280px] md:min-h-[420px] overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1200"
+                src="/inspirex.png"
                 alt="InspireX Season 2"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] hover:scale-105"
               />

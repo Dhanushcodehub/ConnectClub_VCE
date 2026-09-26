@@ -66,13 +66,13 @@ export default function ProjectLikeButton({
     <button
       onClick={handleLike}
       disabled={isLiking}
-      className={`px-6 py-3 font-semibold rounded-xl flex items-center transition-colors border ${
+      className={`group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-display font-black uppercase tracking-widest border transition-all ${
         isLiked 
-          ? "bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30" 
-          : "bg-white/10 text-white border-white/10 hover:bg-white/20"
+          ? "bg-[#2A0C1A] text-red-500 border-red-500/30 hover:bg-[#3D1226] hover:border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]" 
+          : "bg-[#0A0B14] text-white/60 border-white/10 hover:bg-[#13151F] hover:text-white hover:border-white/25"
       }`}
     >
-      <Heart className={`w-5 h-5 mr-2 ${isLiked ? "fill-red-500" : ""}`} />
+      <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500" : ""}`} />
       {likes} {likes === 1 ? "Like" : "Likes"}
     </button>
   );

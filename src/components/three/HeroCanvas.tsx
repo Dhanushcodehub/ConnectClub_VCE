@@ -90,7 +90,7 @@ function LogoSphere() {
       <mesh>
         <sphereGeometry args={[R * 0.97, 48, 48]} />
         <meshStandardMaterial
-          color="#030d22"
+          color="#1A0B2E"
           transparent
           opacity={0.55}
           roughness={1}
@@ -100,7 +100,7 @@ function LogoSphere() {
       {/* Connection lines */}
       <lineSegments geometry={lineGeo}>
         <lineBasicMaterial 
-          color="#1a5cff" 
+          color="#9333EA" 
           transparent 
           opacity={0.6} 
           depthWrite={false}
@@ -110,7 +110,7 @@ function LogoSphere() {
 
       {/* Nodes */}
       {positions.map((pos, i) => {
-        // Every 7th node gets the bright cyan accent like the logo variation
+        // Every 7th node gets the bright accent
         const accent = i % 7 === 0;
         return (
           <mesh
@@ -120,8 +120,8 @@ function LogoSphere() {
           >
             <sphereGeometry args={[sizes[i], 12, 12]} />
             <meshStandardMaterial
-              color={accent ? "#FF8800" : "#1166FF"}
-              emissive={accent ? "#FF8800" : "#0044DD"}
+              color={accent ? "#E879F9" : "#9333EA"}
+              emissive={accent ? "#D946EF" : "#7E22CE"}
               emissiveIntensity={accent ? 2.2 : 1.0}
               roughness={0.2}
               metalness={0.15}
@@ -133,11 +133,11 @@ function LogoSphere() {
       {/* Atmosphere glow shells */}
       <mesh>
         <sphereGeometry args={[R * 1.04, 32, 32]} />
-        <meshBasicMaterial color="#0044FF" transparent opacity={0.035} side={THREE.FrontSide} />
+        <meshBasicMaterial color="#9333EA" transparent opacity={0.04} side={THREE.FrontSide} />
       </mesh>
       <mesh>
         <sphereGeometry args={[R * 1.12, 32, 32]} />
-        <meshBasicMaterial color="#00AAFF" transparent opacity={0.018} side={THREE.BackSide} />
+        <meshBasicMaterial color="#C084FC" transparent opacity={0.02} side={THREE.BackSide} />
       </mesh>
     </group>
   );
