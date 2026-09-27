@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { staggerContainer, fadeUp, slideInRight, viewportOnce } from "@/lib/animations";
 
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -99,17 +100,19 @@ export function InstagramBanner() {
               <p className="text-white/60 text-lg leading-relaxed mb-8">
                 Join our growing community online. Get the latest updates on upcoming hackathons, tech workshops, behind-the-scenes event prep, and connect with fellow developers at Vardhaman College of Engineering.
               </p>
-              
+
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                <a 
-                  href="https://instagram.com/connectclubvce" 
-                  target="_blank" 
+                <CTAButton
+                  href="https://instagram.com/connectclubvce"
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[13px] font-sans font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                  variant="primary"
+                  size="lg"
+                  icon={<InstagramIcon className="w-4 h-4" />}
+                  iconPosition="left"
                 >
-                  <InstagramIcon className="w-4 h-4 mr-2" />
                   @connectclubvce
-                </a>
+                </CTAButton>
               </div>
             </div>
 

@@ -176,22 +176,63 @@
   .btn-glow {
     position: relative;
     overflow: hidden;
-    background: var(--primary);
-    color: white;
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-                box-shadow 0.3s ease;
-    box-shadow: 0 0 24px rgba(147, 51, 234, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+    background: linear-gradient(135deg, #7E22CE 0%, #9333EA 50%, #A855F7 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 
+      0 0 20px rgba(147, 51, 234, 0.45),
+      0 4px 14px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s ease,
+                border-color 0.35s ease,
+                background 0.35s ease !important;
+  }
+
+  .btn-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transform: skewX(-20deg);
+    transition: left 0.75s ease-in-out;
+    pointer-events: none;
+    z-index: 10;
   }
 
   .btn-glow:hover {
-    box-shadow: 0 0 36px rgba(168, 85, 247, 0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: translateY(-2px) scale(1.03);
+    background: linear-gradient(135deg, #6B21A8 0%, #8B5CF6 50%, #A855F7 100%) !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 
+      0 0 35px rgba(168, 85, 247, 0.75),
+      0 0 70px rgba(147, 51, 234, 0.45),
+      0 8px 24px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .btn-glow:hover::before {
+    left: 140%;
+  }
+
+  .btn-glow:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), inset 0 2px 4px rgba(0, 0, 0, 0.4) !important;
   }
 
   .btn-glow::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
     pointer-events: none;
   }
 
@@ -249,6 +290,29 @@
 
 .animate-marquee {
   animation: marquee 30s linear infinite;
+}
+
+/* ── Gallery marquee rows ──────────────────────────────────────────────── */
+@keyframes marquee-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-marquee-left {
+  animation: marquee-left linear infinite;
+}
+.animate-marquee-right {
+  animation: marquee-right linear infinite;
+}
+
+/* Pause marquee row on hover */
+.group\/row:hover .animate-marquee-left,
+.group\/row:hover .animate-marquee-right {
+  animation-play-state: paused;
 }
 
 @keyframes shimmer {

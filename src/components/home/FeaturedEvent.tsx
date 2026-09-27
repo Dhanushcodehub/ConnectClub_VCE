@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { ArrowRight, Calendar, MapPin, Users } from "lucide-react";
 import { staggerContainer, fadeUp, slideInLeft, viewportOnce } from "@/lib/animations";
 
@@ -46,7 +47,7 @@ export function FeaturedEvent() {
             {/* Image */}
             <div className="md:col-span-5 relative min-h-[280px] md:min-h-[420px] overflow-hidden">
               <img
-                src="/inspirex.png"
+                src="/inspirex.jpg"
                 alt="InspireX Season 2"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] hover:scale-105"
               />
@@ -56,8 +57,8 @@ export function FeaturedEvent() {
 
               {/* Status badge */}
               <div className="absolute top-5 left-5 z-10">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-[#0A1A0F] text-emerald-400 text-[10px] font-bold uppercase tracking-widest">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-emerald-500/30 bg-[#0A1A0F] text-emerald-400 text-[10px] font-bold uppercase tracking-widest">
+                  <span className="w-1.5 h-1.5 rounded-md bg-emerald-400 animate-pulse" />
                   Upcoming
                 </span>
               </div>
@@ -107,13 +108,14 @@ export function FeaturedEvent() {
                 </motion.div>
 
                 <motion.div variants={fadeUp}>
-                  <Link
+                  <CTAButton
                     href="/events/inspirex-2026"
-                    className="group inline-flex items-center gap-3 px-7 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                    variant="primary"
+                    size="md"
+                    icon={<ArrowRight className="w-4 h-4 text-current" />}
                   >
                     Register Now
-                    <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  </CTAButton>
                 </motion.div>
               </motion.div>
             </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { BackgroundClient } from "../three/BackgroundClient";
 
 const LogoCanvas = dynamic(
@@ -114,20 +115,23 @@ export function Hero() {
 
             {/* CTAs */}
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
-              <Link
+              <CTAButton
                 href="/events"
-                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto"
+                variant="primary"
+                size="md"
+                icon={<ArrowRight className="w-4 h-4 text-current" />}
               >
                 Explore Events
-                <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
+              </CTAButton>
+              <CTAButton
                 href="/connect-ai"
-                className="group flex items-center justify-center gap-2 px-6 md:px-8 py-3.5 md:py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest transition-all border bg-[#0D0F1A] text-white/70 border-white/10 hover:bg-[#13151F] hover:text-white hover:border-white/30 w-full sm:w-auto"
+                variant="secondary"
+                size="md"
+                icon={<Sparkles className="w-4 h-4 text-purple-400" />}
+                iconPosition="left"
               >
-                <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" />
                 Connect AI
-              </Link>
+              </CTAButton>
             </motion.div>
 
             {/* Tech stack tags */}
@@ -166,7 +170,7 @@ export function Hero() {
               transition={{ delay: 1.5, duration: 0.7 }}
               className="mt-4 md:mt-6 relative z-20 flex flex-col items-center gap-1 select-none"
             >
-              <p className="font-display font-black uppercase tracking-[0.2em] text-white/70 text-[10px] md:text-base">
+              <p className="font-black  uppercase tracking-[0.2em] text-white/70 text-[10px] md:text-base">
                 Connect Club
               </p>
               <p className="eyebrow text-[7px] md:text-[9px] text-white/25">Vardhaman College of Engineering</p>

@@ -12,6 +12,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
 import { ProfileButton } from "./ProfileButton";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 const navLinks = [
   { name: "Events",    href: "/events" },
@@ -145,13 +146,17 @@ export function Navbar() {
 
             {/* CTA + hamburger */}
             <div className="flex items-center gap-3">
-              <Link
-                href="/connect-ai"
-                className="hidden md:flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] whitespace-nowrap shrink-0 btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group"
-              >
-                <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse shrink-0" />
-                <span className="mt-[1px]">Connect AI</span>
-              </Link>
+              <div className="hidden md:block">
+                <CTAButton
+                  href="/connect-ai"
+                  variant="primary"
+                  size="sm"
+                  icon={<Sparkles className="w-3.5 h-3.5 text-current" />}
+                  iconPosition="left"
+                >
+                  Connect AI
+                </CTAButton>
+              </div>
               
               <ProfileButton />
 
@@ -218,11 +223,16 @@ export function Navbar() {
                   </motion.div>
                 ))}
                 <div className="p-2 mt-2 border-t border-white/10 flex flex-col gap-2">
-
-                  <Link href="/connect-ai"
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] w-full btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] group">
-                    <Sparkles className="w-4 h-4 text-current group-hover:animate-pulse" /> <span className="mt-[1px]">Connect AI</span>
-                  </Link>
+                  <CTAButton
+                    href="/connect-ai"
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    icon={<Sparkles className="w-4 h-4 text-current" />}
+                    iconPosition="left"
+                  >
+                    Connect AI
+                  </CTAButton>
                 </div>
               </div>
             </motion.div>

@@ -3,8 +3,35 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, X, Sparkles, Loader2, RotateCcw, MessageSquare } from "lucide-react";
+import { Send, X, Sparkles, Loader2, RotateCcw, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const MinimalBotIcon = ({ className = "w-7 h-7" }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    {/* Antenna */}
+    <path d="M12 2v5.5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="12" cy="2" r="1.25" fill="white" />
+    
+    {/* Head Outline */}
+    <rect x="3.5" y="7.5" width="17" height="13" rx="4.5" stroke="white" strokeWidth="2" fill="none" />
+    
+    {/* Ear Nodes */}
+    <path d="M1.5 14h2" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <path d="M20.5 14h2" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    
+    {/* Minimal Eyes */}
+    <circle cx="8.5" cy="13" r="1.5" fill="white" />
+    <circle cx="15.5" cy="13" r="1.5" fill="white" />
+    
+    {/* Minimal Smile */}
+    <path d="M9.5 16.5C10.5 17.5 13.5 17.5 14.5 16.5" stroke="white" strokeWidth="1.75" strokeLinecap="round" />
+  </svg>
+);
 
 interface ChatMessage {
   role: "user" | "ai";
@@ -131,32 +158,65 @@ export function ConnectAIChat() {
   return (
     <>
       {/* Floating Trigger Button */}
-      <motion.button
-        type="button"
-        aria-label={isOpen ? "Close Connect AI" : "Open Connect AI"}
-        onClick={() => setIsOpen((prev) => !prev)}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
-        className="fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[60] w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-white shadow-[0_0_30px_rgba(147,51,234,0.45)] cursor-pointer"
-        style={{ background: "linear-gradient(135deg, #7E22CE, #C084FC)" }}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          {isOpen ? (
-            <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <X className="w-7 h-7" />
-            </motion.span>
-          ) : (
-            <motion.span key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <Bot className="w-7 h-7" />
-            </motion.span>
-          )}
-        </AnimatePresence>
+      <div className="fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[60] group">
+        {/* Animated Neon Pulse Halo behind trigger */}
+        <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-400 opacity-65 blur-md group-hover:opacity-100 group-hover:blur-lg transition-all duration-500 animate-pulse" />
+
+        {/* Floating Tooltip Pill */}
         {!isOpen && (
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0A0B14]" />
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-300 pointer-events-none whitespace-nowrap px-3 py-1 rounded-full bg-[#0A0B14]/95 border border-purple-500/40 text-[10px] font-black uppercase tracking-wider text-purple-200 shadow-2xl flex items-center gap-1.5 z-30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Connect AI
+          </div>
         )}
-      </motion.button>
+
+        <motion.button
+          type="button"
+          aria-label={isOpen ? "Close Connect AI" : "Open Connect AI"}
+          onClick={() => setIsOpen((prev) => !prev)}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileHover={{ scale: 1.08, y: -2 }}
+          whileTap={{ scale: 0.92 }}
+          className="relative w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-xl flex items-center justify-center text-white border border-white/30 shadow-[0_0_35px_rgba(168,85,247,0.6)] cursor-pointer overflow-hidden backdrop-blur-xl"
+          style={{ background: "linear-gradient(135deg, #6B21A8 0%, #9333EA 50%, #C084FC 100%)" }}
+        >
+          {/* Specular Light Glow overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-black/20 pointer-events-none" />
+
+          <AnimatePresence mode="wait" initial={false}>
+            {isOpen ? (
+              <motion.span
+                key="close"
+                initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                exit={{ rotate: 90, scale: 0.5, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <X className="w-7 h-7 text-white" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="open"
+                initial={{ rotate: 90, scale: 0.5, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                exit={{ rotate: -90, scale: 0.5, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center justify-center relative z-10"
+              >
+                <MinimalBotIcon className="w-7 h-7 text-white" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+
+          {!isOpen && (
+            <span className="absolute top-2 right-2 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-[#0A0B14]" />
+            </span>
+          )}
+        </motion.button>
+      </div>
 
       {/* Chat Panel */}
       <AnimatePresence>
@@ -172,8 +232,8 @@ export function ConnectAIChat() {
             {/* Header */}
             <header className="shrink-0 px-5 py-4 flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-primary/15 to-transparent">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-                  <Sparkles className="w-4.5 h-4.5" />
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center p-1 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                  <MinimalBotIcon className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
@@ -202,8 +262,8 @@ export function ConnectAIChat() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-start gap-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary border border-primary/20 flex items-center justify-center shrink-0 mt-1">
-                    <Bot className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 mt-1 p-1">
+                    <MinimalBotIcon className="w-5 h-5 text-white" />
                   </div>
                   <div className="bg-white/[0.04] border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 text-white/85 text-[14px] leading-relaxed">
                     {WELCOME_MESSAGE}

@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { Camera, Briefcase, Play, Mail, ArrowRight, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp, viewportOnce } from "@/lib/animations";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 export function CTA() {
   return (
@@ -70,27 +70,32 @@ export function CTA() {
               variants={fadeUp}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full"
             >
-              <Link
+              <CTAButton
                 href="/events"
-                className="group flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)] w-full sm:w-auto justify-center"
+                variant="primary"
+                size="lg"
+                icon={<ArrowRight className="w-4 h-4 text-current" />}
               >
                 Upcoming Events
-                <ArrowRight className="w-4 h-4 text-current group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
+              </CTAButton>
+              <CTAButton
                 href="/connect-ai"
-                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
+                variant="glass"
+                size="lg"
+                icon={<Sparkles className="w-4 h-4 text-purple-400" />}
+                iconPosition="left"
               >
-                <Sparkles className="w-4 h-4" />
                 Connect AI
-              </Link>
-              <Link
+              </CTAButton>
+              <CTAButton
                 href="/contact"
-                className="flex items-center gap-3 px-8 py-4 rounded-xl text-xs font-display font-black uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all w-full sm:w-auto justify-center"
+                variant="glass"
+                size="lg"
+                icon={<Mail className="w-4 h-4 text-purple-400" />}
+                iconPosition="left"
               >
-                <Mail className="w-4 h-4" />
                 Contact Us
-              </Link>
+              </CTAButton>
             </motion.div>
           </motion.div>
         </div>

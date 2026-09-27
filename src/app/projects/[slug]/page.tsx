@@ -5,6 +5,7 @@ import { ArrowUpRight, CheckCircle2, GitBranch, Globe } from "lucide-react";
 import Link from "next/link";
 import ProjectLikeButton from "./ProjectLikeButton";
 import ProjectComments from "./ProjectComments";
+import { CTAButton } from "@/components/ui/CTAButton";
 
 export const dynamic = "force-dynamic";
 
@@ -146,16 +147,30 @@ export default async function ProjectDetailPage({
 
             <div className="flex flex-wrap gap-4 mt-auto z-10">
               {project.demoLink && (
-                <a href={project.demoLink} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-display font-black uppercase tracking-widest btn-glow transition-all border border-transparent hover:!bg-none hover:bg-white/10 hover:text-white hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                  <Globe className="w-4 h-4 mr-1" />
+                <CTAButton
+                  href={project.demoLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="primary"
+                  size="md"
+                  icon={<Globe className="w-4 h-4" />}
+                  iconPosition="left"
+                >
                   Live Demo
-                </a>
+                </CTAButton>
               )}
               {project.githubLink && (
-                <a href={project.githubLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-display font-black uppercase tracking-widest border border-white/10 bg-[#0A0B14] text-white/60 hover:bg-[#13151F] hover:text-white hover:border-white/25 transition-all">
-                  <GitBranch className="w-4 h-4 mr-1" />
+                <CTAButton
+                  href={project.githubLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  size="md"
+                  icon={<GitBranch className="w-4 h-4" />}
+                  iconPosition="left"
+                >
                   Source
-                </a>
+                </CTAButton>
               )}
               
               <ProjectLikeButton projectId={project.id} initialLikes={project.likes || 0} collectionName={(project as any).collectionName || "projects"} />
