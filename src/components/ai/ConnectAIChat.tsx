@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Sparkles, Loader2, RotateCcw, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ai/MarkdownContent";
 
 const MinimalBotIcon = ({ className = "w-7 h-7" }: { className?: string }) => (
   <svg
@@ -291,13 +292,17 @@ export function ConnectAIChat() {
                     </div>
                     <div
                       className={cn(
-                        "px-4 py-3 text-[14px] leading-relaxed whitespace-pre-wrap shadow-sm",
+                        "px-4 py-3 text-[14px] leading-relaxed shadow-sm",
                         msg.role === "user"
-                          ? "bg-primary text-white rounded-2xl rounded-tr-sm"
+                          ? "bg-primary text-white rounded-2xl rounded-tr-sm whitespace-pre-wrap"
                           : "bg-white/[0.04] border border-white/10 text-white/90 rounded-2xl rounded-tl-sm"
                       )}
                     >
-                      {msg.content}
+                      {msg.role === "ai" ? (
+                        <MarkdownContent content={msg.content} />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 </motion.div>

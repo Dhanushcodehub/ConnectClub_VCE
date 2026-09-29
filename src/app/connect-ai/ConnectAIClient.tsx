@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles, User, ArrowLeft, Loader2, Bot, Pencil, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ai/MarkdownContent";
 import Link from "next/link";
 
 const suggestedQuestions = [
@@ -169,9 +170,11 @@ export default function ConnectAIPage() {
                           : "bg-transparent text-white/90"
                       )}>
                         {msg.role === "ai" && <div className="font-bold text-xs text-primary mb-1">Connect AI</div>}
-                        <div className="prose prose-invert prose-p:leading-relaxed max-w-none text-[15px] whitespace-pre-wrap">
-                          {msg.content}
-                        </div>
+                        {msg.role === "ai" ? (
+                          <MarkdownContent content={msg.content} className="text-white/90" />
+                        ) : (
+                          <div className="whitespace-pre-wrap text-white">{msg.content}</div>
+                        )}
                       </div>
                       
                       {/* Action Buttons for User Messages */}

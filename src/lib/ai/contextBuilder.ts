@@ -23,6 +23,41 @@ const LIMITS = {
   domains: 15,
 };
 
+const WEBSITE_SITE_MAP = `## This Website (Connect Club site)
+
+Public pages:
+- / - Home: what Connect Club is, upcoming featured event, mission, stats.
+- /events - All events with status, date, venue, and registration links.
+- /events/{eventId} - Single event page: full description, agenda, speakers, registration link, FAQs, gallery, highlights.
+- /projects - All club projects.
+- /projects/{slug} - Single project page with details.
+- /timeline - Chronological history of the club's journey and milestones.
+- /team - Club members, roles, and departments.
+- /gallery - Photo and video albums from past events.
+- /contact - Contact form and club contact details.
+- /feedback - Share feedback about the club, events, or the website.
+- /connect-ai - This assistant.
+
+Member area (requires signing in as a club member):
+- /member/dashboard - Member overview and activity.
+- /member/events - Create and manage events.
+- /member/projects - Create and manage projects.
+- /member/gallery - Manage gallery albums.
+- /member/timeline - Manage timeline milestones.
+- /member/chat - Member group chat and direct messages.
+
+How things work:
+- Registering for an event: open the event's page at /events/{eventId} and use its Registration link. Events without a registration link are not open for sign-up.
+- Joining the club: attend an upcoming event listed on /events, or email the club below to ask about recruitment.
+- Submitting a project: sign in as a member, then use /member/projects.
+- Getting a certificate: certificates for attended events are issued through the club and are listed under /u/certificates for signed-in members.
+- Feedback: use the /feedback page.
+
+Contact:
+- General: connectclub@vce.ac.in
+- Support: support@connectclubvce.in
+- Instagram: @connectclubvce`;
+
 async function fetchCollectionDocs<T = Record<string, unknown>>(
   name: string,
   limit: number
@@ -46,7 +81,35 @@ function formatEvent(e: EventDoc, index: number): string {
   const date = e.date || "Date TBD";
   const venue = e.venue || "Venue TBD";
   const description = (e.description || "").slice(0, 240);
-  return `- ${title} (${status}) — ${description} — Date: ${date} — Venue: ${venue}`;
+  const lines = [`- ${title} (${status}) — ${description} — Date: ${date} — Venue: ${venue}`];
+
+  if (e.registrationLink) {
+    lines.push(`  Registration: ${e.registrationLink}`);
+  }
+  if (e.price) {
+    lines.push(`  Price/Fee: ${e.price}`);
+  }
+  if (e.time) {
+    lines.push(`  Time: ${e.time}`);
+  }
+  if (e.certificates) {
+    lines.push(`  Certificates: provided`);
+  }
+  if (e.organizedBy) {
+    lines.push(`  Organized by: ${e.organizedBy}`);
+  }
+  if (e.speakers?.length) {
+    lines.push(`  Speakers: ${e.speakers.join(", ")}`);
+  }
+  if (e.agenda?.length) {
+    lines.push(`  Agenda: ${e.agenda.map((a) => `${a.time} - ${a.title}`).join("; ")}`);
+  }
+  if (e.highlights?.length) {
+    lines.push(`  Highlights: ${e.highlights.join("; ")}`);
+  }
+  lines.push(`  Page: /events/${e.id || ""}`);
+
+  return lines.join("\n");
 }
 
 type ProjectDoc = Partial<ConnectProject>;
@@ -95,6 +158,10 @@ export async function buildContext(): Promise<BuiltAIContext> {
 
   sections.push(`## Connect Club`);
   sections.push(`We are a student-led technology community at Vardhaman College of Engineering.`);
+  sections.push(
+    `We run events such as hackathons, bootcamps, and summits; build live projects; and offer technical domains including AI, cloud native, web3, cybersecurity, and game development. Open to all VCE students.`
+  );
+  sections.push(`\n${WEBSITE_SITE_MAP}`);
 
   sections.push(`\n### Events (${events.length})`);
   events.slice(0, LIMITS.events).forEach((e, i) => sections.push(formatEvent(e, i)));

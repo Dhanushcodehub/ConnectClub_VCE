@@ -1,16 +1,16 @@
 export const AI_CONFIG = {
   gemini: {
-    primaryModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-    secondaryModel: process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash",
+    primaryModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+    secondaryModel: process.env.GEMINI_FALLBACK_MODEL || "gemini-flash-lite-latest",
     temperature: 0.7,
     maxOutputTokens: 1024,
     topP: 0.9,
   },
   groq: {
-    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+    model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
     baseUrl: "https://api.groq.com/openai/v1/chat/completions",
     temperature: 0.7,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
   },
   retry: {
     maxAttempts: 3,

@@ -116,7 +116,7 @@ export async function POST(req: Request) {
       {
         error: "Failed to generate a response.",
         details: messageText,
-        hint: "Check that GEMINI_API_KEY / GROQ_API_KEY are configured in .env.local.",
+        hint: "Check that GROQ_API_KEY / GEMINI_API_KEY are configured in .env.local.",
       },
       { status }
     );

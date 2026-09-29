@@ -141,46 +141,55 @@ async function generateWithGroq(opts: GenerateOptions): Promise<string> {
   }
 }
 
+function geminiModelChain(): string[] {
+  const models = [AI_CONFIG.gemini.primaryModel, AI_CONFIG.gemini.secondaryModel];
+  return models.filter((model, index) => Boolean(model) && models.indexOf(model) === index);
+}
+
 export async function generateResponse(opts: GenerateOptions): Promise<GenerateResult> {
   if (isMockMode) {
     return mockGenerate(opts);
   }
 
-  if (!canUseProviders.gemini && !canUseProviders.groq) {
+  if (!canUseProviders.groq && !canUseProviders.gemini) {
     throw new Error(
-      "No AI provider is configured. Set GEMINI_API_KEY (primary) and/or GROQ_API_KEY (fallback) in .env.local."
+      "No AI provider is configured. Set GROQ_API_KEY (primary) and/or GEMINI_API_KEY (fallback) in .env.local."
     );
   }
 
   const errors: string[] = [];
 
-  if (canUseProviders.gemini && !opts.forceFailover) {
-    for (let attempt = 1; attempt <= AI_CONFIG.retry.maxAttempts; attempt++) {
-      try {
-        const content = await generateWithGemini(opts, AI_CONFIG.gemini.primaryModel);
-        return { content, provider: "gemini" };
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        errors.push(`Gemini attempt ${attempt}: ${message}`);
-
-        if (attempt < AI_CONFIG.retry.maxAttempts) {
-          const delay = Math.min(
-            AI_CONFIG.retry.baseDelayMs * 2 ** (attempt - 1),
-            AI_CONFIG.retry.maxDelayMs
-          );
-          await sleep(delay);
-        }
-      }
-    }
-  }
-
-  if (canUseProviders.groq) {
+  if (canUseProviders.groq && !opts.forceFailover) {
     try {
       const content = await generateWithGroq(opts);
       return { content, provider: "groq" };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      errors.push(`Groq fallback: ${message}`);
+      errors.push(`Groq attempt 1: ${message}`);
+    }
+  }
+
+  if (canUseProviders.gemini) {
+    for (const model of geminiModelChain()) {
+      for (let attempt = 1; attempt <= AI_CONFIG.retry.maxAttempts; attempt++) {
+        try {
+          const content = await generateWithGemini(opts, model);
+          return { content, provider: "gemini" };
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          errors.push(`Gemini ${model} attempt ${attempt}: ${message}`);
+
+          if (!isRetryableError(error)) break;
+
+          if (attempt < AI_CONFIG.retry.maxAttempts) {
+            const delay = Math.min(
+              AI_CONFIG.retry.baseDelayMs * 2 ** (attempt - 1),
+              AI_CONFIG.retry.maxDelayMs
+            );
+            await sleep(delay);
+          }
+        }
+      }
     }
   }
 
@@ -249,7 +258,7 @@ function isGreeting(query: string): boolean {
 }
 
 function mockGenerate(opts: GenerateOptions): GenerateResult {
-  const provider: "mock-gemini" | "mock-groq" = opts.forceFailover ? "mock-groq" : "mock-gemini";
+  const provider: "mock-gemini" | "mock-groq" = opts.forceFailover ? "mock-gemini" : "mock-groq";
   const query = mockNormalize(opts.message);
 
   if (isInjectionAttempt(query)) {
