@@ -51,11 +51,17 @@ export default function ContactPage() {
     setStatus("loading");
     
     try {
-      await addDoc(collection(db, "contact_messages"), {
-        ...formData,
-        status: "unread",
-        createdAt: serverTimestamp(),
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message.");
+      }
       
       setStatus("success");
       setFormData({ firstName: "", lastName: "", email: "", message: "" });
@@ -67,7 +73,7 @@ export default function ContactPage() {
     } catch (error: any) {
       console.error("Error submitting form: ", error);
       setStatus("error");
-      setErrorMessage("Failed to send message. Please try again later.");
+      setErrorMessage(error?.message || "Failed to send message. Please try again later.");
     }
   };
 

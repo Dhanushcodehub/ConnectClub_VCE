@@ -146,9 +146,9 @@ export function RollNumberVerify({
   /* ── Incomplete roll number hint (always takes priority) ─────────────── */
   if (!isRollComplete) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06]">
-        <ShieldAlert className="w-3 h-3 text-white/25" />
-        <span className="text-[10px] font-medium text-white/30 tracking-wide">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700">
+        <ShieldAlert className="w-3 h-3 text-zinc-400" />
+        <span className="text-[10px] font-semibold text-zinc-300 tracking-wide">
           Enter full roll no.
         </span>
       </span>
@@ -158,9 +158,9 @@ export function RollNumberVerify({
   /* ── Verified badge (compact green pill, inline with label) ──────────── */
   if (isVerified) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-600 shadow-sm">
         <ShieldCheck className="w-3 h-3 text-emerald-400" />
-        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
           Verified
         </span>
       </span>
@@ -176,11 +176,11 @@ export function RollNumberVerify({
           reset();
           setIsModalOpen(true);
         }}
-        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 transition-all cursor-pointer group"
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950 hover:bg-amber-900 border border-amber-600 hover:border-amber-500 text-amber-200 hover:text-white transition-all cursor-pointer group shadow-sm"
       >
-        <ShieldAlert className="w-3 h-3" />
+        <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
         <span className="text-[10px] font-bold uppercase tracking-wider">
-          Verify
+          Verify ID Card
         </span>
       </button>
 
@@ -194,7 +194,7 @@ export function RollNumberVerify({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/85 backdrop-blur-md"
             />
 
             {/* Modal */}
@@ -203,26 +203,26 @@ export function RollNumberVerify({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="relative w-full max-w-md bg-[#111114] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-md bg-[#121217] border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Camera className="w-4 h-4 text-primary" />
+                  <div className="w-8 h-8 rounded-xl bg-purple-950 border border-purple-700 flex items-center justify-center">
+                    <Camera className="w-4 h-4 text-purple-300" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">
                       Verify Roll Number
                     </h3>
-                    <p className="text-[11px] text-white/40">
-                      Upload your college ID card
+                    <p className="text-[11px] text-zinc-300">
+                      Upload your official college ID card
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -231,9 +231,9 @@ export function RollNumberVerify({
               {/* Body */}
               <div className="px-5 py-5">
                 {/* Info: Roll number being verified */}
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-4">
-                  <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
-                    Roll No:
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 mb-4">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    Target Roll No:
                   </span>
                   <span className="text-[13px] font-bold text-white font-mono tracking-wide">
                     {rollNo}
@@ -254,16 +254,16 @@ export function RollNumberVerify({
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={handleDrop}
                         onClick={() => fileRef.current?.click()}
-                        className="group relative flex flex-col items-center justify-center py-10 px-4 rounded-xl border-2 border-dashed border-white/[0.08] hover:border-primary/40 bg-white/[0.01] hover:bg-primary/[0.03] transition-all cursor-pointer"
+                        className="group relative flex flex-col items-center justify-center py-10 px-4 rounded-xl border-2 border-dashed border-zinc-700 hover:border-primary bg-zinc-900/60 hover:bg-zinc-900 transition-all cursor-pointer shadow-inner"
                       >
-                        <div className="w-11 h-11 rounded-xl bg-white/[0.04] group-hover:bg-primary/10 flex items-center justify-center mb-3 transition-colors">
-                          <Upload className="w-5 h-5 text-white/30 group-hover:text-primary transition-colors" />
+                        <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 group-hover:border-primary flex items-center justify-center mb-3 transition-colors shadow-sm">
+                          <Upload className="w-5 h-5 text-zinc-300 group-hover:text-primary transition-colors" />
                         </div>
-                        <p className="text-[13px] font-medium text-white/60 group-hover:text-white/80 mb-1 transition-colors">
-                          Drop your ID card image here
+                        <p className="text-[13px] font-bold text-zinc-100 group-hover:text-white mb-1 transition-colors">
+                          Drop your ID card photo here
                         </p>
-                        <p className="text-[11px] text-white/30">
-                          or click to browse · JPG, PNG
+                        <p className="text-[11px] text-zinc-400 font-medium">
+                          or click to browse from device · JPG, PNG
                         </p>
                       </div>
                       <input
@@ -290,24 +290,24 @@ export function RollNumberVerify({
                     >
                       {/* Preview */}
                       {preview && (
-                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border border-white/[0.06] mb-4">
+                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border border-zinc-700 mb-4 bg-black">
                           <img
                             src={preview}
                             alt="ID Card"
-                            className="w-full h-full object-contain bg-black/30"
+                            className="w-full h-full object-contain"
                           />
                           {/* Scanning overlay */}
-                          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
+                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
                             <div className="relative w-10 h-10 mb-3">
                               <Loader2 className="w-10 h-10 text-primary animate-spin" />
                             </div>
-                            <p className="text-[12px] font-medium text-white/70 mb-1">
+                            <p className="text-[12px] font-bold text-white mb-1">
                               {status === "uploading"
                                 ? "Preparing image..."
-                                : "Scanning for roll number..."}
+                                : "Scanning for roll number with OCR..."}
                             </p>
                             {status === "scanning" && (
-                              <div className="w-36 h-1 rounded-full bg-white/10 mt-1.5 overflow-hidden">
+                              <div className="w-40 h-1.5 rounded-full bg-zinc-800 border border-zinc-700 mt-2 overflow-hidden">
                                 <motion.div
                                   className="h-full bg-primary rounded-full"
                                   initial={{ width: "0%" }}
@@ -343,29 +343,28 @@ export function RollNumberVerify({
                       className="flex flex-col items-center"
                     >
                       {preview && (
-                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border-2 border-emerald-500/30 mb-4">
+                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border-2 border-emerald-500 mb-4 bg-black">
                           <img
                             src={preview}
                             alt="ID Card"
-                            className="w-full h-full object-contain bg-black/30"
+                            className="w-full h-full object-contain"
                           />
-                          <div className="absolute inset-0 bg-emerald-500/5" />
                         </div>
                       )}
 
                       <div className="flex flex-col items-center py-2">
-                        <div className="w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+                        <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500 flex items-center justify-center mb-3 shadow-md">
                           <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                         </div>
-                        <p className="text-sm font-bold text-emerald-400 mb-1">
+                        <p className="text-base font-bold text-emerald-400 mb-1">
                           Roll Number Verified!
                         </p>
-                        <div className="flex items-center gap-2 text-[12px] text-white/50">
-                          <span>Detected:</span>
-                          <span className="font-mono font-bold text-white">
+                        <div className="flex items-center gap-2 text-xs text-zinc-300">
+                          <span>Detected on card:</span>
+                          <span className="font-mono font-bold text-white bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded">
                             {detectedRoll}
                           </span>
-                          <span className="text-emerald-400">✓ Match</span>
+                          <span className="text-emerald-400 font-bold">✓ Match</span>
                         </div>
                       </div>
                     </motion.div>
@@ -381,32 +380,31 @@ export function RollNumberVerify({
                       className="flex flex-col items-center"
                     >
                       {preview && (
-                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border-2 border-red-500/30 mb-4">
+                        <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden border-2 border-red-500 mb-4 bg-black">
                           <img
                             src={preview}
                             alt="ID Card"
-                            className="w-full h-full object-contain bg-black/30"
+                            className="w-full h-full object-contain"
                           />
-                          <div className="absolute inset-0 bg-red-500/5" />
                         </div>
                       )}
 
                       <div className="flex flex-col items-center py-2">
-                        <div className="w-11 h-11 rounded-full bg-red-500/10 flex items-center justify-center mb-3">
+                        <div className="w-12 h-12 rounded-full bg-red-950 border border-red-500 flex items-center justify-center mb-3 shadow-md">
                           <XCircle className="w-6 h-6 text-red-400" />
                         </div>
-                        <p className="text-sm font-bold text-red-400 mb-1.5">
+                        <p className="text-base font-bold text-red-400 mb-1.5">
                           Verification Failed
                         </p>
-                        <p className="text-[12px] text-white/40 text-center leading-relaxed max-w-xs mb-4">
+                        <p className="text-xs text-zinc-300 text-center leading-relaxed max-w-xs mb-4">
                           {errorMsg}
                         </p>
                         <button
                           type="button"
                           onClick={reset}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/70 hover:text-white text-[12px] font-medium transition-all border border-white/[0.06]"
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-all border border-zinc-600 shadow-sm"
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-3.5 h-3.5 text-zinc-300" />
                           Try Again
                         </button>
                       </div>
@@ -417,11 +415,11 @@ export function RollNumberVerify({
 
               {/* Footer — only on matched state */}
               {status === "matched" && (
-                <div className="px-5 py-3.5 border-t border-white/[0.06] flex justify-end">
+                <div className="px-5 py-3.5 border-t border-zinc-800 flex justify-end bg-zinc-900/50">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white text-[12px] font-bold transition-colors"
+                    className="px-5 py-2.5 rounded-xl bg-primary hover:bg-purple-600 text-white text-xs font-bold transition-colors shadow-md"
                   >
                     Done
                   </button>
