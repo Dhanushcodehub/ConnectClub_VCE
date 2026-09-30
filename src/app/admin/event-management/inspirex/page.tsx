@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2, Calendar, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import Link from "next/link";
 
 interface Registration {
   id: string;
@@ -122,6 +123,43 @@ export default function InspirexAdminPage() {
           </div>
         </div>
       )}
+
+      {/* Quick Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link 
+          href="/admin/event-management/inspirex/attendance"
+          className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-white group-hover:text-blue-400 transition-colors">Mark Attendance</span>
+          </div>
+        </Link>
+        <Link 
+          href="/admin/event-management/inspirex/member-lists"
+          className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400 group-hover:scale-110 transition-transform">
+              <Briefcase className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-white group-hover:text-amber-400 transition-colors">Document Editor</span>
+          </div>
+        </Link>
+        <Link 
+          href="/admin/event-management/inspirex/certificates"
+          className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-white group-hover:text-purple-400 transition-colors">Issue Certificates</span>
+          </div>
+        </Link>
+      </div>
 
       {/* Main Content */}
       <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl overflow-hidden flex flex-col">

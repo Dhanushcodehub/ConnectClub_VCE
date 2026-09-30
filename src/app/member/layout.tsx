@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import MemberSidebar from "./_components/MemberSidebar";
 import { getMemberByEmail, ConnectMember } from "@/lib/firebase/members";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase/config";
 
 function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth();
@@ -50,13 +52,20 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
               setMemberProfile(currentProfile);
             }
 
-            // RBAC Enforcement
-            if (currentProfile) {
-              const reqPerm = getRequiredPermission(pathname);
-              if (reqPerm && (!currentProfile.permissions || !currentProfile.permissions.includes(reqPerm))) {
-                router.replace("/member/dashboard");
-                return; // Keep profileLoading true to prevent UI flash during redirect
+            // If the user is not in the members collection, deny access
+            if (!currentProfile) {
+              if (auth) {
+                await signOut(auth);
               }
+              router.replace("/member/login");
+              return;
+            }
+
+            // RBAC Enforcement
+            const reqPerm = getRequiredPermission(pathname);
+            if (reqPerm && (!currentProfile.permissions || !currentProfile.permissions.includes(reqPerm))) {
+              router.replace("/member/dashboard");
+              return; // Keep profileLoading true to prevent UI flash during redirect
             }
           } catch (error) {
             console.error("Error fetching member profile:", error);
@@ -85,6 +94,11 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   
   // If user is an admin and not on login page, render nothing while redirecting
   if (role === "admin" && pathname !== "/member/login") {
+    return null;
+  }
+
+  // Synchronous check: if user is logged in but not in members collection, block rendering
+  if (user && !memberProfile && pathname !== "/member/login") {
     return null;
   }
 

@@ -164,16 +164,16 @@ export function Preloader() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="text-[11px] font-mono tracking-[0.32em] uppercase text-white/30 mb-3"
+              className="text-[10px] font-mono tracking-[0.3em] uppercase text-white/30 mb-2"
             >
               Welcome to
             </motion.div>
 
             {/* Letter-by-letter title */}
-            <div className="flex items-baseline leading-none mb-2">
+            <div className="flex items-baseline leading-none mb-1.5">
               {TITLE.split("").map((ch, i) =>
                 ch === " " ? (
-                  <span key={i} className="inline-block w-[0.3em]" />
+                  <span key={i} className="inline-block w-[0.25em]" />
                 ) : (
                   <motion.span
                     key={i}
@@ -184,7 +184,7 @@ export function Preloader() {
                       delay: i * 0.07 + 0.24,
                       ease: [0.16, 1, 0.3, 1],
                     }}
-                    className="inline-block font-heading font-black text-[clamp(40px,8vw,100px)] tracking-[-0.02em] uppercase bg-gradient-to-br from-white via-primary to-white bg-[length:300%_100%] bg-clip-text text-transparent animate-[shimmer_2.8s_1s_ease-in-out_infinite]"
+                    className="inline-block font-heading font-black text-[clamp(28px,5vw,56px)] tracking-[-0.02em] uppercase bg-gradient-to-br from-white via-primary to-white bg-[length:300%_100%] bg-clip-text text-transparent animate-[shimmer_2.8s_1s_ease-in-out_infinite]"
                   >
                     {ch}
                   </motion.span>
@@ -194,11 +194,11 @@ export function Preloader() {
 
             {/* Subtitle */}
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, delay: 1.3 }}
-              className="text-[clamp(12px,2vw,16px)] font-mono tracking-[0.5em] uppercase text-primary mb-3"
-              style={{ textShadow: "0 0 24px rgba(147,51,234,0.5)" }}
+              className="text-[clamp(10px,1.5vw,14px)] font-mono tracking-[0.45em] uppercase text-primary mb-2.5"
+              style={{ textShadow: "0 0 20px rgba(147,51,234,0.5)" }}
             >
               VCE
             </motion.div>
@@ -208,7 +208,7 @@ export function Preloader() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 1.7 }}
-              className="text-[11px] font-mono tracking-[0.14em] text-white/30"
+              className="text-[10px] font-mono tracking-[0.12em] text-white/30"
             >
               Building the Next Generation of Innovators
             </motion.div>
@@ -219,12 +219,12 @@ export function Preloader() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.5 }}
-            className="absolute bottom-8 left-8 z-[3] flex items-end gap-1"
+            className="absolute bottom-6 left-6 z-[3] flex items-end gap-0.5"
           >
-            <span className="font-mono text-[clamp(32px,5vw,48px)] font-black tabular-nums text-white/80 leading-none">
+            <span className="font-mono text-[clamp(20px,3vw,32px)] font-black tabular-nums text-white/70 leading-none">
               {progress}
             </span>
-            <span className="font-mono text-xs text-white/30 mb-1">%</span>
+            <span className="font-mono text-[10px] text-white/25 mb-0.5">%</span>
           </motion.div>
 
           {/* Bottom progress bar */}

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { updateUserProfile } from "@/lib/firebase/users";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Camera, Check, X } from "lucide-react";
 import Image from "next/image";
+import { RollNumberVerify } from "@/components/user/RollNumberVerify";
 
 const DEFAULT_AVATARS = [
   "/avatars/avatar_lady_coder.jpg",
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [rollNoVerified, setRollNoVerified] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     rollNo: "",
@@ -50,20 +52,53 @@ export default function ProfilePage() {
         githubUrl: profile.githubUrl || "",
         photoURL: profile.photoURL || "",
       });
+      setRollNoVerified(profile.rollNoVerified === true);
     }
   }, [profile]);
 
+  const rollVerifyClearedRef = useRef(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // If roll number changes, reset verification both locally and in Firebase (once)
+    if (name === "rollNo" && value !== profile?.rollNo) {
+      setRollNoVerified(false);
+      if (user?.uid && !rollVerifyClearedRef.current) {
+        rollVerifyClearedRef.current = true;
+        updateUserProfile(user.uid, { rollNoVerified: false } as any).catch(() => { });
+      }
+    } else if (name === "rollNo" && value === profile?.rollNo) {
+      // User reverted to original roll number — restore original verification state
+      setRollNoVerified(profile?.rollNoVerified === true);
+      rollVerifyClearedRef.current = false;
+    }
+  };
+
+  const handleRollVerified = async () => {
+    if (!user?.uid) return;
+    try {
+      // Save both the current roll number and verification flag together
+      // so refreshProfile doesn't revert the form to the old saved value
+      await updateUserProfile(user.uid, {
+        rollNo: formData.rollNo,
+        rollNoVerified: true,
+      } as any);
+      setRollNoVerified(true);
+      rollVerifyClearedRef.current = false;
+      await refreshProfile();
+    } catch (err) {
+      console.error("Error saving roll verification:", err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.uid) return;
-    
+
     setLoading(true);
     setSuccess(false);
-    
+
     try {
       await updateUserProfile(user.uid, formData);
       await refreshProfile();
@@ -96,7 +131,7 @@ export default function ProfilePage() {
       </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -149,15 +184,22 @@ export default function ProfilePage() {
                 placeholder="John Doe"
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/70 ml-1">Roll Number</label>
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-sm font-medium text-white/70">Roll Number</label>
+                <RollNumberVerify
+                  rollNo={formData.rollNo}
+                  isVerified={rollNoVerified}
+                  onVerified={handleRollVerified}
+                />
+              </div>
               <input
                 type="text"
                 name="rollNo"
                 value={formData.rollNo}
                 onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
+                className="w-full bg-black/50 border border-white/10 rounded-md px-5 py-4 text-white placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
                 placeholder="e.g. 1602-xx-xxx-xxx"
               />
             </div>
@@ -210,7 +252,7 @@ export default function ProfilePage() {
                 placeholder="+91"
               />
             </div>
-            
+
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium text-white/70 ml-1">Bio</label>
               <textarea
@@ -261,7 +303,7 @@ export default function ProfilePage() {
               <span className="text-sm font-medium">Profile updated successfully!</span>
             </motion.div>
           )}
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -310,18 +352,17 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {DEFAULT_AVATARS.map(url => (
-                  <button 
+                  <button
                     key={url}
                     type="button"
                     onClick={() => {
-                      setFormData({...formData, photoURL: url});
+                      setFormData({ ...formData, photoURL: url });
                       setIsAvatarModalOpen(false);
                     }}
-                    className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
-                      formData.photoURL === url 
-                        ? 'border-primary scale-105 shadow-[0_0_20px_rgba(var(--primary),0.3)] z-10' 
-                        : 'border-white/5 hover:border-white/30 hover:scale-105'
-                    }`}
+                    className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${formData.photoURL === url
+                      ? 'border-primary scale-105 shadow-[0_0_20px_rgba(var(--primary),0.3)] z-10'
+                      : 'border-white/5 hover:border-white/30 hover:scale-105'
+                      }`}
                   >
                     <img src={url} alt="avatar" className="w-full h-full object-cover" />
                     {formData.photoURL === url && (
@@ -334,12 +375,12 @@ export default function ProfilePage() {
                   </button>
                 ))}
               </div>
-              
+
               <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
                 <button
                   type="button"
                   onClick={() => {
-                    setFormData({...formData, photoURL: user?.photoURL || ""});
+                    setFormData({ ...formData, photoURL: user?.photoURL || "" });
                     setIsAvatarModalOpen(false);
                   }}
                   className="text-sm text-white/50 hover:text-white transition-colors"

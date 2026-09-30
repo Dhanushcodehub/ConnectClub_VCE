@@ -7,6 +7,7 @@ export interface ConnectUser {
   name: string;
   email: string;
   rollNo: string;
+  rollNoVerified?: boolean;
   phone: string;
   photoURL?: string;
   department?: string;
