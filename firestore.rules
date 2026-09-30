@@ -111,10 +111,17 @@ service cloud.firestore {
       // Anyone (external site) can create — but fields are validated
       allow create: if
         request.resource.data.keys().hasAll(['eventId', 'rollNo', 'name', 'email', 'registeredAt']) &&
-        request.resource.data.eventId is string &&
+        request.resource.data.eventId == 'inspirex-s2' &&
         request.resource.data.rollNo is string &&
+        request.resource.data.rollNo.size() >= 4 &&
+        request.resource.data.rollNo.size() <= 30 &&
         request.resource.data.name is string &&
-        request.resource.data.email is string;
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() >= 3 &&
+        request.resource.data.email.size() <= 254 &&
+        request.resource.data.registeredAt is timestamp;
 
       // Nobody can update or delete via client SDK — only Admin SDK can
       allow update, delete: if false;

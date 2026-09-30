@@ -1,5 +1,5 @@
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where, orderBy, limit, addDoc, serverTimestamp, increment, deleteDoc, Timestamp } from "firebase/firestore";
-import { db } from "./config";
+import { db, isFirebaseConfigured } from "./config";
 
 // ─── User Profile ───────────────────────────────────────────
 export interface ConnectUser {
@@ -382,6 +382,7 @@ export async function getUserProjects(userId: string): Promise<UserProject[]> {
 }
 
 export async function getApprovedUserProjects(): Promise<UserProject[]> {
+  if (!isFirebaseConfigured) return [];
   try {
     const q = query(
       collection(db, USER_PROJECTS_COLLECTION),

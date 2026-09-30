@@ -1,16 +1,30 @@
 import { collection, getDocs, doc, getDoc, updateDoc, increment, addDoc, serverTimestamp, query, orderBy, Timestamp } from "firebase/firestore";
-import { db } from "./config";
+import { db, isFirebaseConfigured } from "./config";
 import { ConnectEvent, eventsData } from "../data/events";
 import { ConnectProject, projectsData } from "../data/projects";
 
 // Events
 export async function getEvents(): Promise<ConnectEvent[]> {
+  if (!isFirebaseConfigured) return eventsData;
   try {
     const querySnapshot = await getDocs(collection(db, "events"));
     if (querySnapshot.empty) {
       return eventsData;
     }
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ConnectEvent));
+    return querySnapshot.docs.map(doc => {
+      const event = { id: doc.id, ...doc.data() } as ConnectEvent;
+      if (event.id === "inspirex-s2") {
+        return {
+          ...event,
+          date: "September 13, 2026",
+          venue: "Main Auditorium, Vardhaman College of Engineering",
+          price: "₹499",
+          registrationLink: undefined,
+          status: "Past",
+        };
+      }
+      return event;
+    });
   } catch (error) {
     console.error("Error fetching events:", error);
     return eventsData;
@@ -18,11 +32,23 @@ export async function getEvents(): Promise<ConnectEvent[]> {
 }
 
 export async function getEventBySlug(slug: string): Promise<ConnectEvent | null> {
+  if (!isFirebaseConfigured) return eventsData.find(e => e.id === slug) || null;
   try {
     const docRef = doc(db, "events", slug);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as ConnectEvent;
+      const event = { id: docSnap.id, ...docSnap.data() } as ConnectEvent;
+      if (event.id === "inspirex-s2") {
+        return {
+          ...event,
+          date: "September 13, 2026",
+          venue: "Main Auditorium, Vardhaman College of Engineering",
+          price: "₹499",
+          registrationLink: undefined,
+          status: "Past",
+        };
+      }
+      return event;
     }
     return eventsData.find(e => e.id === slug) || null;
   } catch (error) {
@@ -33,6 +59,7 @@ export async function getEventBySlug(slug: string): Promise<ConnectEvent | null>
 
 // Projects
 export async function getProjects(): Promise<ConnectProject[]> {
+  if (!isFirebaseConfigured) return projectsData;
   try {
     const projectsRef = collection(db, "projects");
     const q = query(projectsRef); // Add ordering if needed
@@ -50,6 +77,7 @@ export async function getProjects(): Promise<ConnectProject[]> {
 }
 
 export async function getProjectBySlug(slug: string): Promise<ConnectProject | null> {
+  if (!isFirebaseConfigured) return projectsData.find(p => p.id === slug) || null;
   try {
     // 1. Check official projects
     let docRef = doc(db, "projects", slug);

@@ -1,34 +1,28 @@
 import { NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAdminApp } from "@/lib/firebase/admin";
+import { requireStaffRequest } from "@/lib/firebase/requestAuth";
+import {
+  normalizeEmail,
+  normalizePhone,
+  normalizeRollNo,
+  serializeTimestamp,
+} from "@/lib/registrations/validation";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    // 0. Verify Authentication and Admin Role
+    await requireStaffRequest(req);
+
     const primaryApp = getAdminApp();
     const primaryDb = getFirestore(primaryApp);
-    const getAdminAuth = (await import('@/lib/firebase/admin')).getAdminAuth;
-    const adminAuth = getAdminAuth();
-    
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
-    }
-    
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    
-    if (decodedToken.role !== 'admin' && decodedToken.email !== 'admin@connectclubvce.in') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
 
     // 1. Fetch all Connect Club users' roll numbers to cross-reference
     const ccUsersSnapshot = await primaryDb.collection("users").select("rollNo").get();
     const ccRollNumbers = new Set(
       ccUsersSnapshot.docs
-        .map(doc => doc.data().rollNo?.toUpperCase()?.trim())
+        .map(doc => normalizeRollNo(doc.data().rollNo))
         .filter(Boolean)
     );
 
@@ -41,28 +35,72 @@ export async function GET(req: Request) {
     const registrations = snapshot.docs.map(doc => {
       const data = doc.data();
       const rawRollNo = data.rollNo || "";
-      const cleanRollNo = rawRollNo.toUpperCase().trim();
-      
+      const cleanRollNo = normalizeRollNo(rawRollNo);
+
       return {
         id: doc.id,
         name: data.name || "Unknown",
         rollNo: rawRollNo || "Unknown",
         email: data.email || "",
         phone: data.phone || "",
+        branch: data.branch || "",
+        year: data.year || "",
+        section: data.section || "",
         status: data.status || "pending", // "pending" or "approved"
         ticketId: data.ticketId || null,
-        registeredAt: data.registeredAt ? data.registeredAt.toDate().toISOString() : null,
-        approvedAt: data.approvedAt ? data.approvedAt.toDate().toISOString() : null,
+        registeredAt: serializeTimestamp(data.registeredAt),
+        approvedAt: serializeTimestamp(data.approvedAt),
+        morningAttendance: data.morningAttendance === true,
+        afternoonAttendance: data.afternoonAttendance === true,
+        morningAttendanceAt: serializeTimestamp(data.morningAttendanceAt),
+        afternoonAttendanceAt: serializeTimestamp(data.afternoonAttendanceAt),
+        normalizedEmail: normalizeEmail(data.email),
+        normalizedPhone: normalizePhone(data.phone),
+        duplicateKey: `${cleanRollNo}:${normalizeEmail(data.email)}:${normalizePhone(data.phone)}`,
         isConnectClubMember: ccRollNumbers.has(cleanRollNo),
       };
     });
 
-    return NextResponse.json({ success: true, count: registrations.length, data: registrations });
-  } catch (error: any) {
+    const duplicateIndexes = new Set<number>();
+    const seen = new Map<string, number>();
+    registrations.forEach((registration, index) => {
+      const keys = [
+        registration.normalizedEmail && `email:${registration.normalizedEmail}`,
+        registration.normalizedPhone && `phone:${registration.normalizedPhone}`,
+        registration.rollNo !== "Unknown" && `roll:${cleanRegistrationRollNo(registration.rollNo)}`,
+      ].filter(Boolean) as string[];
+      keys.forEach((key) => {
+        if (seen.has(key)) {
+          duplicateIndexes.add(index);
+          duplicateIndexes.add(seen.get(key)!);
+        } else {
+          seen.set(key, index);
+        }
+      });
+    });
+
+    const data = registrations.map((registration, index) => ({
+      ...registration,
+      possibleDuplicate: duplicateIndexes.has(index),
+    }));
+
+    return NextResponse.json({ success: true, count: data.length, data });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Unauthorized: Admin authentication required." }, { status: 401 });
+    }
+    if (message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden: Admin access required." }, { status: 403 });
+    }
     console.error("Error fetching external registrations:", error);
     return NextResponse.json(
-      { error: "Failed to fetch registrations.", details: error.message },
+      { error: "Failed to fetch registrations.", details: message },
       { status: 500 }
     );
   }
+}
+
+function cleanRegistrationRollNo(value: string): string {
+  return normalizeRollNo(value);
 }

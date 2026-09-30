@@ -1,4 +1,10 @@
 import { NextResponse } from 'next/server';
+import {
+  normalizeEmail,
+  normalizePhone,
+  normalizeRollNo,
+  validateRegistrationIdentity,
+} from '@/lib/registrations/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,8 +19,24 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (password.length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+    }
 
-    let uid;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedRollNo = normalizeRollNo(rollNo);
+    const normalizedPhone = normalizePhone(phone);
+    const validationError = validateRegistrationIdentity({
+      name,
+      rollNo: normalizedRollNo,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+    });
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+
+    let uid: string | undefined;
     try {
       const adminModule = await import('@/lib/firebase/admin');
       const getAdminAuth = adminModule.getAdminAuth;
@@ -22,11 +44,26 @@ export async function POST(req: Request) {
       const adminAuth = getAdminAuth();
       const adminDb = getAdminDb();
 
+      const [normalizedRollMatch, normalizedPhoneMatch, legacyRollMatch, legacyPhoneMatch] =
+        await Promise.all([
+          adminDb.collection('users').where('normalizedRollNo', '==', normalizedRollNo).limit(1).get(),
+          adminDb.collection('users').where('normalizedPhone', '==', normalizedPhone).limit(1).get(),
+          adminDb.collection('users').where('rollNo', '==', normalizedRollNo).limit(1).get(),
+          adminDb.collection('users').where('phone', '==', normalizedPhone).limit(1).get(),
+        ]);
+
+      if (!normalizedRollMatch.empty || !legacyRollMatch.empty) {
+        return NextResponse.json({ error: 'This roll number is already registered.' }, { status: 409 });
+      }
+      if (!normalizedPhoneMatch.empty || !legacyPhoneMatch.empty) {
+        return NextResponse.json({ error: 'This phone number is already registered.' }, { status: 409 });
+      }
+
       // 1. Create Firebase Auth user
       const userRecord = await adminAuth.createUser({
-        email,
+        email: normalizedEmail,
         password,
-        displayName: name,
+        displayName: name.trim(),
       });
       uid = userRecord.uid;
 
@@ -36,10 +73,12 @@ export async function POST(req: Request) {
       // 3. Create user profile document in Firestore
       await adminDb.collection('users').doc(uid).set({
         uid,
-        name,
-        email,
-        rollNo,
-        phone,
+        name: name.trim(),
+        email: normalizedEmail,
+        rollNo: normalizedRollNo,
+        phone: normalizedPhone,
+        normalizedRollNo,
+        normalizedPhone,
         department: department || '',
         yearOfStudy: yearOfStudy || '',
         provider: 'email',
@@ -60,7 +99,7 @@ export async function POST(req: Request) {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       // 5. Store OTP in Firestore
-      await adminDb.collection('email_otps').doc(email.toLowerCase()).set({
+      await adminDb.collection('email_otps').doc(normalizedEmail).set({
         otp,
         expiresAt,
         createdAt: new Date()
@@ -78,7 +117,7 @@ export async function POST(req: Request) {
 
       const mailOptions = {
         from: `"Connect Club" <${process.env.EMAIL_USER}>`,
-        to: email,
+        to: normalizedEmail,
         subject: 'Connect Club - Verification Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
@@ -95,21 +134,34 @@ export async function POST(req: Request) {
 
       await transporter.sendMail(mailOptions);
 
-    } catch (firebaseError: any) {
-      if (firebaseError.code === 'auth/email-already-exists') {
+    } catch (firebaseError: unknown) {
+      const errorCode = typeof firebaseError === "object" && firebaseError !== null && "code" in firebaseError
+        ? firebaseError.code
+        : undefined;
+      if (errorCode === 'auth/email-already-exists') {
         return NextResponse.json(
           { error: 'An account with this email already exists.' },
           { status: 409 }
         );
       }
+      if (uid) {
+        try {
+          const adminModule = await import('@/lib/firebase/admin');
+          await adminModule.getAdminAuth().deleteUser(uid);
+          await adminModule.getAdminDb().collection('users').doc(uid).delete();
+          await adminModule.getAdminDb().collection('email_otps').doc(normalizedEmail).delete();
+        } catch (cleanupError) {
+          console.error('Registration cleanup failed:', cleanupError);
+        }
+      }
       throw firebaseError;
     }
 
     return NextResponse.json({ success: true, uid }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error registering user:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

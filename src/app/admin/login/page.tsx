@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword, signOut, User } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/config";
 import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,9 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   
   const [requires2FA, setRequires2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
@@ -60,6 +63,24 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setRecoveryMessage("");
+    setLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, recoveryEmail.trim().toLowerCase());
+      setRecoveryMessage("If this account is registered, a password-reset email has been sent.");
+      setRecoveryEmail("");
+    } catch (err: any) {
+      console.error(err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
       setLoading(false);
     }
   };
@@ -265,7 +286,58 @@ export default function AdminLoginPage() {
                       </>
                     )}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryOpen(true);
+                      setError("");
+                      setRecoveryMessage("");
+                      setRecoveryEmail(email);
+                    }}
+                    className="w-full text-sm text-white/50 hover:text-primary transition-colors mt-4"
+                  >
+                    Forgot your password?
+                  </button>
                 </form>
+                {recoveryOpen && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <h3 className="text-white font-bold mb-2">Recover admin account</h3>
+                    <p className="text-white/50 text-xs mb-4">
+                      Enter your admin email and Firebase will send a secure reset link.
+                    </p>
+                    {recoveryMessage && (
+                      <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-xs">
+                        {recoveryMessage}
+                      </div>
+                    )}
+                    <form onSubmit={handlePasswordRecovery} className="space-y-3">
+                      <input
+                        type="email"
+                        required
+                        value={recoveryEmail}
+                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        placeholder="admin@connectclub.com"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-primary"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 bg-primary text-white font-bold py-3 rounded-xl disabled:opacity-50"
+                        >
+                          {loading ? "Sending..." : "Send reset link"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRecoveryOpen(false)}
+                          className="px-4 text-white/50 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Search, Loader2, AlertCircle, ArrowLeft, Sun, Moon, CheckCircle2, QrCode, X, Camera } from "lucide-react";
+import { Search, Loader2, AlertCircle, ArrowLeft, Sun, Moon, CheckCircle2, QrCode, X, Camera, Download } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Html5Qrcode } from "html5-qrcode";
@@ -15,6 +15,8 @@ interface Registration {
   rollNo: string;
   year: string;
   email: string;
+  phone: string;
+  section: string;
   registeredAt: string | null;
   isConnectClubMember?: boolean;
   morningAttendance: boolean;
@@ -98,7 +100,7 @@ export default function InspirexAttendancePage() {
           const reg = currentRegs.find(r => r.rollNo === decodedText || r.id === decodedText);
           
           if (reg) {
-            if (beepRef.current) beepRef.current.play().catch(e => console.log(e));
+            if (beepRef.current)             beepRef.current.play().catch(() => {});
             
             const isAlreadyPresent = currentSession === "morning" ? reg.morningAttendance : reg.afternoonAttendance;
             if (isAlreadyPresent) {
@@ -131,7 +133,7 @@ export default function InspirexAttendancePage() {
             }
           }
         },
-        (error) => {
+        () => {
           // Ignore normal scanning frame errors
         }
       ).catch(err => {
@@ -156,15 +158,21 @@ export default function InspirexAttendancePage() {
   useEffect(() => {
     fetchRegistrations(true);
 
-    // Set up polling for real-time sync across multiple admins (every 3 seconds)
+    const refreshWhenVisible = () => {
+      if (!document.hidden) fetchRegistrations(false);
+    };
     const pollInterval = setInterval(() => {
-      fetchRegistrations(false);
-    }, 3000);
+      refreshWhenVisible();
+    }, 10000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
-  const fetchRegistrations = async (showLoader = false) => {
+  async function fetchRegistrations(showLoader = false) {
     if (showLoader) setIsLoading(true);
     
     try {
@@ -184,15 +192,15 @@ export default function InspirexAttendancePage() {
       if (data.success && data.data) {
         setRegistrations(data.data);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (showLoader) setError(err.message || "An unexpected error occurred.");
+      if (showLoader) setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       if (showLoader) setIsLoading(false);
     }
-  };
+  }
 
-  const handleToggleAttendance = async (regId: string, session: "morning" | "afternoon", currentStatus: boolean) => {
+  async function handleToggleAttendance(regId: string, session: "morning" | "afternoon", currentStatus: boolean) {
     setUpdatingId(regId + session);
     
     // Optimistic update
@@ -203,9 +211,13 @@ export default function InspirexAttendancePage() {
     ));
 
     try {
+      const token = user ? await user.getIdToken() : null;
       const res = await fetch("/api/inspirex-registrations/attendance", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           registrationId: regId,
           session,
@@ -220,17 +232,42 @@ export default function InspirexAttendancePage() {
       }
       
       toast.success(`${session === "morning" ? "Morning" : "Afternoon"} attendance updated`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert optimistic update
       setRegistrations(prev => prev.map(reg => 
         reg.id === regId 
           ? { ...reg, [session === "morning" ? "morningAttendance" : "afternoonAttendance"]: currentStatus }
           : reg
       ));
-      toast.error("Error: " + err.message);
+      toast.error("Error: " + (err instanceof Error ? err.message : "Unable to update attendance"));
     } finally {
       setUpdatingId(null);
     }
+  }
+
+  const downloadAttendanceCsv = () => {
+    const escape = (value: string | boolean) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = [
+      ["Name", "Roll No", "Email", "Phone", "Branch", "Year", "Section", "Morning", "Afternoon"],
+      ...filteredRegistrations.map((reg) => [
+        reg.name,
+        reg.rollNo,
+        reg.email,
+        reg.phone,
+        reg.branch,
+        reg.year,
+        reg.section,
+        reg.morningAttendance ? "Present" : "Absent",
+        reg.afternoonAttendance ? "Present" : "Absent",
+      ]),
+    ];
+    const csv = rows.map((row) => row.map(escape).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "inspirex-season-2-attendance.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredRegistrations = registrations.filter(reg => {
@@ -244,14 +281,7 @@ export default function InspirexAttendancePage() {
     const matchesBranch = selectedBranch === "All" || reg.branch === selectedBranch;
     const matchesYear = selectedYear === "All" || reg.year === selectedYear;
     
-    // For section, since it's not explicitly in DB, we try to see if branch contains it (e.g. "CSE - A")
-    // or if the user selected "All", we just pass it.
-    let matchesSection = true;
-    if (selectedSection !== "All") {
-      matchesSection = reg.branch.toLowerCase().includes(selectedSection.toLowerCase()) || 
-                       reg.name.toLowerCase().includes(` ${selectedSection.toLowerCase()}`) ||
-                       reg.rollNo.toLowerCase().endsWith(selectedSection.toLowerCase()); // simple heuristics
-    }
+    const matchesSection = selectedSection === "All" || reg.section === selectedSection;
 
     return matchesSearch && matchesBranch && matchesYear && matchesSection;
   });
@@ -286,6 +316,14 @@ export default function InspirexAttendancePage() {
           >
             <QrCode className="w-6 h-6" />
             Scan QR
+          </button>
+          <button
+            onClick={downloadAttendanceCsv}
+            disabled={filteredRegistrations.length === 0}
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all disabled:opacity-40"
+          >
+            <Download className="w-5 h-5" />
+            Export CSV
           </button>
         </div>
         

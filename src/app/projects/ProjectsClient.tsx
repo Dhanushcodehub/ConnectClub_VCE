@@ -7,6 +7,7 @@ import { ArrowRight, Code2, Heart, MessageCircle } from "lucide-react";
 import { ConnectProject } from "@/lib/data/projects";
 import { getProjects } from "@/lib/firebase/api";
 import { getApprovedUserProjects } from "@/lib/firebase/users";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 
 export default function ProjectsClient({ initialProjects }: { initialProjects: ConnectProject[] }) {
@@ -14,6 +15,10 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
   const [isLoading, setIsLoading] = useState(initialProjects.length === 0);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
     Promise.all([getProjects(), getApprovedUserProjects()]).then(([officialProjects, userProjects]) => {
       // Map user projects to ConnectProject format
       const formattedUserProjects: ConnectProject[] = userProjects.map((p) => ({
@@ -46,7 +51,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
       
       setProjects(sorted);
       setIsLoading(false);
-    });
+    }).catch(() => setIsLoading(false));
   }, []);
 
   return (

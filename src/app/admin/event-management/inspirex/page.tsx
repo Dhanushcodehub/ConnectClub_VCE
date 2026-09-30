@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 interface Registration {
@@ -16,6 +15,7 @@ interface Registration {
   registeredAt: string | null;
   approvedAt: string | null;
   isConnectClubMember: boolean;
+  possibleDuplicate?: boolean;
 }
 
 export default function InspirexAdminPage() {
@@ -29,7 +29,7 @@ export default function InspirexAdminPage() {
     if (user) fetchRegistrations();
   }, [user]);
 
-  const fetchRegistrations = async () => {
+  async function fetchRegistrations() {
     setIsLoading(true);
     setError(null);
     try {
@@ -44,13 +44,13 @@ export default function InspirexAdminPage() {
       
       if (!res.ok) throw new Error(data.error || "Failed to fetch registrations");
       if (data.success && data.data) setRegistrations(data.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   const filteredRegistrations = registrations.filter(reg => {
     const query = searchQuery.toLowerCase();
@@ -178,6 +178,11 @@ export default function InspirexAdminPage() {
                             Member
                           </span>
                         )}
+                        {reg.possibleDuplicate && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                            Possible duplicate
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -191,8 +196,8 @@ export default function InspirexAdminPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex flex-col items-end">
-                        <span className="text-green-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Approved
+                        <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${reg.status === "approved" ? "text-green-400" : "text-amber-300"}`}>
+                          <CheckCircle2 className="w-3 h-3" /> {reg.status}
                         </span>
                         <span className="text-white/30 text-[10px] font-mono mt-1">{reg.ticketId || 'External'}</span>
                       </div>

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, ArrowRight, Search, ChevronLeft, ChevronRight, X, MapPin, Clock } from "lucide-react";
 import { EventStatus, ConnectEvent } from "@/lib/data/events";
 import { getEvents } from "@/lib/firebase/api";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 
@@ -20,10 +21,14 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
 
   useEffect(() => {
     setMounted(true);
+    if (!isFirebaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
     getEvents().then((data) => {
       setEvents(data);
       setIsLoading(false);
-    });
+    }).catch(() => setIsLoading(false));
   }, []);
 
   const tabs: (EventStatus | "All")[] = ["All", "Upcoming", "Ongoing", "Past"];
@@ -236,7 +241,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                      <span className="text-white font-bold text-lg">{featuredEvent.price || "Free"}</span>
                    </div>
                    <div className="flex items-center text-white/70 text-xs font-bold uppercase tracking-[0.2em] gap-2 group-hover:text-primary transition-all group-hover:gap-3">
-                     {featuredEvent.registrationLink ? "Register" : "Explore"}
+                     {featuredEvent.registrationLink && featuredEvent.status === "Upcoming" ? "Register" : "Explore"}
                      <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
                    </div>
                 </div>
@@ -391,7 +396,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
                     <span className="text-white font-bold text-base">{event.price || "Free"}</span>
                   </div>
                   <div className="flex items-center text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] gap-2 group-hover:text-primary transition-all group-hover:gap-3">
-                    {event.registrationLink ? "Register" : "Explore"}
+                    {event.registrationLink && event.status === "Upcoming" ? "Register" : "Explore"}
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:-rotate-45" />
                   </div>
                 </div>

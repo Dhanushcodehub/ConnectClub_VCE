@@ -23,20 +23,20 @@ export interface ConnectEvent {
 export const eventsData: ConnectEvent[] = [
   // Upcoming Events
   {
-    id: "inspirex-2026",
-    title: "InspireX Hackathon 2026",
-    description: "A 48-hour continuous building sprint. Bring your ideas, form a team, and build the next big thing. Mentorship, food, and huge prizes included.",
-    date: "Oct 15 - 17, 2026",
-    venue: "Main Auditorium, VCE",
-    status: "Upcoming",
+    id: "inspirex-s2",
+    title: "InspireX Season 2",
+    description: "A day of talks, conversations, and practical insight from founders, creators, and technology leaders.",
+    date: "September 13, 2026",
+    venue: "Main Auditorium, Vardhaman College of Engineering",
+    status: "Past",
     banner: "/inspirex.png",
-    speakers: ["John Doe (CEO, TechCorp)", "Jane Smith (Lead Engineer)"],
-    registrationLink: "https://lu.ma/inspirex2026",
+    time: "8:00 AM onwards",
+    price: "₹499",
     agenda: [
-      { time: "Day 1 - 09:00 AM", title: "Opening Ceremony & Keynote" },
-      { time: "Day 1 - 11:00 AM", title: "Hacking Begins" },
-      { time: "Day 3 - 10:00 AM", title: "Submission Deadline" },
-      { time: "Day 3 - 02:00 PM", title: "Closing Ceremony & Winners" }
+      { time: "08:00 AM", title: "Registration & Check-in" },
+      { time: "09:00 AM", title: "Opening Ceremony" },
+      { time: "09:30 AM", title: "Keynote Session I" },
+      { time: "02:30 PM", title: "Keynote Session II" }
     ],
   },
   {

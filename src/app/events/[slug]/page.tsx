@@ -105,7 +105,7 @@ export default async function EventDetailPage({
       offers: {
         "@type": "Offer",
         url: event.registrationLink,
-        price: "0",
+        price: event.price?.replace(/[^\d.]/g, "") || "0",
         priceCurrency: "INR",
         availability: "https://schema.org/InStock",
       },

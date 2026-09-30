@@ -362,14 +362,18 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                       <CheckCircle2 className="w-5 h-5" />
                       Registered
                     </div>
-                  ) : event.status === "Upcoming" ? (
+                  ) : event.status === "Upcoming" && event.registrationLink ? (
                     <button 
                       onClick={handleRegister}
                       className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      {event.registrationLink ? "Register Now" : "Registration Coming Soon"}
+                      Register Now
                     </button>
+                  ) : event.status === "Upcoming" ? (
+                    <div className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-white/50 font-bold text-sm text-center">
+                      Registration unavailable
+                    </div>
                   ) : event.status === "Ongoing" ? (
                     <div className="w-full py-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold text-sm flex justify-center items-center">
                       Happening Now
