@@ -94,9 +94,17 @@ export default function MemberListsPage() {
             ...(token && { 'Authorization': `Bearer ${token}` })
           }
         });
+        
+        if (!res.ok) {
+          const text = await res.text();
+          let errData;
+          try { errData = JSON.parse(text); } catch(e) {}
+          throw new Error(errData?.error || `HTTP ${res.status}: ${text.substring(0, 50)}`);
+        }
+        
         const data = await res.json();
         
-        if (!data.success) throw new Error("Failed to fetch registrations");
+        if (!data.success) throw new Error(data.error || "Failed to fetch registrations");
 
         const allRegistrations: any[] = data.data;
         const groups: Record<string, { label: string; rows: any[]; filename: string }> = {};
@@ -172,15 +180,17 @@ export default function MemberListsPage() {
           setSelectedDocKey(docList[0].key);
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        toast.error("Error loading registration data");
+        toast.error(err.message || "Error loading registration data");
       } finally {
         setIsLoading(false);
       }
     }
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   // Format branches for display in the table
   const branchFormatter = (b: string) => {

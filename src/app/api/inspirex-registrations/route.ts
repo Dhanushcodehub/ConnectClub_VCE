@@ -26,13 +26,13 @@ export async function GET(req: Request) {
         .filter(Boolean)
     );
 
-    // 2. Fetch external registrations from the local inbox collection
-    const snapshot = await primaryDb.collection("external_registrations")
+    // 2. Fetch external registrations
+    const externalSnapshot = await primaryDb.collection("external_registrations")
       .where("eventId", "==", "inspirex-s2")
       .orderBy("registeredAt", "desc")
       .get();
     
-    const registrations = snapshot.docs.map(doc => {
+    const externalRegistrations = externalSnapshot.docs.map(doc => {
       const data = doc.data();
       const rawRollNo = data.rollNo || "";
       const cleanRollNo = normalizeRollNo(rawRollNo);
@@ -58,6 +58,10 @@ export async function GET(req: Request) {
         normalizedPhone: normalizePhone(data.phone),
         duplicateKey: `${cleanRollNo}:${normalizeEmail(data.email)}:${normalizePhone(data.phone)}`,
         isConnectClubMember: ccRollNumbers.has(cleanRollNo),
+        branch: data.branch || "",
+        year: data.year || "",
+        section: data.section || "",
+        source: "external"
       };
     });
 
