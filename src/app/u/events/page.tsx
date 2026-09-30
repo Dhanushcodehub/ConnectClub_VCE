@@ -13,24 +13,29 @@ export default function MyEventsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchRegistrations() {
-      if (user?.uid) {
-        try {
-          const regs = await getUserRegistrations(user.uid);
-          setRegistrations(regs);
-        } catch (error) {
-          console.error("Failed to fetch registrations:", error);
-        } finally {
-          setLoading(false);
-        }
+    const currentUid = user?.uid;
+    if (!currentUid) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchRegistrations(targetUid: string) {
+      try {
+        const regs = await getUserRegistrations(targetUid);
+        setRegistrations(regs);
+      } catch (error) {
+        console.error("Failed to fetch registrations:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchRegistrations();
+    fetchRegistrations(currentUid);
   }, [user]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "";
     const date = timestamp.toMillis ? new Date(timestamp.toMillis()) : new Date(timestamp);
+    if (isNaN(date.getTime())) return "";
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
   };
 

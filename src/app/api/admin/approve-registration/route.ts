@@ -64,10 +64,22 @@ export async function POST(request: Request) {
       const userRecord = await auth.getUserByEmail(normalizeEmail(extData.email));
       uid = userRecord.uid;
     } catch {
-      const users = await db.collection("users")
-        .where("rollNo", "==", normalizeRollNo(extData.rollNo))
+      const cleanRoll = normalizeRollNo(extData.rollNo);
+      const strippedRoll = String(extData.rollNo || "").replace(/[\s\-.:]/g, "").toUpperCase();
+
+      let users = await db.collection("users")
+        .where("rollNo", "==", cleanRoll)
         .limit(2)
         .get();
+
+      // Fallback: If not found with hyphens, query stripped format (or vice versa)
+      if (users.empty && strippedRoll !== cleanRoll) {
+        users = await db.collection("users")
+          .where("rollNo", "==", strippedRoll)
+          .limit(2)
+          .get();
+      }
+
       if (users.size === 1) uid = users.docs[0].id;
     }
 

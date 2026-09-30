@@ -136,11 +136,17 @@ export default function NotificationsPage() {
 
     setIsMarkingAll(true);
     try {
-      const batch = writeBatch(db);
-      unread.forEach((n) => {
-        batch.update(doc(db, "notifications", n.id), { read: true });
-      });
-      await batch.commit();
+      // Firestore enforces a max limit of 500 writes per batch.
+      // Chunk into blocks of 400 to prevent batch limit crashes.
+      const CHUNK_SIZE = 400;
+      for (let i = 0; i < unread.length; i += CHUNK_SIZE) {
+        const chunk = unread.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach((n) => {
+          batch.update(doc(db, "notifications", n.id), { read: true });
+        });
+        await batch.commit();
+      }
       toast.success("All notifications marked as read");
     } catch (error) {
       console.error("Error marking all as read:", error);

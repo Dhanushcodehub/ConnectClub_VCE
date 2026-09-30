@@ -14,19 +14,23 @@ export default function MyProjectsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProjects() {
-      if (user?.uid) {
-        try {
-          const projs = await getUserProjects(user.uid);
-          setProjects(projs);
-        } catch (error) {
-          console.error("Failed to fetch projects:", error);
-        } finally {
-          setLoading(false);
-        }
+    const currentUid = user?.uid;
+    if (!currentUid) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchProjects(targetUid: string) {
+      try {
+        const projs = await getUserProjects(targetUid);
+        setProjects(projs);
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchProjects();
+    fetchProjects(currentUid);
   }, [user]);
 
   const getStatusBadge = (status: string) => {

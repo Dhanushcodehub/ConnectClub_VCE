@@ -19,38 +19,41 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDashboardData() {
-      if (user?.uid) {
-        try {
-          // Silent sync if profile is available - DO NOT AWAIT THIS, it should run in the background
-          if (profile?.rollNo) {
-            const token = await user.getIdToken();
-            fetch("/api/users/sync-external", {
-              method: "POST",
-              headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
-              body: JSON.stringify({ userId: user.uid, rollNo: profile.rollNo, email: user.email })
-            }).catch(e => console.error("Silent sync failed", e));
-          }
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-          const notifs = await getUserNotifications(user.uid);
-          setNotifications(notifs.slice(0, 5));
-          
-          const regsRef = collection(db, "event_registrations");
-          const q = query(regsRef, where("userId", "==", user.uid));
-          const snap = await getDocs(q);
-          const regs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-          
-          // Deduplicate by eventId to handle race condition duplicates
-          const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
-          setRegistrations(uniqueRegs);
-        } catch (error) {
-          console.error("Failed to fetch dashboard data:", error);
-        } finally {
-          setLoading(false);
+    async function fetchDashboardData() {
+      try {
+        // Silent sync if profile is available - DO NOT AWAIT THIS, it should run in the background
+        if (profile?.rollNo) {
+          const token = await user!.getIdToken();
+          fetch("/api/users/sync-external", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ userId: user!.uid, rollNo: profile.rollNo, email: user!.email })
+          }).catch(e => console.error("Silent sync failed", e));
         }
+
+        const notifs = await getUserNotifications(user!.uid);
+        setNotifications(notifs.slice(0, 5));
+        
+        const regsRef = collection(db, "event_registrations");
+        const q = query(regsRef, where("userId", "==", user!.uid));
+        const snap = await getDocs(q);
+        const regs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+        
+        // Deduplicate by eventId to handle race condition duplicates
+        const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
+        setRegistrations(uniqueRegs);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
       }
     }
     fetchDashboardData();

@@ -14,24 +14,29 @@ export default function MyCertificatesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchCertificates() {
-      if (user?.uid) {
-        try {
-          const certs = await getUserCertificates(user.uid);
-          setCertificates(certs);
-        } catch (error) {
-          console.error("Failed to fetch certificates:", error);
-        } finally {
-          setLoading(false);
-        }
+    const currentUid = user?.uid;
+    if (!currentUid) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchCertificates(targetUid: string) {
+      try {
+        const certs = await getUserCertificates(targetUid);
+        setCertificates(certs);
+      } catch (error) {
+        console.error("Failed to fetch certificates:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchCertificates();
+    fetchCertificates(currentUid);
   }, [user]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "";
     const date = timestamp.toMillis ? new Date(timestamp.toMillis()) : new Date(timestamp);
+    if (isNaN(date.getTime())) return "";
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
   };
 

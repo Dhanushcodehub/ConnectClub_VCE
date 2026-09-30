@@ -14,22 +14,26 @@ export default function MyTicketsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchRegistrations() {
-      if (user?.uid) {
-        try {
-          const regs = await getUserRegistrations(user.uid);
-          
-          // Deduplicate by eventId to handle race condition duplicates
-          const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
-          setRegistrations(uniqueRegs);
-        } catch (error) {
-          console.error("Failed to fetch registrations:", error);
-        } finally {
-          setLoading(false);
-        }
+    const currentUid = user?.uid;
+    if (!currentUid) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchRegistrations(targetUid: string) {
+      try {
+        const regs = await getUserRegistrations(targetUid);
+        
+        // Deduplicate by eventId to handle race condition duplicates
+        const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
+        setRegistrations(uniqueRegs);
+      } catch (error) {
+        console.error("Failed to fetch registrations:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchRegistrations();
+    fetchRegistrations(currentUid);
   }, [user]);
 
   const tickets = registrations.filter(r => r.ticketId);

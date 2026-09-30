@@ -24,14 +24,15 @@ async function getCertificateData(id: string) {
   let userBranch = certData.participantBranch;
 
   if (!userName || !userBranch || userBranch === "N/A") {
-    const userDoc = await db.collection('users').doc(certData.userId).get();
-    if (userDoc.exists) {
-      userName = userName || userDoc.data()?.name || "Unknown User";
-      userBranch = userBranch && userBranch !== "N/A" ? userBranch : (userDoc.data()?.branch || "N/A");
-    } else {
-      userName = userName || "Unknown User";
-      userBranch = userBranch || "N/A";
+    if (certData.userId) {
+      const userDoc = await db.collection('users').doc(certData.userId).get();
+      if (userDoc.exists) {
+        userName = userName || userDoc.data()?.name || "Unknown User";
+        userBranch = userBranch && userBranch !== "N/A" ? userBranch : (userDoc.data()?.branch || "N/A");
+      }
     }
+    userName = userName || "Unknown User";
+    userBranch = userBranch || "N/A";
   }
 
   // Fetch Template

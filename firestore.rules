@@ -37,10 +37,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Admins can read their own admin document
+    // Admins can read their own admin document; only Server Admin SDK can write admins
     match /admins/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if false;
     }
 
     // Allow logging login history
@@ -75,10 +75,16 @@ service cloud.firestore {
 
     // Chats and messaging
     match /messages/{document=**} {
-      allow read, write: if request.auth != null; // Everyone can use chats
+      allow read, write: if request.auth != null; // Everyone can use general club chat
     }
     match /direct_messages/{document=**} {
-      allow read, write: if request.auth != null; 
+      allow read, write: if request.auth != null && (
+        resource == null ||
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
+        request.resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
     }
     match /typing_status/{document=**} {
       allow read, write: if request.auth != null; 
