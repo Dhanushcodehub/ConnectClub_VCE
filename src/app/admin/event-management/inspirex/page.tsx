@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2, Calendar, Briefcase } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 

@@ -58,16 +58,13 @@ export async function GET(req: Request) {
         normalizedPhone: normalizePhone(data.phone),
         duplicateKey: `${cleanRollNo}:${normalizeEmail(data.email)}:${normalizePhone(data.phone)}`,
         isConnectClubMember: ccRollNumbers.has(cleanRollNo),
-        branch: data.branch || "",
-        year: data.year || "",
-        section: data.section || "",
         source: "external"
       };
     });
 
     const duplicateIndexes = new Set<number>();
     const seen = new Map<string, number>();
-    registrations.forEach((registration, index) => {
+    externalRegistrations.forEach((registration, index) => {
       const keys = [
         registration.normalizedEmail && `email:${registration.normalizedEmail}`,
         registration.normalizedPhone && `phone:${registration.normalizedPhone}`,
@@ -83,7 +80,7 @@ export async function GET(req: Request) {
       });
     });
 
-    const data = registrations.map((registration, index) => ({
+    const data = externalRegistrations.map((registration, index) => ({
       ...registration,
       possibleDuplicate: duplicateIndexes.has(index),
     }));

@@ -1,5 +1,5 @@
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { db } from "./config";
+import { db, isFirebaseConfigured } from "./config";
 
 export interface ConnectMilestone {
   id?: string;
@@ -14,18 +14,61 @@ export interface ConnectMilestone {
 
 const TIMELINE_COLLECTION = "timeline";
 
+const fallbackMilestones: ConnectMilestone[] = [
+  {
+    id: "connect-club-founded",
+    year: "2023",
+    month: "August",
+    title: "Connect Club begins",
+    description: "A student-led community was formed to bring together builders, designers, and technology enthusiasts at Vardhaman College of Engineering.",
+    mediaUrl: "/logo/logo-light.svg",
+    mediaType: "image",
+    order: 10,
+  },
+  {
+    id: "connect-club-community",
+    year: "2024",
+    month: "March",
+    title: "Growing the community",
+    description: "Workshops, peer learning sessions, and collaborative projects helped students turn ideas into practical work.",
+    mediaUrl: "/logo/logo-light.svg",
+    mediaType: "image",
+    order: 20,
+  },
+  {
+    id: "inspirex-season-one",
+    year: "2025",
+    month: "September",
+    title: "InspireX Season One",
+    description: "Connect Club launched its flagship speaker series, creating a space for students to learn directly from creators and industry leaders.",
+    mediaUrl: "/inspirex.png",
+    mediaType: "image",
+    order: 30,
+  },
+  {
+    id: "inspirex-season-two",
+    year: "2026",
+    month: "September",
+    title: "InspireX Season Two",
+    description: "Season Two brought together founders, creators, and students for a full day of talks, conversations, and practical insight.",
+    mediaUrl: "/inspirex.png",
+    mediaType: "image",
+    order: 40,
+  },
+];
+
 export async function getMilestones(): Promise<ConnectMilestone[]> {
-  if (typeof window === "undefined") return [];
+  if (!isFirebaseConfigured) return fallbackMilestones;
   try {
     const q = query(collection(db, TIMELINE_COLLECTION), orderBy("order", "asc"));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
-      return [];
+      return fallbackMilestones;
     }
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ConnectMilestone));
   } catch (error) {
     console.error("Error fetching milestones:", error);
-    return [];
+    return fallbackMilestones;
   }
 }
 

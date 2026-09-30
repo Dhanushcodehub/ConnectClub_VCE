@@ -15,9 +15,12 @@ export default function TimelinePage() {
 
   useEffect(() => {
     async function load() {
-      const data = await getMilestones();
-      setTimelineEvents(data);
-      setLoading(false);
+      try {
+        const data = await getMilestones();
+        setTimelineEvents(data);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, []);
