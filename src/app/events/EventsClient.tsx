@@ -80,6 +80,15 @@ export default function EventsClient({ initialEvents }: { initialEvents: Connect
     return () => clearInterval(interval);
   }, [featuredEvents.length]);
 
+  // When upcoming events shrink (sold out, status flipped, list refetched),
+  // the saved index can point past the end — clamp it so the hero never
+  // silently disappears.
+  useEffect(() => {
+    if (featuredEvents.length > 0 && currentFeaturedIndex >= featuredEvents.length) {
+      setCurrentFeaturedIndex(0);
+    }
+  }, [featuredEvents.length, currentFeaturedIndex]);
+
   if (isLoading) {
     return (
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { generateTicketId } from "@/lib/tickets";
 import * as admin from "firebase-admin";
 import { getAdminApp } from "@/lib/firebase/admin";
 
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     const batch = ccDb.batch();
 
     const registrationRef = ccDb.collection("event_registrations").doc();
-    const generatedTicketId = `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const generatedTicketId = generateTicketId();
 
     batch.set(registrationRef, {
       userId,

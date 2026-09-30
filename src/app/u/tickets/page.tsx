@@ -24,9 +24,23 @@ export default function MyTicketsPage() {
       try {
         const regs = await getUserRegistrations(targetUid);
         
-        // Deduplicate by eventId to handle race condition duplicates
-        const uniqueRegs = Array.from(new Map(regs.map(r => [r.eventId, r])).values());
-        setRegistrations(uniqueRegs);
+        // Deduplicate by eventId to handle race condition duplicates.
+        // Prefer the row that actually has a ticket ID, then the earliest
+        // registration, so the choice is stable across refetches.
+        const byEvent = new Map<string, any>();
+        for (const r of regs) {
+          const existing = byEvent.get(r.eventId);
+          if (!existing) {
+            byEvent.set(r.eventId, r);
+            continue;
+          }
+          const better =
+            (r.ticketId && !existing.ticketId) ||
+            (r.ticketId === existing.ticketId &&
+              (r.registeredAt?.toMillis?.() ?? 0) < (existing.registeredAt?.toMillis?.() ?? 0));
+          if (better) byEvent.set(r.eventId, r);
+        }
+        setRegistrations(Array.from(byEvent.values()));
       } catch (error) {
         console.error("Failed to fetch registrations:", error);
       } finally {
@@ -66,14 +80,14 @@ export default function MyTicketsPage() {
         <div className="flex flex-col gap-12 pb-24">
           {tickets.map((reg, i) => (
             <motion.div
-              key={reg.ticketId}
+              key={reg.id || reg.ticketId}
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.15, type: "spring", stiffness: 100, damping: 20 }}
             >
               <TicketCard 
                 ticketId={reg.ticketId}
-                eventName={reg.eventId === "inspirex-s2" ? "InspireX Season 2" : reg.eventId}
+                eventName={reg.eventTitle || reg.eventName || (reg.eventId === "inspirex-s2" ? "InspireX Season 2" : reg.eventId)}
                 userName={profile?.name || "Attendee"}
                 userEmail={user?.email || profile?.rollNo || ""}
               />

@@ -68,6 +68,15 @@ export default function FeedbackFormPage() {
 
   const validateForm = () => {
     if (!form) return false;
+    const errors = collectValidationErrors();
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Single source of truth for validation so handleSubmit can inspect the
+  // same error set it just set, without waiting for a re-render.
+  const collectValidationErrors = (): Record<string, string> => {
+    if (!form) return {};
     const errors: Record<string, string> = {};
     if (!rollNo.trim()) {
       errors['rollNo'] = 'Roll Number is required';
@@ -84,18 +93,27 @@ export default function FeedbackFormPage() {
       });
     });
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
+  };
+
+  const getFirstValidationError = (): string | null => {
+    const errors = collectValidationErrors();
+    return Object.keys(errors)[0] ?? null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
     if (!validateForm()) {
-      // scroll to first error
-      const firstError = Object.keys(validationErrors)[0];
-      const el = document.getElementById(`field-${firstError}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Scroll to the first error. validateForm() just set the errors state,
+      // but React state updates are async — reading `validationErrors` here
+      // would give the previous render's (possibly empty) map, so compute
+      // the first error key from the same snapshot validateForm used.
+      const firstError = getFirstValidationError();
+      if (firstError) {
+        const el = document.getElementById(`field-${firstError}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 

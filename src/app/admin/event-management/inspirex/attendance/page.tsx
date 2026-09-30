@@ -42,6 +42,9 @@ export default function InspirexAttendancePage() {
   const registrationsRef = useRef(registrations);
   const scanSessionRef = useRef(scanSession);
   const lastScanRef = useRef<{text: string, time: number} | null>(null);
+  // Registration IDs with an in-flight optimistic toggle; polled snapshots
+  // must not overwrite these rows until the API confirms.
+  const pendingTogglesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     registrationsRef.current = registrations;
@@ -190,7 +193,18 @@ export default function InspirexAttendancePage() {
       }
       
       if (data.success && data.data) {
-        setRegistrations(data.data);
+        // Merge instead of replace: an optimistic attendance toggle that is
+        // still in flight must not be clobbered by the polled snapshot,
+        // which was read before the toggle's write landed server-side.
+        setRegistrations(prev => {
+          const pendingIds = pendingTogglesRef.current;
+          if (pendingIds.size === 0) return data.data;
+          return data.data.map((fresh: Registration) =>
+            pendingIds.has(fresh.id) && prev.find((p: Registration) => p.id === fresh.id)
+              ? prev.find((p: Registration) => p.id === fresh.id)!
+              : fresh
+          );
+        });
       }
     } catch (err: unknown) {
       console.error(err);
@@ -202,6 +216,7 @@ export default function InspirexAttendancePage() {
 
   async function handleToggleAttendance(regId: string, session: "morning" | "afternoon", currentStatus: boolean) {
     setUpdatingId(regId + session);
+    pendingTogglesRef.current.add(regId);
     
     // Optimistic update
     setRegistrations(prev => prev.map(reg => 
@@ -242,6 +257,7 @@ export default function InspirexAttendancePage() {
       toast.error("Error: " + (err instanceof Error ? err.message : "Unable to update attendance"));
     } finally {
       setUpdatingId(null);
+      pendingTogglesRef.current.delete(regId);
     }
   }
 

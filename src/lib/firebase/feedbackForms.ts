@@ -17,6 +17,7 @@ import {
   writeBatch,
   Timestamp,
 } from "firebase/firestore";
+import { commitInChunks, type BatchOp } from "@/lib/firebase/batch";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -87,6 +88,11 @@ export interface FeedbackResponse {
 // ─── Helper: generate a short unique ID ─────────────────────────────────
 
 export function generateId(): string {
+  // crypto.randomUUID (CSPRNG) with a Math.random fallback for old browsers;
+  // question/section IDs are only uniqueness-critical, not security-critical.
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  }
   return Math.random().toString(36).substring(2, 10);
 }
 
@@ -144,14 +150,17 @@ export async function updateFeedbackForm(
 }
 
 export async function deleteFeedbackForm(id: string): Promise<void> {
-  // Delete all responses first
+  // Delete all responses first. Chunked because a popular form can have
+  // hundreds of responses and Firestore batches are capped at 500 ops.
   const responsesSnap = await getDocs(
     query(collection(db, "feedback_responses"), where("formId", "==", id)),
   );
-  const batch = writeBatch(db);
-  responsesSnap.docs.forEach((d) => batch.delete(d.ref));
-  batch.delete(doc(db, "feedback_forms", id));
-  await batch.commit();
+  const ops: BatchOp[] = responsesSnap.docs.map((d) => ({
+    type: "delete" as const,
+    ref: d.ref,
+  }));
+  ops.push({ type: "delete", ref: doc(db, "feedback_forms", id) });
+  await commitInChunks(db, ops);
 }
 
 export async function getFeedbackForm(id: string): Promise<FeedbackForm | null> {

@@ -1,5 +1,7 @@
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where, orderBy, limit, addDoc, serverTimestamp, increment, deleteDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where, orderBy, limit, addDoc, serverTimestamp, increment, deleteDoc, Timestamp, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "./config";
+import { commitInChunks, type BatchOp } from "@/lib/firebase/batch";
+import { generateTicketId } from "@/lib/tickets";
 
 // ─── User Profile ───────────────────────────────────────────
 export interface ConnectUser {
@@ -54,6 +56,7 @@ export interface EventRegistration {
   userId: string;
   eventId: string;
   eventTitle: string;
+  ticketId?: string;
   registeredAt: any;
   attended: boolean;
   certificateIssued: boolean;
@@ -200,8 +203,13 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
       where("read", "==", false)
     );
     const querySnapshot = await getDocs(q);
-    const updates = querySnapshot.docs.map(d => updateDoc(doc(db, NOTIFICATIONS_COLLECTION, d.id), { read: true }));
-    await Promise.all(updates);
+    // Chunked: >500 unread docs would exceed the Firestore batch cap.
+    const ops: BatchOp[] = querySnapshot.docs.map((d) => ({
+      type: "update" as const,
+      ref: d.ref,
+      data: { read: true },
+    }));
+    await commitInChunks(db, ops);
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
   }
@@ -272,7 +280,7 @@ export async function registerForEvent(userId: string, eventId: string, eventTit
       throw new Error("Already registered for this event");
     }
 
-    const ticketId = `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const ticketId = generateTicketId();
 
     await addDoc(collection(db, REGISTRATIONS_COLLECTION), {
       userId,

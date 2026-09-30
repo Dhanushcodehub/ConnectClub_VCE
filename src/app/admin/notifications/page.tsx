@@ -28,7 +28,7 @@ import {
   Radio
 } from "lucide-react";
 import { getAllUsers, createNotification, ConnectUser } from "@/lib/firebase/users";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import ImageUploader from "@/components/ImageUploader";
 import { toast } from "sonner";
@@ -222,7 +222,7 @@ export default function AdminNotificationsPage() {
         title: title.trim(),
         message: message.trim(),
         read: false,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       };
       if (actionUrl.trim()) {
         payload.actionUrl = actionUrl.trim();
@@ -235,14 +235,34 @@ export default function AdminNotificationsPage() {
         if (users.length === 0) {
           throw new Error("No registered users found to broadcast to.");
         }
-        const promises = users.map((u) =>
-          createNotification({
-            userId: u.uid,
-            ...payload,
-          })
-        );
-        await Promise.all(promises);
-        toast.success(`Broadcast sent successfully to all ${users.length} registered students!`);
+        // Write in fixed-size chunks instead of Promise.all over every user:
+        // a mid-flight failure no longer abandons the rest of the broadcast,
+        // and we can report exactly how many succeeded.
+        const CHUNK_SIZE = 300;
+        let succeeded = 0;
+        let failed = 0;
+        for (let i = 0; i < users.length; i += CHUNK_SIZE) {
+          const chunk = users.slice(i, i + CHUNK_SIZE);
+          const results = await Promise.allSettled(
+            chunk.map((u) =>
+              createNotification({
+                userId: u.uid,
+                ...payload,
+              })
+            )
+          );
+          for (const r of results) {
+            if (r.status === "fulfilled") succeeded++;
+            else failed++;
+          }
+        }
+        if (failed > 0) {
+          toast.error(
+            `Broadcast partially delivered: ${succeeded} sent, ${failed} failed. Retry to reach the remaining users.`
+          );
+        } else {
+          toast.success(`Broadcast sent successfully to all ${succeeded} registered students!`);
+        }
       } else {
         const specific = users.find((u) => u.uid === targetUser);
         await createNotification({

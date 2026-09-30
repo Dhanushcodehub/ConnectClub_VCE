@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomInt } from 'node:crypto';
 import {
   normalizeEmail,
   normalizePhone,
@@ -44,18 +45,50 @@ export async function POST(req: Request) {
       const adminAuth = getAdminAuth();
       const adminDb = getAdminDb();
 
-      const [normalizedRollMatch, normalizedPhoneMatch, legacyRollMatch, legacyPhoneMatch] =
+      // Check both the normalized fields and the legacy raw fields. Legacy
+      // rows may store un-normalized values (lowercase, spaces, +91 prefix),
+      // so we query the legacy fields with the RAW client values too, and
+      // additionally scan a canonicalized comparison over a small candidate
+      // set to catch formatting-only duplicates.
+      const rawRoll = String(rollNo || '').trim();
+      const rawPhone = String(phone || '').replace(/\D/g, '').slice(-10);
+
+      const [normalizedRollMatch, normalizedPhoneMatch, legacyRollMatch, legacyPhoneMatch, rawRollMatch, rawPhoneMatch] =
         await Promise.all([
           adminDb.collection('users').where('normalizedRollNo', '==', normalizedRollNo).limit(1).get(),
           adminDb.collection('users').where('normalizedPhone', '==', normalizedPhone).limit(1).get(),
-          adminDb.collection('users').where('rollNo', '==', normalizedRollNo).limit(1).get(),
-          adminDb.collection('users').where('phone', '==', normalizedPhone).limit(1).get(),
+          adminDb.collection('users').where('rollNo', '==', normalizedRollNo).limit(5).get(),
+          adminDb.collection('users').where('phone', '==', normalizedPhone).limit(5).get(),
+          adminDb.collection('users').where('rollNo', '==', rawRoll).limit(5).get(),
+          adminDb.collection('users').where('phone', '==', rawPhone).limit(5).get(),
         ]);
 
-      if (!normalizedRollMatch.empty || !legacyRollMatch.empty) {
+      // Canonicalize a legacy row so " 12345-a " vs "12345A" compare equal.
+      const canon = (v: unknown) => String(v ?? '').replace(/[\s\-_.]/g, '').toUpperCase();
+      const canonPhone = (v: unknown) => String(v ?? '').replace(/\D/g, '').slice(-10);
+
+      const rollCandidates = [
+        ...normalizedRollMatch.docs,
+        ...legacyRollMatch.docs,
+        ...rawRollMatch.docs,
+      ];
+      const isRollDup =
+        rollCandidates.length > 0 &&
+        rollCandidates.some((d) => canon(d.data().rollNo) === canon(normalizedRollNo));
+
+      const phoneCandidates = [
+        ...normalizedPhoneMatch.docs,
+        ...legacyPhoneMatch.docs,
+        ...rawPhoneMatch.docs,
+      ];
+      const isPhoneDup =
+        phoneCandidates.length > 0 &&
+        phoneCandidates.some((d) => canonPhone(d.data().phone) === canonPhone(normalizedPhone));
+
+      if (isRollDup) {
         return NextResponse.json({ error: 'This roll number is already registered.' }, { status: 409 });
       }
-      if (!normalizedPhoneMatch.empty || !legacyPhoneMatch.empty) {
+      if (isPhoneDup) {
         return NextResponse.json({ error: 'This phone number is already registered.' }, { status: 409 });
       }
 
@@ -94,14 +127,18 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       });
 
-      // 4. Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      // 4. Generate 6-digit OTP with the platform CSPRNG (Math.random is
+      // predictable and unusable for security codes).
+      const otp = String(randomInt(100000, 1000000));
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      // 5. Store OTP in Firestore
+      // 5. Store OTP in Firestore. lastSentAt feeds the resend-otp cooldown
+      // so the very first resend is also throttled.
       await adminDb.collection('email_otps').doc(normalizedEmail).set({
         otp,
         expiresAt,
+        lastSentAt: new Date(),
+        attempts: 0,
         createdAt: new Date()
       });
 

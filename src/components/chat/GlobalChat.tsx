@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
@@ -11,7 +11,9 @@ import {
   setTypingStatus,
   subscribeToTypingStatus,
   addReaction,
-  removeReaction
+  removeReaction,
+  fetchOlderMessages,
+  CHAT_PAGE_SIZE
 } from "@/lib/firebase/chat";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { ConnectMember } from "@/lib/firebase/members";
@@ -56,8 +58,10 @@ function formatText(text: string) {
   });
 }
 
-function formatDateSeparator(timestamp: number) {
-  const date = new Date(timestamp);
+function formatDateSeparator(timestamp: any) {
+  if (!timestamp) return "Today";
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (isNaN(date.getTime())) return "Today";
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -85,6 +89,10 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
   
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  // Older history loaded beyond the realtime window (newest 100 messages).
+  const [olderMessages, setOlderMessages] = useState<ChatMessage[]>([]);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   
   const [typingUsers, setTypingUsers] = useState<{email: string; name: string}[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -144,9 +152,47 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
     }
   }, []);
 
+  // Fetch one older page when the user scrolls to the top of the window.
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingOlder || !hasMoreHistory) return;
+    const allMessages = [...olderMessages, ...messages];
+    const oldest = allMessages[0];
+    if (!oldest?.timestamp) {
+      setHasMoreHistory(false);
+      return;
+    }
+    
+    setIsLoadingOlder(true);
+    try {
+      const oldestTime = oldest.timestamp instanceof Date
+        ? oldest.timestamp
+        : new Date(oldest.timestamp);
+      const { messages: older, hasMore } = await fetchOlderMessages(
+        oldestTime,
+        isDM ? "direct_messages" : "messages",
+        isDM ? dmRoomId : undefined
+      );
+      
+      // Filter out anything already in state (dedupe by id) and prepend.
+      const knownIds = new Set(allMessages.map((m) => m.id).filter(Boolean));
+      const fresh = older.filter((m) => !m.id || !knownIds.has(m.id));
+      setOlderMessages((prev) => [...fresh, ...prev]);
+      setHasMoreHistory(hasMore);
+    } catch (error) {
+      console.error("Failed to load older messages:", error);
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [isLoadingOlder, hasMoreHistory, olderMessages, messages, isDM, dmRoomId]);
+
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+
+    // Reached the top — pull the next older page of history.
+    if (scrollTop < 60) {
+      loadOlderMessages();
+    }
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 300;
     
     setShowScrollBottom(!isNearBottom);
@@ -268,9 +314,9 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
-          messages.map((msg, index) => {
+          [...olderMessages, ...messages].map((msg, index, allMsgs) => {
             const isMe = msg.senderEmail === user?.email;
-            const showTail = index === messages.length - 1 || messages[index + 1].senderEmail !== msg.senderEmail;
+            const showTail = index === allMsgs.length - 1 || allMsgs[index + 1].senderEmail !== msg.senderEmail;
             const dateStr = formatDateSeparator(msg.timestamp);
             const showDate = dateStr !== lastDateStr;
             if (showDate) lastDateStr = dateStr;

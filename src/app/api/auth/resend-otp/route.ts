@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { randomInt } from 'node:crypto';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  // Cooldown between resend requests to prevent email bombing.
+  const RESEND_COOLDOWN_MS = 60 * 1000;
   try {
     const { email } = await req.json();
 
@@ -33,14 +36,34 @@ export async function POST(req: Request) {
       throw error;
     }
 
-    // 2. Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // 1b. Rate limit: without this the endpoint is an email-bombing vector
+    // (it triggers a real email per call) and lets attackers burn through
+    // codes to reset the verify-attempt counter.
+    const otpDocRef = adminDb.collection('email_otps').doc(email.toLowerCase());
+    const existingOtp = await otpDocRef.get();
+    if (existingOtp.exists) {
+      const lastSentAt = existingOtp.data()?.lastSentAt?.toDate?.() ?? null;
+      if (lastSentAt && Date.now() - lastSentAt.getTime() < RESEND_COOLDOWN_MS) {
+        const waitSeconds = Math.ceil(
+          (RESEND_COOLDOWN_MS - (Date.now() - lastSentAt.getTime())) / 1000
+        );
+        return NextResponse.json(
+          { error: `Please wait ${waitSeconds}s before requesting another code.` },
+          { status: 429 }
+        );
+      }
+    }
+
+    // 2. Generate 6-digit OTP with the platform CSPRNG (Math.random is
+    // predictable and unusable for security codes).
+    const otp = String(randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // 3. Store OTP in Firestore
-    await adminDb.collection('email_otps').doc(email.toLowerCase()).set({
+    await otpDocRef.set({
       otp,
       expiresAt,
+      lastSentAt: new Date(),
       createdAt: new Date()
     });
 

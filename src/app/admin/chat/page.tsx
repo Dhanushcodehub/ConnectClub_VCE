@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import GlobalChat from "@/components/chat/GlobalChat";
@@ -32,6 +32,8 @@ function formatRelativeTime(dateInput: Date | { seconds: number } | number | str
   } else {
     date = new Date(dateInput);
   }
+  
+  if (isNaN(date.getTime())) return '';
   
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();

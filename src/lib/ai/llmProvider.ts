@@ -27,12 +27,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
-    ),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer); // don't hold the event loop open
+  });
 }
 
 export function isRetryableError(error: unknown): boolean {
@@ -72,26 +73,41 @@ async function generateWithGemini(opts: GenerateOptions, model: string): Promise
   const ai = new GoogleGenAI({ apiKey });
   const history = sanitizeHistory(opts.history || []);
 
-  const chat = ai.chats.create({
-    model,
-    config: {
-      systemInstruction: opts.systemPrompt,
-      temperature: AI_CONFIG.gemini.temperature,
-      maxOutputTokens: AI_CONFIG.gemini.maxOutputTokens,
-      topP: AI_CONFIG.gemini.topP,
-    },
-    history,
-  });
-
-  const response = await withTimeout(
-    chat.sendMessage({ message: opts.message }),
-    AI_CONFIG.request.timeoutMs,
-    "Gemini request"
+  // Abort the underlying HTTP request when the timeout wins the race, so a
+  // slow provider doesn't keep a socket open after we've already failed over.
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(
+    () => abortController.abort(),
+    AI_CONFIG.request.timeoutMs
   );
 
-  const text = response?.text?.trim();
-  if (!text) throw new Error("Gemini returned an empty response.");
-  return text;
+  try {
+    const chat = ai.chats.create({
+      model,
+      config: {
+        systemInstruction: opts.systemPrompt,
+        temperature: AI_CONFIG.gemini.temperature,
+        maxOutputTokens: AI_CONFIG.gemini.maxOutputTokens,
+        topP: AI_CONFIG.gemini.topP,
+        abortSignal: abortController.signal,
+      },
+      history,
+    });
+
+    const response = await chat.sendMessage({ message: opts.message });
+    clearTimeout(timeoutId);
+
+    const text = response?.text?.trim();
+    if (!text) throw new Error("Gemini returned an empty response.");
+    return text;
+  } catch (error: unknown) {
+    clearTimeout(timeoutId);
+    // Normalize abort errors so isRetryableError() treats them as timeouts.
+    if (abortController.signal.aborted) {
+      throw new Error(`Gemini request timed out after ${AI_CONFIG.request.timeoutMs}ms`);
+    }
+    throw error;
+  }
 }
 
 async function generateWithGroq(opts: GenerateOptions): Promise<string> {
@@ -223,9 +239,15 @@ const OFF_TOPIC_PATTERNS: RegExp[] = [
   /write (a|some|me) (poem|essay|story|letter)/i,
   /reverse a/i,
   /leetcode/i,
-  /python|javascript|java|react|c\+\+/i,
-  /code|program|debug|compile/i,
-  /math|homework|equation|calculus|algebra/i,
+  // Programming-language detection: word-bounded so "java" doesn't match
+  // "javascript" and casual words like "react" ("glad to react") pass.
+  /\b(python|javascript|typescript|java|kotlin|rust|golang|c\+\+)\b/i,
+  // Word-bounded tech verbs: "code" no longer matches "zip code",
+  // "program" no longer matches "program schedule", "debug" stays tech-y.
+  /\b(code|compile)\b/i,
+  /\bdebug\b/i,
+  /\bprogram(ming)?\b/i,
+  /\bmath|homework|equation|calculus|algebra\b/i,
   /recipe|cook|meal/i,
   /weather|forecast|temperature/i,
   /capital of|president of|prime minister/i,

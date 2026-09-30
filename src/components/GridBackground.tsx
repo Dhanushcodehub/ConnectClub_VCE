@@ -29,8 +29,31 @@ export function GridBackground() {
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     rafRef.current = requestAnimationFrame(tick);
 
+    // Don't repaint forever while the cursor is idle — stop the rAF loop
+    // until the next move. Cuts constant GPU/CPU work on static pages.
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const armIdleStop = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+      }, 4000);
+    };
+    const wakeOnMove = () => {
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+      armIdleStop();
+    };
+    window.addEventListener("mousemove", wakeOnMove, { passive: true });
+    armIdleStop();
+
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousemove", wakeOnMove);
+      if (idleTimer) clearTimeout(idleTimer);
       cancelAnimationFrame(rafRef.current);
     };
   }, []);

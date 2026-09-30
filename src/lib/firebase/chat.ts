@@ -1,5 +1,6 @@
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, limit, where, getDocs, writeBatch, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, Timestamp, limit, where, getDocs, writeBatch, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove, startAfter } from "firebase/firestore";
 import { db } from "./config";
+import { commitInChunks, type BatchOp } from "@/lib/firebase/batch";
 
 export interface ChatMessage {
   id?: string;
@@ -69,6 +70,53 @@ export function subscribeToMessages(callback: (messages: ChatMessage[]) => void)
   });
 
   return unsubscribe;
+}
+
+/**
+ * Fetch one older page of global chat messages before the given timestamp.
+ * The realtime subscription only holds the newest PAGE_SIZE messages;
+ * this is how users scroll back past that window.
+ * Returns { messages, hasMore } in oldest-to-newest order.
+ */
+export const CHAT_PAGE_SIZE = 100;
+
+export async function fetchOlderMessages(
+  before: Date,
+  collectionName: "messages" | "direct_messages" = "messages",
+  roomId?: string
+): Promise<{ messages: ChatMessage[]; hasMore: boolean }> {
+  if (typeof window === "undefined") return { messages: [], hasMore: false };
+
+  const constraints = [
+    ...(collectionName === "direct_messages" && roomId
+      ? [where("roomId", "==", roomId)]
+      : []),
+    orderBy("timestamp", "desc"),
+    startAfter(Timestamp.fromDate(before)),
+    limit(CHAT_PAGE_SIZE),
+  ];
+  const q = query(collection(db, collectionName), ...constraints);
+
+  const snapshot = await getDocs(q);
+  const messages = snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      text: data.text,
+      senderName: data.senderName,
+      senderEmail: data.senderEmail,
+      senderRole: data.senderRole,
+      timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+      read: data.read ?? true,
+      replyTo: data.replyTo,
+      reactions: data.reactions,
+    } as ChatMessage;
+  });
+
+  return {
+    messages: messages.reverse(),
+    hasMore: messages.length === CHAT_PAGE_SIZE,
+  };
 }
 
 const DM_COLLECTION = "direct_messages";
@@ -150,12 +198,14 @@ export async function markMessagesAsRead(roomId: string, currentUserEmail: strin
     const snapshot = await getDocs(q);
     if (snapshot.empty) return;
 
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => {
-      batch.update(doc(db, DM_COLLECTION, d.id), { read: true });
-    });
-    
-    await batch.commit();
+    // Chunked: a long-neglected room can have >500 unread docs, which would
+    // exceed the Firestore batch cap and fail the whole commit.
+    const ops: BatchOp[] = snapshot.docs.map((d) => ({
+      type: "update" as const,
+      ref: d.ref,
+      data: { read: true },
+    }));
+    await commitInChunks(db, ops);
   } catch (error) {
     console.error("Error marking messages as read:", error);
   }

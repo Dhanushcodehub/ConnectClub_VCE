@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -33,20 +33,57 @@ function normalize(s: string): string {
 }
 
 /**
- * Attempt to find the user's roll‑number inside the OCR text.
- * VCE roll numbers follow the pattern: 4 digits + 1‑2 letters + 2 digits + 2‑3 letters
- * e.g. 25881A05FC, 2288 1A05 FC, etc.
+ * Fix the characters OCR most commonly confuses before comparing, so a
+ * legible ID card doesn't fail verification over a misread glyph:
+ * O/Q↔0, I/L/T↔1, S↔5, B↔8, Z↔2 inside the digit positions.
+ */
+function ocrNormalize(s: string): string {
+  return normalize(s)
+    .replace(/O/g, "0")
+    .replace(/Q/g, "0")
+    .replace(/I/g, "1")
+    .replace(/L/g, "1")
+    .replace(/S/g, "5")
+    .replace(/B/g, "8")
+    .replace(/Z/g, "2");
+}
+
+/**
+ * A normalized string matches the target when equal either before or after
+ * OCR-confusion correction (two-way, since either side may be misread).
+ */
+function rollsMatch(detected: string, target: string): boolean {
+  const a = normalize(detected);
+  const b = normalize(target);
+  return a === b || ocrNormalize(a) === ocrNormalize(b);
+}
+
+/**
+ * Attempt to find roll numbers inside the OCR text.
+ * Covers:
+ * 1. Vardhaman / JNTUH patterns (e.g. 22881A0501, 23885A0412, 22881A05FC)
+ * 2. OU / Osmania 10-12 digit numbers (e.g. 160223733001)
+ * 3. General college roll number tokens (9-12 alphanumeric characters)
  */
 function extractRollNumbers(text: string): string[] {
   const cleaned = text.replace(/[^A-Za-z0-9\n]/g, " ");
-  // VCE / JNTUH pattern: 2-4 digits + 1-2 alpha + 2 digits + 2-3 alpha
-  const re = /\b(\d{2,5}[A-Za-z]{1,2}\d{2}[A-Za-z]{2,4})\b/g;
-  const matches: string[] = [];
-  let m;
-  while ((m = re.exec(cleaned)) !== null) {
-    matches.push(m[1].toUpperCase());
+  // JNTUH / Vardhaman: 2-5 digits + 1-2 alpha + 2 digits + 2-3 alphanumeric
+  // OU: 10-12 consecutive digits
+  // General: 9-12 alphanumeric token
+  const patterns = [
+    /\b(\d{2,5}[A-Za-z]{1,2}\d{2}[A-Za-z0-9]{2,4})\b/g,
+    /\b(\d{10,12})\b/g,
+    /\b([0-9A-Za-z]{9,12})\b/g
+  ];
+  
+  const matches = new Set<string>();
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(cleaned)) !== null) {
+      matches.add(m[1].toUpperCase());
+    }
   }
-  return matches;
+  return Array.from(matches);
 }
 
 export function RollNumberVerify({
@@ -61,13 +98,28 @@ export function RollNumberVerify({
   const [ocrProgress, setOcrProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const reset = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setStatus("idle");
     setPreview(null);
     setDetectedRoll(null);
     setOcrProgress(0);
     setErrorMsg("");
+  }, []);
+
+  // Release the blob URL when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
   }, []);
 
   const handleFileSelect = useCallback(
@@ -77,8 +129,9 @@ export function RollNumberVerify({
         return;
       }
 
-      // Preview
+      // Preview. revokeObjectURL on unmount/removal so blob memory is freed.
       const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
       setPreview(url);
       setStatus("uploading");
       setErrorMsg("");
@@ -99,14 +152,23 @@ export function RollNumberVerify({
           },
         });
 
-        // Attempt to find the roll number
+        // 1. Check direct normalized substring match (handles spaced, hyphenated, or formatted text)
+        const normTarget = normalize(rollNo);
+        const ocrTarget = ocrNormalize(rollNo);
+        const normText = normalize(text);
+        const ocrText = ocrNormalize(text);
+
+        const directMatch = (normTarget && normText.includes(normTarget)) ||
+                            (ocrTarget && ocrText.includes(ocrTarget));
+
+        // 2. Also check extracted tokens with OCR confusion tolerance
         const found = extractRollNumbers(text);
-        const normalizedRoll = normalize(rollNo);
+        const tokenMatch = found.find((r) => rollsMatch(r, rollNo));
 
-        const match = found.find((r) => normalize(r) === normalizedRoll);
+        const matchedRoll = directMatch ? rollNo.toUpperCase() : tokenMatch;
 
-        if (match) {
-          setDetectedRoll(match);
+        if (matchedRoll) {
+          setDetectedRoll(matchedRoll);
           setStatus("matched");
           onVerified();
         } else {

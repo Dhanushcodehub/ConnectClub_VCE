@@ -58,9 +58,7 @@ export default function MediaUploader({ onUpload, className, defaultMedia }: Med
       const res = await fetch(`/api/upload`, {
         method: "POST",
         body: formData,
-      });
-
-      clearInterval(progressInterval);
+      }).finally(() => clearInterval(progressInterval));
 
       if (!res.ok) {
         const errData = await res.json();

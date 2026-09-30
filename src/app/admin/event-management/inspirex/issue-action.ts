@@ -3,6 +3,7 @@
 import * as admin from "firebase-admin";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { commitInChunksAdmin, type BatchOp } from "@/lib/firebase/batch";
 
 export async function issueInspirexCertificates() {
   try {
@@ -50,10 +51,11 @@ export async function issueInspirexCertificates() {
       return { success: false, message: "No registrations found in InspireX database." };
     }
 
-    const batch = primaryDb.batch();
+    // Collect all writes first, then commit in chunks — a single batch is
+    // hard-capped at 500 ops and we write up to 3 ops per registration.
+    const ops: BatchOp[] = [];
     let issuedCount = 0;
-    
-    // We will do batched queries to find users
+
     for (const doc of inspirexSnapshot.docs) {
       const data = doc.data();
       const rawRollNo = data.rollNo || "";
@@ -78,14 +80,18 @@ export async function issueInspirexCertificates() {
 
       // 4. Generate Certificate
       const certRef = primaryDb.collection("certificates").doc();
-      batch.set(certRef, {
-        userId: userId,
-        eventId: "inspirex-s2",
-        eventTitle: "InspireX Season 2",
-        issuedAt: FieldValue.serverTimestamp(),
-        type: "participation",
-        participantName: data.name || data.fullName || "Participant",
-        participantBranch: data.branch || "Unknown"
+      ops.push({
+        type: "set",
+        ref: certRef,
+        data: {
+          userId: userId,
+          eventId: "inspirex-s2",
+          eventTitle: "InspireX Season 2",
+          issuedAt: FieldValue.serverTimestamp(),
+          type: "participation",
+          participantName: data.name || data.fullName || "Participant",
+          participantBranch: data.branch || "Unknown",
+        },
       });
 
       // 5. Check if they have an event_registration. If so, mark it issued. 
@@ -97,35 +103,47 @@ export async function issueInspirexCertificates() {
         .get();
 
       if (!regCheck.empty) {
-        batch.update(regCheck.docs[0].ref, {
-          certificateIssued: true,
-          certificateId: certRef.id,
-          ticketId: doc.id // sync ticket ID just in case
+        ops.push({
+          type: "update",
+          ref: regCheck.docs[0].ref,
+          data: {
+            certificateIssued: true,
+            certificateId: certRef.id,
+            ticketId: doc.id, // sync ticket ID just in case
+          },
         });
       } else {
         const regRef = primaryDb.collection("event_registrations").doc();
-        batch.set(regRef, {
-          userId,
-          eventId: "inspirex-s2",
-          eventTitle: "InspireX Season 2",
-          ticketId: doc.id,
-          registeredAt: data.registeredAt || FieldValue.serverTimestamp(),
-          attended: true, // Assuming if we issue a cert, they attended
-          certificateIssued: true,
-          certificateId: certRef.id
+        ops.push({
+          type: "set",
+          ref: regRef,
+          data: {
+            userId,
+            eventId: "inspirex-s2",
+            eventTitle: "InspireX Season 2",
+            ticketId: doc.id,
+            registeredAt: data.registeredAt || FieldValue.serverTimestamp(),
+            attended: true, // Assuming if we issue a cert, they attended
+            certificateIssued: true,
+            certificateId: certRef.id,
+          },
         });
       }
 
       // 6. Send Notification
       const notifRef = primaryDb.collection("notifications").doc();
-      batch.set(notifRef, {
-        userId: userId,
-        type: "certificate",
-        title: "InspireX Certificate Ready!",
-        message: "Your certificate of participation for InspireX Season 2 is now available.",
-        actionUrl: `/certificate/${certRef.id}`,
-        read: false,
-        createdAt: FieldValue.serverTimestamp()
+      ops.push({
+        type: "set",
+        ref: notifRef,
+        data: {
+          userId: userId,
+          type: "certificate",
+          title: "InspireX Certificate Ready!",
+          message: "Your certificate of participation for InspireX Season 2 is now available.",
+          actionUrl: `/certificate/${certRef.id}`,
+          read: false,
+          createdAt: FieldValue.serverTimestamp(),
+        },
       });
 
       issuedCount++;
@@ -135,7 +153,7 @@ export async function issueInspirexCertificates() {
       return { success: false, message: "No eligible new registrations found. All members already have their certificates." };
     }
 
-    await batch.commit();
+    await commitInChunksAdmin(primaryDb, ops);
 
     return { success: true, message: `Successfully synced and issued ${issuedCount} certificates!` };
   } catch (error: any) {

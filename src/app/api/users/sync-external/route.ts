@@ -3,30 +3,34 @@
  *
  * Silently syncs pending external registrations for a logged-in user.
  * Called by the dashboard on mount.
+ *
+ * Requires a valid Firebase ID token — the uid always comes from the token,
+ * never from the request body (trusting a body userId would let anyone
+ * sync tickets into someone else's account).
  */
 import { NextResponse } from "next/server";
-import { getAdminApp } from "@/lib/firebase/admin";
+import { getAdminApp, getAdminAuth } from "@/lib/firebase/admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getAdminAuth } from "@/lib/firebase/admin";
+import { generateTicketId } from "@/lib/tickets";
 
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("Authorization");
-    let uid = "";
-    
-    // Fallback if they pass userId in body (from older client code)
-    const body = await request.json().catch(() => ({}));
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split("Bearer ")[1];
-      const adminAuth = getAdminAuth();
-      const decodedToken = await adminAuth.verifyIdToken(token);
-      uid = decodedToken.uid;
-    } else if (body.userId) {
-      uid = body.userId; // Trusting the body if no token (less secure but works for now)
-    } else {
+    if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const token = authHeader.slice("Bearer ".length).trim();
+    let uid: string;
+    try {
+      const decodedToken = await getAdminAuth().verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => ({}));
 
     if (!body.rollNo && !body.email) {
       return NextResponse.json({ error: "Missing rollNo or email" }, { status: 400 });
@@ -35,84 +39,111 @@ export async function POST(request: Request) {
     const app = getAdminApp();
     const db = getFirestore(app);
 
-    // Look for registrations in external_registrations
-    // We check by rollNo (case-insensitive in JS, but exact match in Firestore)
-    const rollNo = body.rollNo?.toUpperCase().trim();
-    
-    const snapshot = await db.collection("external_registrations")
+    // Look for registrations in external_registrations.
+    // Checked by rollNo (case-insensitive in JS, but exact match in Firestore).
+    const rollNo = String(body.rollNo || "").toUpperCase().trim();
+
+    if (!rollNo) {
+      return NextResponse.json({ error: "Missing rollNo or email" }, { status: 400 });
+    }
+
+    let snapshot = await db
+      .collection("external_registrations")
       .where("rollNo", "==", rollNo)
       .get();
+
+    // Fallback: If no match found and rollNo has hyphens or spaces, query with stripped punctuation
+    if (snapshot.empty) {
+      const stripped = rollNo.replace(/[^A-Za-z0-9]/g, "");
+      if (stripped && stripped !== rollNo) {
+        snapshot = await db
+          .collection("external_registrations")
+          .where("rollNo", "==", stripped)
+          .get();
+      }
+    }
 
     if (snapshot.empty) {
       return NextResponse.json({ success: true, synced: 0 });
     }
 
-    const batch = db.batch();
     let syncedCount = 0;
-    const processedEventIds = new Set<string>(); // Prevent duplicate tickets in same batch
+    const processedEventIds = new Set<string>(); // Prevent duplicate tickets in same run
 
     for (const doc of snapshot.docs) {
       const extData = doc.data();
-      
-      // 1. Check if they already have a ticket to avoid duplicates (DB check + local memory check)
-      const existing = await db.collection("event_registrations")
-        .where("userId", "==", uid)
-        .where("eventId", "==", extData.eventId)
-        .limit(1)
-        .get();
 
-      if (!existing.empty || processedEventIds.has(extData.eventId)) {
-        // Just mark the external one as approved (already have a ticket)
-        batch.update(doc.ref, { 
-          status: "approved", 
-          approvedAt: FieldValue.serverTimestamp(), 
+      // Deterministic registration ID makes concurrent syncs idempotent —
+      // two tabs or a double-fire cannot create duplicate tickets.
+      const registrationRef = db
+        .collection("event_registrations")
+        .doc(`${extData.eventId}_${uid}`);
+
+      const created = await db.runTransaction(async (transaction) => {
+        const existing = await transaction.get(registrationRef);
+
+        if (existing.exists) {
+          // Already has a ticket — just mark the external row approved and
+          // copy the existing ticket ID back onto it.
+          const existingTicketId = existing.data()?.ticketId || null;
+          transaction.update(doc.ref, {
+            status: "approved",
+            approvedAt: FieldValue.serverTimestamp(),
+            userId: uid,
+            note: "Auto-synced (ticket already existed)",
+            ...(existingTicketId ? { ticketId: existingTicketId } : {}),
+          });
+          return false;
+        }
+
+        // Another external row for the same event already created a ticket
+        // in this run — don't double-ticket, just mark this row approved.
+        if (processedEventIds.has(extData.eventId)) {
+          transaction.update(doc.ref, {
+            status: "approved",
+            approvedAt: FieldValue.serverTimestamp(),
+            userId: uid,
+            note: "Auto-synced (ticket already existed)",
+          });
+          return false;
+        }
+
+        const ticketId = generateTicketId();
+
+        transaction.set(registrationRef, {
           userId: uid,
-          note: "Auto-synced (ticket already existed)"
+          eventId: extData.eventId,
+          eventTitle: extData.eventTitle || extData.eventId,
+          ticketId,
+          registeredAt: FieldValue.serverTimestamp(),
+          attended: false,
+          certificateIssued: false,
         });
-        continue;
-      }
 
-      processedEventIds.add(extData.eventId);
+        const notifRef = db.collection("notifications").doc();
+        transaction.set(notifRef, {
+          userId: uid,
+          type: "event",
+          title: "🎟 You're In!",
+          message: `Your registration for ${extData.eventTitle || extData.eventId} has been auto-confirmed. Your ticket ID is ${ticketId}. See you there! 🚀`,
+          read: false,
+          actionUrl: `/u/dashboard`,
+          createdAt: FieldValue.serverTimestamp(),
+        });
 
-      // 2. Generate ticket ID
-      const ticketId = `TX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        transaction.update(doc.ref, {
+          status: "approved",
+          approvedAt: FieldValue.serverTimestamp(),
+          userId: uid,
+          ticketId,
+        });
 
-      // 3. Create event registration
-      const regRef = db.collection("event_registrations").doc();
-      batch.set(regRef, {
-        userId: uid,
-        eventId: extData.eventId,
-        eventTitle: extData.eventTitle || extData.eventId,
-        ticketId,
-        registeredAt: FieldValue.serverTimestamp(),
-        attended: false,
-        certificateIssued: false,
+        processedEventIds.add(extData.eventId);
+        return true;
       });
 
-      // 4. Create notification
-      const notifRef = db.collection("notifications").doc();
-      batch.set(notifRef, {
-        userId: uid,
-        type: "event",
-        title: "🎟 You're In!",
-        message: `Your registration for ${extData.eventTitle || extData.eventId} has been auto-confirmed. Your ticket ID is ${ticketId}. See you there! 🚀`,
-        read: false,
-        actionUrl: `/u/dashboard`,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-
-      // 5. Mark external doc as approved
-      batch.update(doc.ref, {
-        status: "approved",
-        approvedAt: FieldValue.serverTimestamp(),
-        userId: uid,
-        ticketId,
-      });
-
-      syncedCount++;
+      if (created) syncedCount++;
     }
-
-    await batch.commit();
 
     return NextResponse.json({ success: true, synced: syncedCount });
   } catch (error: any) {

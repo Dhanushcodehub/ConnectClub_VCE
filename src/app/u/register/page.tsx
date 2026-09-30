@@ -117,8 +117,8 @@ export default function UserRegisterPage() {
     setError("");
     
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -262,7 +262,7 @@ export default function UserRegisterPage() {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
               />
             </div>
 

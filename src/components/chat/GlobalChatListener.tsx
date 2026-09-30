@@ -67,33 +67,38 @@ export function GlobalChatListener() {
     let unsubscribeDM: () => void = () => {};
     
     if (role === "admin") {
-      // Admin needs to listen to ALL DMs where they are not the sender
+      // Admin needs to listen to ALL DMs where they are not the sender.
+      // Listen to the latest few, not just one: two DMs arriving together
+      // used to toast only the newest and silently swallow the other.
       const q = query(
         collection(db, "direct_messages"),
         orderBy("timestamp", "desc"),
-        limit(1)
+        limit(10)
       );
       
       let initialAdminDMLoad = true;
-      let lastAdminDMMsgId: string | null = null;
+      const seenAdminDMIds = new Set<string>();
       
       unsubscribeDM = onSnapshot(q, (snapshot) => {
         if (snapshot.empty) return;
         
-        const doc = snapshot.docs[0];
-        const data = doc.data();
-        const id = doc.id;
+        const docs = snapshot.docs;
         
         if (initialAdminDMLoad) {
-          lastAdminDMMsgId = id;
+          docs.forEach((d) => seenAdminDMIds.add(d.id));
           initialAdminDMLoad = false;
           return;
         }
         
-        if (id !== lastAdminDMMsgId && data.senderEmail !== user.email) {
-          lastAdminDMMsgId = id;
+        // Oldest-first so multiple new messages toast in order.
+        for (const doc of [...docs].reverse()) {
+          const data = doc.data();
+          if (seenAdminDMIds.has(doc.id)) continue;
+          seenAdminDMIds.add(doc.id);
           
-          if (!document.hidden && pathname === '/admin/chat') return; // Might be viewing it
+          if (data.senderEmail === user.email) continue;
+          
+          if (!document.hidden && pathname === '/admin/chat') continue; // Might be viewing it
           
           toast(
             `DM from ${data.senderName}`, 
@@ -104,6 +109,12 @@ export function GlobalChatListener() {
           if (Notification.permission === "granted" && document.hidden) {
             new Notification(`DM from ${data.senderName}`, { body: data.text });
           }
+        }
+        
+        // Keep the seen-set bounded to the query window.
+        const windowIds = new Set(docs.map((d) => d.id));
+        for (const id of seenAdminDMIds) {
+          if (!windowIds.has(id)) seenAdminDMIds.delete(id);
         }
       });
     } else {

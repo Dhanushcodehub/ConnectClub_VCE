@@ -49,8 +49,11 @@ export default function ResponseChart({ question, responses }: ResponseChartProp
       }
       responses.forEach((r) => {
         const ans = r.answers?.[question.id];
-        if (ans !== undefined) {
-          counts[String(ans)]++;
+        if (ans !== undefined && ans !== null && ans !== "") {
+          // Answers saved before the scale was edited can fall outside
+          // min..max — bucket them instead of producing NaN counts.
+          const key = String(ans);
+          counts[key] = (counts[key] ?? 0) + 1;
         }
       });
     } else if (question.type === "star_rating") {
@@ -60,8 +63,9 @@ export default function ResponseChart({ question, responses }: ResponseChartProp
       }
       responses.forEach((r) => {
         const ans = r.answers?.[question.id];
-        if (ans !== undefined) {
-          counts[String(ans)]++;
+        if (ans !== undefined && ans !== null && ans !== "") {
+          const key = String(ans);
+          counts[key] = (counts[key] ?? 0) + 1;
         }
       });
     }

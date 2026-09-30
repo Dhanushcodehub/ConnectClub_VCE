@@ -8,6 +8,7 @@ import { ArrowLeft, Send, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
+import { toast } from "sonner";
 
 export default function SubmitProjectPage() {
   const { user, profile } = useAuth();
@@ -51,15 +52,18 @@ export default function SubmitProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      toast.error("Please log in to submit a project.");
+      return;
+    }
     
     if (formData.description.length < 50) {
-      alert("Description must be at least 50 characters.");
+      toast.error("Project description must be at least 50 characters.");
       return;
     }
     
     if (!formData.bannerUrl) {
-      alert("Please upload a banner image for your project.");
+      toast.error("Please upload a banner image for your project.");
       return;
     }
 
@@ -77,9 +81,12 @@ export default function SubmitProjectPage() {
         authorName: profile?.name || user.displayName || "Anonymous",
         status: "pending"
       });
+      toast.success("Project submitted successfully! It is now pending review.");
       router.push('/u/projects');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting project:", error);
+      toast.error(error?.message || "Failed to submit project. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
