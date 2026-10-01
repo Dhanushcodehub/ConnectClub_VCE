@@ -82,8 +82,13 @@ export async function POST(req: Request) {
 
     if (process.env.RESEND_API_KEY) {
       const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Connect Club <noreply@connectclubvce.tech>';
+      const resend = new Resend(process.env.RESEND_API_KEY.trim());
+      let fromEmail = (process.env.RESEND_FROM_EMAIL || 'Connect Club <noreply@connectclubvce.tech>').trim();
+      // Remove enclosing quotes if added in Vercel UI
+      fromEmail = fromEmail.replace(/^["']|["']$/g, '');
+      if (!fromEmail.includes('<') && !fromEmail.includes('>')) {
+        fromEmail = `Connect Club <${fromEmail}>`;
+      }
       
       const { error: resendError } = await resend.emails.send({
         from: fromEmail,
