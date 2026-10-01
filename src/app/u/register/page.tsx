@@ -31,6 +31,11 @@ export default function UserRegisterPage() {
   const router = useRouter();
   const { user, role, profile, loading: authLoading } = useAuth();
 
+  // Prefetch the OTP verification page immediately so transition is instant
+  useEffect(() => {
+    router.prefetch("/u/verify");
+  }, [router]);
+
   // onAuthStateChanged in AuthContext already detects the user after redirect.
   // This useEffect reacts to the auth state change and routes accordingly.
 
@@ -138,9 +143,9 @@ export default function UserRegisterPage() {
         throw new Error(data.error || "Failed to register.");
       }
 
-      const userCred = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      
-      router.push(`/u/verify?email=${encodeURIComponent(formData.email)}`);
+      // Initiate sign-in and redirect without blocking UI
+      signInWithEmailAndPassword(auth, formData.email, formData.password).catch(() => {});
+      router.replace(`/u/verify?email=${encodeURIComponent(formData.email)}`);
     } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err) || "Failed to create account. Please try again.");

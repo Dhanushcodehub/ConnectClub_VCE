@@ -68,17 +68,8 @@ export async function POST(req: Request) {
     });
 
     // 4. Send OTP Email using Resend (or fallback to Nodemailer)
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
-        <h2 style="color: #2563eb;">Verify Your Email</h2>
-        <p style="font-size: 16px; color: #4b5563;">You requested a new verification code. Please use the code below to verify your email:</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">${otp}</span>
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">This code will expire in 10 minutes.</p>
-        <p style="font-size: 14px; color: #ef4444; margin-top: 20px;"><strong>Note:</strong> If you did not request this, please ignore this email.</p>
-      </div>
-    `;
+    const { getOtpEmailHtml } = await import('@/lib/email/otpTemplate');
+    const emailHtml = getOtpEmailHtml(otp);
 
     if (process.env.RESEND_API_KEY) {
       const { Resend } = await import('resend');
