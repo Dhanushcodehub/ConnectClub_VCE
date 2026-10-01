@@ -142,34 +142,55 @@ export async function POST(req: Request) {
         createdAt: new Date()
       });
 
-      // 6. Send OTP Email using Nodemailer
-      const nodemailer = await import('nodemailer');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_APP_PASSWORD,
-        },
-      });
-
-      const mailOptions = {
-        from: `"Connect Club" <${process.env.EMAIL_USER}>`,
-        to: normalizedEmail,
-        subject: 'Connect Club - Verification Code',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
-            <h2 style="color: #2563eb;">Verify Your Email</h2>
-            <p style="font-size: 16px; color: #4b5563;">Thank you for registering with Connect Club! Please use the verification code below to complete your registration:</p>
-            <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">${otp}</span>
-            </div>
-            <p style="font-size: 14px; color: #6b7280;">This code will expire in 10 minutes.</p>
-            <p style="font-size: 14px; color: #ef4444; margin-top: 20px;"><strong>Note:</strong> If you did not request this, please ignore this email.</p>
+      // 6. Send OTP Email using Resend (or fallback to Nodemailer)
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
+          <h2 style="color: #2563eb;">Verify Your Email</h2>
+          <p style="font-size: 16px; color: #4b5563;">Thank you for registering with Connect Club! Please use the verification code below to complete your registration:</p>
+          <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">${otp}</span>
           </div>
-        `,
-      };
+          <p style="font-size: 14px; color: #6b7280;">This code will expire in 10 minutes.</p>
+          <p style="font-size: 14px; color: #ef4444; margin-top: 20px;"><strong>Note:</strong> If you did not request this, please ignore this email.</p>
+        </div>
+      `;
 
-      await transporter.sendMail(mailOptions);
+      if (process.env.RESEND_API_KEY) {
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'Connect Club <noreply@connectclubvce.tech>';
+        
+        const { error: resendError } = await resend.emails.send({
+          from: fromEmail,
+          to: normalizedEmail,
+          subject: 'Connect Club - Verification Code',
+          html: emailHtml,
+        });
+
+        if (resendError) {
+          throw new Error(resendError.message || 'Failed to send verification email via Resend');
+        }
+      } else {
+        const nodemailer = await import('nodemailer');
+        const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+        const smtpPort = Number(process.env.SMTP_PORT) || 465;
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_APP_PASSWORD,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"Connect Club" <${process.env.EMAIL_USER}>`,
+          to: normalizedEmail,
+          subject: 'Connect Club - Verification Code',
+          html: emailHtml,
+        });
+      }
 
     } catch (firebaseError: unknown) {
       const errorCode = typeof firebaseError === "object" && firebaseError !== null && "code" in firebaseError
