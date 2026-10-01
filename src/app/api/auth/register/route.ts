@@ -92,57 +92,56 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'This phone number is already registered.' }, { status: 409 });
       }
 
-      // 1. Create Firebase Auth user
+      // 1. Create Firebase Auth user (unverified)
       const userRecord = await adminAuth.createUser({
         email: normalizedEmail,
         password,
         displayName: name.trim(),
+        emailVerified: false,
       });
       uid = userRecord.uid;
 
       // 2. Set custom claim for RBAC
       await adminAuth.setCustomUserClaims(uid, { role: 'user' });
 
-      // 3. Create user profile document in Firestore
-      await adminDb.collection('users').doc(uid).set({
-        uid,
-        name: name.trim(),
-        email: normalizedEmail,
-        rollNo: normalizedRollNo,
-        phone: normalizedPhone,
-        normalizedRollNo,
-        normalizedPhone,
-        department: department || '',
-        yearOfStudy: yearOfStudy || '',
-        provider: 'email',
-        photoURL: '',
-        bio: '',
-        linkedinUrl: '',
-        githubUrl: '',
-        projectsCount: 0,
-        likesReceived: 0,
-        commentsCount: 0,
-        certificatesCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      // 4. Generate 6-digit OTP with the platform CSPRNG (Math.random is
+      // 3. Generate 6-digit OTP with the platform CSPRNG (Math.random is
       // predictable and unusable for security codes).
       const otp = String(randomInt(100000, 1000000));
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      // 5. Store OTP in Firestore. lastSentAt feeds the resend-otp cooldown
-      // so the very first resend is also throttled.
+      // 4. Store OTP AND pending profile in Firestore email_otps.
+      // NOTE: We DO NOT write to the 'users' collection yet!
+      // The user document is only created after successful OTP verification.
       await adminDb.collection('email_otps').doc(normalizedEmail).set({
         otp,
+        uid,
+        pendingProfile: {
+          uid,
+          name: name.trim(),
+          email: normalizedEmail,
+          rollNo: normalizedRollNo,
+          phone: normalizedPhone,
+          normalizedRollNo,
+          normalizedPhone,
+          department: department || '',
+          yearOfStudy: yearOfStudy || '',
+          provider: 'email',
+          photoURL: '',
+          bio: '',
+          linkedinUrl: '',
+          githubUrl: '',
+          projectsCount: 0,
+          likesReceived: 0,
+          commentsCount: 0,
+          certificatesCount: 0,
+        },
         expiresAt,
         lastSentAt: new Date(),
         attempts: 0,
         createdAt: new Date()
       });
 
-      // 6. Send OTP Email using Resend (or fallback to Nodemailer)
+      // 5. Send OTP Email using Resend (or fallback to Nodemailer)
       const { getOtpEmailHtml } = await import('@/lib/email/otpTemplate');
       const emailHtml = getOtpEmailHtml(otp);
 

@@ -102,7 +102,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5. Delete OTP record after successful verification
+    // 5. Persist user document in Firestore 'users' collection ONLY NOW after OTP is confirmed
+    if (data.pendingProfile) {
+      const profileData = {
+        ...data.pendingProfile,
+        uid: userRecord.uid,
+        email: normalizedEmail,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await adminDb.collection('users').doc(userRecord.uid).set(profileData, { merge: true });
+    }
+
+    // 6. Delete OTP record after successful verification
     await otpRef.delete();
 
     return NextResponse.json({ success: true, uid: userRecord.uid });
