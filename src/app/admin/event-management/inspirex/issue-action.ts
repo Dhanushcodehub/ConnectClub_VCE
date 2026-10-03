@@ -1,145 +1,88 @@
 "use server";
 
-import * as admin from "firebase-admin";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { commitInChunksAdmin, type BatchOp } from "@/lib/firebase/batch";
 
-export async function issueInspirexCertificates() {
+export async function issueEventCertificates(eventId: string, eventTitle: string) {
   try {
-    // 1. Initialize Connect Club Admin SDK
-    const primaryApp = getAdminApp();
-    const primaryDb = getFirestore(primaryApp);
+    const app = getAdminApp();
+    const db = getFirestore(app);
 
-    // 2. Initialize InspireX Admin SDK
-    const projectId = process.env.INSPIREX_FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.INSPIREX_FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.INSPIREX_FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-    if (!projectId || !clientEmail || !privateKey) {
-      throw new Error("Missing InspireX Firebase credentials in environment variables.");
-    }
-
-    const appName = "inspirex-admin";
-    let inspirexApp: admin.app.App;
-    
-    const existingApp = admin.apps.find(app => app && app.name === appName);
-    if (existingApp) {
-      inspirexApp = existingApp;
-    } else {
-      inspirexApp = admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      }, appName);
-    }
-
-    const inspirexDb = getFirestore(inspirexApp);
-
-    // 3. Ensure Certificate Template Exists
-    const templateDoc = await primaryDb.collection("event_templates").doc("inspirex-s2").get();
+    const templateDoc = await db.collection("event_templates").doc(eventId).get();
     if (!templateDoc.exists || !templateDoc.data()?.imageUrl) {
-      return { success: false, message: "Please configure a certificate template in the Certificate Studio before issuing certificates." };
+      return {
+        success: false,
+        message: "Please configure a certificate template for this event before issuing certificates.",
+      };
     }
 
-    // 4. Get all raw registrations from InspireX
-    const inspirexSnapshot = await inspirexDb.collection("registrations").get();
-    
-    if (inspirexSnapshot.empty) {
-      return { success: false, message: "No registrations found in InspireX database." };
+    const registrationsSnap = await db
+      .collection("event_registrations")
+      .where("eventId", "==", eventId)
+      .get();
+
+    if (registrationsSnap.empty) {
+      return { success: false, message: "No registered participants found for this event." };
     }
 
-    // Collect all writes first, then commit in chunks — a single batch is
-    // hard-capped at 500 ops and we write up to 3 ops per registration.
     const ops: BatchOp[] = [];
     let issuedCount = 0;
 
-    for (const doc of inspirexSnapshot.docs) {
-      const data = doc.data();
-      const rawRollNo = data.rollNo || "";
-      const cleanRollNo = rawRollNo.toUpperCase().trim();
-      
-      if (!cleanRollNo) continue;
+    for (const regDoc of registrationsSnap.docs) {
+      const reg = regDoc.data();
+      const userId = reg.userId;
 
-      // Find if this roll number belongs to a Connect Club member
-      const userSnap = await primaryDb.collection("users").where("rollNo", "==", cleanRollNo).limit(1).get();
-      if (userSnap.empty) continue; // Not a CC member
-      
-      const userId = userSnap.docs[0].id;
+      if (!userId) continue;
 
-      // Check if they already got this certificate
-      const certCheck = await primaryDb.collection("certificates")
+      const userSnap = await db.collection("users").doc(userId).get();
+      const userData = userSnap.data();
+
+      const participantName = reg.participantName || userData?.name || "Participant";
+      const participantBranch = reg.participantBranch || userData?.branch || "N/A";
+
+      const certCheck = await db
+        .collection("certificates")
         .where("userId", "==", userId)
-        .where("eventId", "==", "inspirex-s2")
+        .where("eventId", "==", eventId)
         .limit(1)
         .get();
 
-      if (!certCheck.empty) continue; // Already issued
+      if (!certCheck.empty) continue;
 
-      // 4. Generate Certificate
-      const certRef = primaryDb.collection("certificates").doc();
+      const certRef = db.collection("certificates").doc();
+
       ops.push({
         type: "set",
         ref: certRef,
         data: {
-          userId: userId,
-          eventId: "inspirex-s2",
-          eventTitle: "InspireX Season 2",
+          userId,
+          eventId,
+          eventTitle,
           issuedAt: FieldValue.serverTimestamp(),
           type: "participation",
-          participantName: data.name || data.fullName || "Participant",
-          participantBranch: data.branch || "Unknown",
+          participantName,
+          participantBranch,
         },
       });
 
-      // 5. Check if they have an event_registration. If so, mark it issued. 
-      // If not (e.g. registered before webhook), create it.
-      const regCheck = await primaryDb.collection("event_registrations")
-        .where("userId", "==", userId)
-        .where("eventId", "==", "inspirex-s2")
-        .limit(1)
-        .get();
+      ops.push({
+        type: "update",
+        ref: regDoc.ref,
+        data: {
+          certificateIssued: true,
+          certificateId: certRef.id,
+        },
+      });
 
-      if (!regCheck.empty) {
-        ops.push({
-          type: "update",
-          ref: regCheck.docs[0].ref,
-          data: {
-            certificateIssued: true,
-            certificateId: certRef.id,
-            ticketId: doc.id, // sync ticket ID just in case
-          },
-        });
-      } else {
-        const regRef = primaryDb.collection("event_registrations").doc();
-        ops.push({
-          type: "set",
-          ref: regRef,
-          data: {
-            userId,
-            eventId: "inspirex-s2",
-            eventTitle: "InspireX Season 2",
-            ticketId: doc.id,
-            registeredAt: data.registeredAt || FieldValue.serverTimestamp(),
-            attended: true, // Assuming if we issue a cert, they attended
-            certificateIssued: true,
-            certificateId: certRef.id,
-          },
-        });
-      }
-
-      // 6. Send Notification
-      const notifRef = primaryDb.collection("notifications").doc();
       ops.push({
         type: "set",
-        ref: notifRef,
+        ref: db.collection("notifications").doc(),
         data: {
-          userId: userId,
+          userId,
           type: "certificate",
-          title: "InspireX Certificate Ready!",
-          message: "Your certificate of participation for InspireX Season 2 is now available.",
+          title: `${eventTitle} Certificate Ready!`,
+          message: `Your certificate for ${eventTitle} is now available.`,
           actionUrl: `/certificate/${certRef.id}`,
           read: false,
           createdAt: FieldValue.serverTimestamp(),
@@ -150,14 +93,27 @@ export async function issueInspirexCertificates() {
     }
 
     if (issuedCount === 0) {
-      return { success: false, message: "No eligible new registrations found. All members already have their certificates." };
+      return {
+        success: false,
+        message: "No eligible new certificates were generated for this event.",
+      };
     }
 
-    await commitInChunksAdmin(primaryDb, ops);
+    await commitInChunksAdmin(db, ops);
 
-    return { success: true, message: `Successfully synced and issued ${issuedCount} certificates!` };
+    return {
+      success: true,
+      message: `Successfully issued ${issuedCount} certificates for ${eventTitle}.`,
+    };
   } catch (error: any) {
-    console.error("Error issuing certificates:", error);
-    return { success: false, message: error.message || "Failed to issue certificates." };
+    console.error("Error issuing event certificates:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to issue certificates.",
+    };
   }
+}
+
+export async function issueInspirexCertificates() {
+  return issueEventCertificates("inspirex-s2", "InspireX Season 2");
 }
