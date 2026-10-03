@@ -11,10 +11,12 @@ import {
   ChevronRight, 
   ChevronLeft,
   Loader2,
-  Type
+  Type,
+  Send
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { issueInspirexCertificates } from "../issue-action";
 
 interface TemplateConfig {
   imageUrl: string;
@@ -34,6 +36,7 @@ export default function CertificateStudio() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [issuing, setIssuing] = useState(false);
   
   // Real participant data for preview
   const [participants, setParticipants] = useState<any[]>([]);
@@ -209,6 +212,31 @@ export default function CertificateStudio() {
     }
   };
 
+  const handleIssueCertificates = async () => {
+    if (!config.imageUrl) {
+      toast.error("Please save a template first");
+      return;
+    }
+    
+    if (!window.confirm(`Issue certificates to ${participants.length} participants?`)) {
+      return;
+    }
+
+    setIssuing(true);
+    try {
+      const result = await issueInspirexCertificates();
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error: any) {
+      toast.error("Error issuing certificates: " + error.message);
+    } finally {
+      setIssuing(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -216,12 +244,12 @@ export default function CertificateStudio() {
   return (
     <div className="min-h-screen flex flex-col bg-background p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display text-white">Certificate Studio</h1>
-          <p className="text-white/60 text-sm">Design and map dynamic fields for {eventId}</p>
+          <p className="text-white/60 text-sm">Design and issue certificates for {eventId}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Link href={`/admin/event-management/${eventId.split('-')[0]}`} className="px-4 py-2 text-sm text-white/70 hover:text-white transition-colors">
             Back
           </Link>
@@ -232,6 +260,14 @@ export default function CertificateStudio() {
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Configuration
+          </button>
+          <button 
+            onClick={handleIssueCertificates}
+            disabled={issuing || !config.imageUrl}
+            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+          >
+            {issuing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Issue Certificates
           </button>
         </div>
       </div>
