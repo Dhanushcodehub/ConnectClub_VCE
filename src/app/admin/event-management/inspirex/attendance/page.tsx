@@ -23,8 +23,9 @@ interface Registration {
   afternoonAttendance: boolean;
 }
 
-export default function InspirexAttendancePage() {
+export default function InspirexAttendancePage({ isAdmin = true }: { isAdmin?: boolean }) {
   const { user, role } = useAuth();
+  const isAdminContext = isAdmin || role === "admin";
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -316,7 +317,7 @@ export default function InspirexAttendancePage() {
         {/* Top Header Row */}
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <Link href={role === "admin" ? "/admin/event-management/inspirex" : "/member/dashboard"} className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
+            <Link href={isAdminContext ? "/admin/event-management/inspirex" : "/member/dashboard"} className="inline-flex items-center text-sm font-medium text-white/50 hover:text-white mb-4 transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to InspireX
             </Link>
@@ -328,7 +329,7 @@ export default function InspirexAttendancePage() {
           </div>
           <button
             onClick={() => setIsScanning(true)}
-            className="flex items-center justify-center gap-2 w-full md:w-auto px-8 py-4 bg-green-500 hover:bg-green-600 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-95 shrink-0 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-8 py-4 bg-green-500 hover:bg-green-600 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <QrCode className="w-6 h-6" />
             Scan QR
@@ -336,7 +337,7 @@ export default function InspirexAttendancePage() {
           <button
             onClick={downloadAttendanceCsv}
             disabled={filteredRegistrations.length === 0}
-            className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all disabled:opacity-40"
+            className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-5 h-5" />
             Export CSV
@@ -360,8 +361,8 @@ export default function InspirexAttendancePage() {
             <select 
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="w-full md:w-40 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+              className="w-full md:w-40 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpat...' ) }}
             >
               <option value="All">All Branches</option>
               {branches.map(b => <option key={b} value={b}>{b}</option>)}
@@ -370,8 +371,8 @@ export default function InspirexAttendancePage() {
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full md:w-32 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+              className="w-full md:w-32 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpat...' ) }}
             >
               <option value="All">All Years</option>
               {years.map(y => <option key={y} value={y}>{y} Year</option>)}
@@ -380,8 +381,8 @@ export default function InspirexAttendancePage() {
             <select 
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
-              className="w-full md:w-36 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors appearance-none"
-              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF40%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem top 50%', backgroundSize: '0.65rem auto' }}
+              className="w-full md:w-36 bg-[#111114] border border-white/10 rounded-xl py-2.5 px-2.5 md:py-3 md:px-4 text-xs md:text-sm text-white focus:outline-none focus:border-green-500/50 transition-colors"
+              style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpat...' ) }}
             >
               <option value="All">All Sections</option>
               {sections.map(s => <option key={s} value={s}>Section {s}</option>)}
@@ -413,13 +414,13 @@ export default function InspirexAttendancePage() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setScanSession("morning")}
-                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "morning" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)]" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}
+                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "morning" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.35)]" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
               >
                 Morning
               </button>
               <button
                 onClick={() => setScanSession("afternoon")}
-                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "afternoon" ? "bg-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.3)]" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}
+                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-colors ${scanSession === "afternoon" ? "bg-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.35)]" : "bg-white/5 text-white/60 hover:bg-white/10"}`}
               >
                 Afternoon
               </button>
