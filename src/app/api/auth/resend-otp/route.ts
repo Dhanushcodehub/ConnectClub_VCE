@@ -17,6 +17,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const normalizedEmail = String(email).toLowerCase().trim();
+
     const adminModule = await import('@/lib/firebase/admin');
     const getAdminDb = adminModule.getAdminDb;
     const adminDb = getAdminDb();
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
     const getAdminAuth = adminModule.getAdminAuth;
     const adminAuth = getAdminAuth();
     try {
-      await adminAuth.getUserByEmail(email);
+      await adminAuth.getUserByEmail(normalizedEmail);
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
         return NextResponse.json(
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     // 1b. Rate limit: without this the endpoint is an email-bombing vector
     // (it triggers a real email per call) and lets attackers burn through
     // codes to reset the verify-attempt counter.
-    const otpDocRef = adminDb.collection('email_otps').doc(email.toLowerCase());
+    const otpDocRef = adminDb.collection('email_otps').doc(normalizedEmail);
     const existingOtp = await otpDocRef.get();
     if (existingOtp.exists) {
       const lastSentAt = existingOtp.data()?.lastSentAt?.toDate?.() ?? null;
@@ -59,13 +61,26 @@ export async function POST(req: Request) {
     const otp = String(randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // 3. Store OTP in Firestore
-    await otpDocRef.set({
+    // 3. Preserve the pending registration fields and reset only the OTP state.
+    // Using set() here would overwrite the existing document and wipe out
+    // pendingProfile / uid / previous OTP metadata.
+    const existingData = existingOtp.exists ? existingOtp.data() : null;
+    const nextOtpData = {
       otp,
       expiresAt,
       lastSentAt: new Date(),
-      createdAt: new Date()
-    });
+      createdAt: existingData?.createdAt ?? new Date(),
+      attempts: 0,
+      lockedUntil: null,
+      uid: existingData?.uid ?? null,
+      pendingProfile: existingData?.pendingProfile ?? null,
+    };
+
+    if (existingOtp.exists) {
+      await otpDocRef.update(nextOtpData);
+    } else {
+      await otpDocRef.set(nextOtpData);
+    }
 
     // 4. Send OTP Email using Resend (or fallback to Nodemailer)
     const { getOtpEmailHtml } = await import('@/lib/email/otpTemplate');
@@ -76,14 +91,14 @@ export async function POST(req: Request) {
       const resend = new Resend(process.env.RESEND_API_KEY.trim());
       let fromEmail = (process.env.RESEND_FROM_EMAIL || 'Connect Club <noreply@connectclubvce.tech>').trim();
       // Remove enclosing quotes if added in Vercel UI
-      fromEmail = fromEmail.replace(/^["']|["']$/g, '');
+      fromEmail = fromEmail.replace(/^['"]|['"]$/g, '');
       if (!fromEmail.includes('<') && !fromEmail.includes('>')) {
         fromEmail = `Connect Club <${fromEmail}>`;
       }
-      
+
       const { error: resendError } = await resend.emails.send({
         from: fromEmail,
-        to: email,
+        to: normalizedEmail,
         subject: 'Connect Club - New Verification Code',
         html: emailHtml,
       });
@@ -107,7 +122,7 @@ export async function POST(req: Request) {
 
       await transporter.sendMail({
         from: `"Connect Club" <${process.env.EMAIL_USER}>`,
-        to: email,
+        to: normalizedEmail,
         subject: 'Connect Club - New Verification Code',
         html: emailHtml,
       });
