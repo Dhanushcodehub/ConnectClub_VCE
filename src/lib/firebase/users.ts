@@ -147,14 +147,99 @@ export async function checkUserExists(uid: string): Promise<boolean> {
   }
 }
 
+export const fallbackUsers: ConnectUser[] = [
+  {
+    uid: "student-1",
+    name: "Bhavesh Sharma",
+    email: "bhavesh.sharma@gmail.com",
+    rollNo: "22881A0512",
+    phone: "9876543210",
+    department: "CSE",
+    yearOfStudy: "3rd Year",
+    provider: "google",
+    projectsCount: 2,
+    likesReceived: 14,
+    commentsCount: 5,
+    certificatesCount: 1,
+    createdAt: new Date("2026-08-15T10:00:00Z"),
+    updatedAt: new Date("2026-08-15T10:00:00Z"),
+  },
+  {
+    uid: "student-2",
+    name: "Ananya Reddy",
+    email: "ananya.reddy@gmail.com",
+    rollNo: "23881A6624",
+    phone: "9848012345",
+    department: "AI&ML",
+    yearOfStudy: "2nd Year",
+    provider: "google",
+    projectsCount: 1,
+    likesReceived: 8,
+    commentsCount: 2,
+    certificatesCount: 2,
+    createdAt: new Date("2026-08-20T14:30:00Z"),
+    updatedAt: new Date("2026-08-20T14:30:00Z"),
+  },
+  {
+    uid: "student-3",
+    name: "Karthik Varma",
+    email: "karthik.varma@outlook.com",
+    rollNo: "21881A1245",
+    phone: "9123456780",
+    department: "IT",
+    yearOfStudy: "4th Year",
+    provider: "email",
+    projectsCount: 4,
+    likesReceived: 32,
+    commentsCount: 12,
+    certificatesCount: 3,
+    createdAt: new Date("2026-07-10T09:15:00Z"),
+    updatedAt: new Date("2026-07-10T09:15:00Z"),
+  },
+  {
+    uid: "student-4",
+    name: "Sneha Patel",
+    email: "sneha.patel@gmail.com",
+    rollNo: "24881A0456",
+    phone: "9988776655",
+    department: "ECE",
+    yearOfStudy: "1st Year",
+    provider: "google",
+    projectsCount: 0,
+    likesReceived: 2,
+    commentsCount: 1,
+    certificatesCount: 0,
+    createdAt: new Date("2026-09-01T16:45:00Z"),
+    updatedAt: new Date("2026-09-01T16:45:00Z"),
+  },
+  {
+    uid: "student-5",
+    name: "Rohit Kumar",
+    email: "rohit.k@gmail.com",
+    rollNo: "22881A6708",
+    phone: "9001122334",
+    department: "DS",
+    yearOfStudy: "3rd Year",
+    provider: "email",
+    projectsCount: 1,
+    likesReceived: 5,
+    commentsCount: 3,
+    certificatesCount: 1,
+    createdAt: new Date("2026-08-28T11:20:00Z"),
+    updatedAt: new Date("2026-08-28T11:20:00Z"),
+  },
+];
+
 export async function getAllUsers(): Promise<ConnectUser[]> {
+  if (!isFirebaseConfigured || !db) return fallbackUsers;
   try {
     const q = query(collection(db, USERS_COLLECTION));
     const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return [];
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as ConnectUser));
   } catch (error) {
     console.error("Error fetching all users:", error);
-    return [];
+    return fallbackUsers;
   }
 }
 
@@ -162,7 +247,12 @@ export async function getAllUsers(): Promise<ConnectUser[]> {
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════
 
+const inMemoryNotifications: UserNotification[] = [];
+
 export async function getUserNotifications(userId: string): Promise<UserNotification[]> {
+  if (!isFirebaseConfigured || !db) {
+    return inMemoryNotifications.filter(n => n.userId === userId);
+  }
   try {
     const q = query(
       collection(db, NOTIFICATIONS_COLLECTION),
@@ -182,11 +272,14 @@ export async function getUserNotifications(userId: string): Promise<UserNotifica
     }).slice(0, 50);
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    return [];
+    return inMemoryNotifications.filter(n => n.userId === userId);
   }
 }
 
 export async function markNotificationRead(notifId: string): Promise<void> {
+  const local = inMemoryNotifications.find(n => n.id === notifId);
+  if (local) local.read = true;
+  if (!isFirebaseConfigured || !db) return;
   try {
     const docRef = doc(db, NOTIFICATIONS_COLLECTION, notifId);
     await updateDoc(docRef, { read: true });
@@ -196,6 +289,10 @@ export async function markNotificationRead(notifId: string): Promise<void> {
 }
 
 export async function markAllNotificationsRead(userId: string): Promise<void> {
+  inMemoryNotifications.forEach(n => {
+    if (n.userId === userId) n.read = true;
+  });
+  if (!isFirebaseConfigured || !db) return;
   try {
     const q = query(
       collection(db, NOTIFICATIONS_COLLECTION),
@@ -216,6 +313,9 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
 }
 
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  if (!isFirebaseConfigured || !db) {
+    return inMemoryNotifications.filter(n => n.userId === userId && !n.read).length;
+  }
   try {
     const q = query(
       collection(db, NOTIFICATIONS_COLLECTION),
@@ -226,18 +326,31 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
     return querySnapshot.size;
   } catch (error) {
     console.error("Error counting unread notifications:", error);
-    return 0;
+    return inMemoryNotifications.filter(n => n.userId === userId && !n.read).length;
   }
 }
 
-export async function createNotification(notification: Omit<UserNotification, "id">): Promise<void> {
+export async function createNotification(notification: Omit<UserNotification, "id">): Promise<string> {
+  const newNotif: UserNotification = {
+    id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    ...notification,
+    createdAt: new Date(),
+  };
+  inMemoryNotifications.unshift(newNotif);
+
+  if (!isFirebaseConfigured || !db) {
+    return newNotif.id;
+  }
+
   try {
-    await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+    const docRef = await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
       ...notification,
       createdAt: serverTimestamp(),
     });
+    return docRef.id;
   } catch (error) {
     console.error("Error creating notification:", error);
+    throw error;
   }
 }
 
