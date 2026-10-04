@@ -24,6 +24,31 @@ interface TemplateConfig {
   branch: { x: number; y: number; size: number; color: string; visible: boolean };
 }
 
+interface Participant {
+  id?: string;
+  name: string;
+  rollNo?: string;
+  email?: string;
+  branch?: string;
+  year?: string;
+  section?: string;
+  morningAttendance?: boolean;
+  afternoonAttendance?: boolean;
+  [key: string]: any;
+}
+
+function formatBranchYear(branch?: string, year?: string): string {
+  const b = branch?.trim() || "";
+  const y = year?.trim() || "";
+  if (b && y) {
+    if (b.toLowerCase().includes(y.toLowerCase())) {
+      return b;
+    }
+    return `${b} - ${y}`;
+  }
+  return b || y || "";
+}
+
 const DEFAULT_CONFIG: TemplateConfig = {
   imageUrl: "",
   name: { x: 0.5, y: 0.4, size: 56, color: "#1a1a1a", visible: true },
@@ -39,7 +64,7 @@ export default function CertificateStudio() {
   const [issuing, setIssuing] = useState(false);
   
   // Real participant data for preview
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,14 +75,17 @@ export default function CertificateStudio() {
 
   // 1. Fetch Config and Participants
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         // Fetch Template
         const docSnap = await getDoc(templateDocRef);
-        if (docSnap.exists()) {
-          setConfig(docSnap.data() as TemplateConfig);
-          if (docSnap.data().imageUrl) {
-            loadImage(docSnap.data().imageUrl);
+        if (docSnap.exists() && isMounted) {
+          const tplData = docSnap.data() as TemplateConfig;
+          setConfig(tplData);
+          if (tplData.imageUrl) {
+            loadImage(tplData.imageUrl);
           }
         }
 
@@ -69,20 +97,37 @@ export default function CertificateStudio() {
           }
         });
         const data = await res.json();
-        if (data.registrations && data.registrations.length > 0) {
-          setParticipants(data.registrations);
-        } else {
-          // Fallback if no real users yet
-          setParticipants([{ name: "John Doe", branch: "Computer Science - 3rd Year" }]);
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to load registrations");
+        }
+
+        if (isMounted) {
+          const allRegistrations: Participant[] = Array.isArray(data.data) ? data.data : [];
+          const attendedParticipants = allRegistrations.filter(
+            (reg) => reg.morningAttendance === true || reg.afternoonAttendance === true
+          );
+          setParticipants(attendedParticipants);
+          setPreviewIndex(0);
         }
       } catch (err) {
         toast.error("Failed to load studio data");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     fetchData();
-    // Load Fonts for Canvas reliably using Google Fonts CSS
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Load Fonts for Canvas reliably using Google Fonts CSS
+  useEffect(() => {
     const fontLinkId = 'cormorant-garamond-font';
     if (!document.getElementById(fontLinkId)) {
       const link = document.createElement('link');
@@ -140,7 +185,8 @@ export default function CertificateStudio() {
       ctx.fillText("Upload Template Image", canvas.width / 2, canvas.height / 2);
     }
 
-    const currentParticipant = participants[previewIndex] || { name: "Sample Name", branch: "Sample Branch" };
+    const currentParticipant = participants[previewIndex];
+    if (!currentParticipant) return;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -152,18 +198,19 @@ export default function CertificateStudio() {
       ctx.fillText(currentParticipant.name, config.name.x * canvas.width, config.name.y * canvas.height);
     }
 
-    // Draw Branch
-    if (config.branch.visible && currentParticipant.branch) {
+    // Draw Branch / Year
+    const branchInfo = formatBranchYear(currentParticipant.branch, currentParticipant.year);
+    if (config.branch.visible && branchInfo) {
       ctx.font = `400 ${config.branch.size}px sans-serif`;
       ctx.fillStyle = config.branch.color;
-      ctx.fillText(currentParticipant.branch, config.branch.x * canvas.width, config.branch.y * canvas.height);
+      ctx.fillText(branchInfo, config.branch.x * canvas.width, config.branch.y * canvas.height);
     }
   };
 
-  // Re-render when config or preview index changes
+  // Re-render when config, preview index, or participants change
   useEffect(() => {
     renderCanvas();
-  }, [config, previewIndex]);
+  }, [config, previewIndex, participants]);
 
   // 3. Handlers
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -404,25 +451,39 @@ export default function CertificateStudio() {
         {/* Live Preview Area */}
         <div className="flex-1 bg-[#111118] border border-white/5 rounded-2xl flex flex-col items-center justify-center overflow-hidden p-6 relative min-h-[500px]">
           
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-black/50 backdrop-blur border border-white/10 px-4 py-2 rounded-full">
-            <button 
-              onClick={() => setPreviewIndex(Math.max(0, previewIndex - 1))}
-              disabled={previewIndex === 0}
-              className="text-white/70 hover:text-white disabled:opacity-30"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="text-xs font-bold whitespace-nowrap">
-              Preview: {participants[previewIndex]?.name || "Sample"} ({previewIndex + 1}/{Math.max(1, participants.length)})
+          {participants.length > 0 ? (
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-black/50 backdrop-blur border border-white/10 px-4 py-2 rounded-full">
+              <button 
+                onClick={() => setPreviewIndex((prev) => Math.max(0, prev - 1))}
+                disabled={previewIndex === 0}
+                className="text-white/70 hover:text-white disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Previous participant"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-xs font-bold whitespace-nowrap text-white">
+                Preview: {participants[previewIndex]?.name} ({previewIndex + 1}/{participants.length})
+              </div>
+              <button 
+                onClick={() => setPreviewIndex((prev) => Math.min(participants.length - 1, prev + 1))}
+                disabled={previewIndex >= participants.length - 1}
+                className="text-white/70 hover:text-white disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Next participant"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
-            <button 
-              onClick={() => setPreviewIndex(Math.min(participants.length - 1, previewIndex + 1))}
-              disabled={previewIndex >= participants.length - 1}
-              className="text-white/70 hover:text-white disabled:opacity-30"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+          ) : (
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/60 backdrop-blur border border-amber-500/30 text-amber-300 px-4 py-2 rounded-full text-xs font-medium">
+              No attended participants found for InspireX.
+            </div>
+          )}
+
+          {participants.length === 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-black/75 backdrop-blur border border-amber-500/30 text-amber-300 text-xs px-4 py-2 rounded-full shadow-lg pointer-events-none whitespace-nowrap">
+              No attended participants found for InspireX.
+            </div>
+          )}
 
           <div className="w-full h-full flex items-center justify-center overflow-auto custom-scrollbar">
             <canvas 
