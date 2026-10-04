@@ -82,9 +82,29 @@ export default function CertificateStudio() {
       }
     };
     fetchData();
-    // Load Fonts for Canvas
-    const font = new FontFace('Cormorant Garamond', "url(https://fonts.gstatic.com/s/cormorantgaramond/v16/co3YmX5slCNuHLi8bLeY9MK7whWMhyjYqXtKky2F7i6C34s.woff2)", { style: 'italic', weight: '600' });
-    font.load().then(f => (document.fonts as any).add(f)).catch(console.error);
+    // Load Fonts for Canvas reliably using Google Fonts CSS
+    const fontLinkId = 'cormorant-garamond-font';
+    if (!document.getElementById(fontLinkId)) {
+      const link = document.createElement('link');
+      link.id = fontLinkId;
+      link.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+
+      // Force browser to load the font by applying it to a hidden element
+      const div = document.createElement('div');
+      div.style.fontFamily = "'Cormorant Garamond', serif";
+      div.style.fontStyle = 'italic';
+      div.style.fontWeight = '600';
+      div.style.position = 'absolute';
+      div.style.visibility = 'hidden';
+      div.innerText = 'preload';
+      document.body.appendChild(div);
+      
+      document.fonts.ready.then(() => {
+        renderCanvas();
+      }).catch(console.error);
+    }
   }, []);
 
   const loadImage = (url: string) => {
