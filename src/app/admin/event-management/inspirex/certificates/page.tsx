@@ -49,6 +49,197 @@ function formatBranchYear(branch?: string, year?: string): string {
   return b || y || "";
 }
 
+function isColorDark(hexOrRgb: string): boolean {
+  if (!hexOrRgb) return true;
+  if (hexOrRgb.startsWith("#")) {
+    const hex = hexOrRgb.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+  }
+  return true;
+}
+
+function getRepresentativeColor(
+  colors: [number, number, number][],
+  isDarkText: boolean
+): [number, number, number] {
+  if (colors.length === 0) return isDarkText ? [255, 255, 255] : [17, 17, 24];
+  
+  const sorted = [...colors].sort((a, b) => {
+    const lumA = 0.299 * a[0] + 0.587 * a[1] + 0.114 * a[2];
+    const lumB = 0.299 * b[0] + 0.587 * b[1] + 0.114 * b[2];
+    return isDarkText ? lumB - lumA : lumA - lumB;
+  });
+
+  const bestHalf = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 2)));
+  const avg = bestHalf.reduce(
+    (acc, c) => [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]],
+    [0, 0, 0]
+  );
+  return [
+    Math.round(avg[0] / bestHalf.length),
+    Math.round(avg[1] / bestHalf.length),
+    Math.round(avg[2] / bestHalf.length),
+  ];
+}
+
+function getAreaBackgroundColor(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  textColor: string
+): { topColor: string; bottomColor: string } {
+  const isDark = isColorDark(textColor);
+  const fallback = isDark ? "rgb(255, 255, 255)" : "rgb(17, 17, 24)";
+
+  try {
+    const halfW = w / 2;
+    const halfH = h / 2;
+    
+    const yTop = Math.max(0, Math.min(canvasHeight - 1, Math.round(cy - halfH - 4)));
+    const yBottom = Math.max(0, Math.min(canvasHeight - 1, Math.round(cy + halfH + 4)));
+    
+    const samplePointsX = [
+      Math.round(cx - halfW * 0.4),
+      Math.round(cx - halfW * 0.2),
+      Math.round(cx),
+      Math.round(cx + halfW * 0.2),
+      Math.round(cx + halfW * 0.4),
+    ].filter((x) => x >= 0 && x < canvasWidth);
+
+    const topColors: [number, number, number][] = [];
+    const bottomColors: [number, number, number][] = [];
+
+    for (const sx of samplePointsX) {
+      const pTop = ctx.getImageData(sx, yTop, 1, 1).data;
+      if (pTop && pTop[3] > 128) {
+        topColors.push([pTop[0], pTop[1], pTop[2]]);
+      }
+      const pBot = ctx.getImageData(sx, yBottom, 1, 1).data;
+      if (pBot && pBot[3] > 128) {
+        bottomColors.push([pBot[0], pBot[1], pBot[2]]);
+      }
+    }
+
+    if (topColors.length === 0 && bottomColors.length === 0) {
+      return { topColor: fallback, bottomColor: fallback };
+    }
+
+    const avgTop = getRepresentativeColor(topColors, isDark);
+    const avgBot = getRepresentativeColor(bottomColors, isDark);
+
+    return {
+      topColor: `rgb(${avgTop[0]}, ${avgTop[1]}, ${avgTop[2]})`,
+      bottomColor: `rgb(${avgBot[0]}, ${avgBot[1]}, ${avgBot[2]})`,
+    };
+  } catch {
+    return { topColor: fallback, bottomColor: fallback };
+  }
+}
+
+function drawSoftCover(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  topColor: string,
+  bottomColor: string
+) {
+  ctx.save();
+
+  // Create vertical gradient matching the sampled top and bottom background
+  const grad = ctx.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, topColor);
+  grad.addColorStop(1, bottomColor);
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+
+  ctx.restore();
+}
+
+function coverPlaceholderAreas(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  config: TemplateConfig
+) {
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // 1. Cover Name Placeholder ("John Doe")
+  // Center is determined by the template default (0.5, 0.4) and the config slider
+  const minNameX = Math.min(0.5 * cw, config.name.x * cw);
+  const maxNameX = Math.max(0.5 * cw, config.name.x * cw);
+  const minNameY = Math.min(0.4 * ch, config.name.y * ch);
+  const maxNameY = Math.max(0.4 * ch, config.name.y * ch);
+
+  const nameBoxH = Math.max(config.name.size * 1.5, ch * 0.08);
+  const nameBoxW = Math.min(cw * 0.70, Math.max(config.name.size * 9, cw * 0.54));
+
+  const nameLeft = Math.max(0, minNameX - nameBoxW / 2);
+  const nameRight = Math.min(cw, maxNameX + nameBoxW / 2);
+  const nameTop = Math.max(0, minNameY - nameBoxH / 2);
+  const nameBottom = Math.min(ch, maxNameY + nameBoxH / 2);
+
+  const nameW = nameRight - nameLeft;
+  const nameH = nameBottom - nameTop;
+  const nameCenterX = (nameLeft + nameRight) / 2;
+  const nameCenterY = (nameTop + nameBottom) / 2;
+
+  const nameBg = getAreaBackgroundColor(
+    ctx,
+    nameCenterX,
+    nameCenterY,
+    nameW,
+    nameH,
+    cw,
+    ch,
+    config.name.color
+  );
+
+  drawSoftCover(ctx, nameLeft, nameTop, nameW, nameH, nameBg.topColor, nameBg.bottomColor);
+
+  // 2. Cover Branch Placeholder ("Computer Science - 3rd Year")
+  // Center is determined by the template default (0.5, 0.5) and the config slider
+  const minBranchX = Math.min(0.5 * cw, config.branch.x * cw);
+  const maxBranchX = Math.max(0.5 * cw, config.branch.x * cw);
+  const minBranchY = Math.min(0.5 * ch, config.branch.y * ch);
+  const maxBranchY = Math.max(0.5 * ch, config.branch.y * ch);
+
+  const branchBoxH = Math.max(config.branch.size * 1.6, ch * 0.05);
+  const branchBoxW = Math.min(cw * 0.72, Math.max(config.branch.size * 22, cw * 0.56));
+
+  const branchLeft = Math.max(0, minBranchX - branchBoxW / 2);
+  const branchRight = Math.min(cw, maxBranchX + branchBoxW / 2);
+  const branchTop = Math.max(0, minBranchY - branchBoxH / 2);
+  const branchBottom = Math.min(ch, maxBranchY + branchBoxH / 2);
+
+  const branchW = branchRight - branchLeft;
+  const branchH = branchBottom - branchTop;
+  const branchCenterX = (branchLeft + branchRight) / 2;
+  const branchCenterY = (branchTop + branchBottom) / 2;
+
+  const branchBg = getAreaBackgroundColor(
+    ctx,
+    branchCenterX,
+    branchCenterY,
+    branchW,
+    branchH,
+    cw,
+    ch,
+    config.branch.color
+  );
+
+  drawSoftCover(ctx, branchLeft, branchTop, branchW, branchH, branchBg.topColor, branchBg.bottomColor);
+}
+
 const DEFAULT_CONFIG: TemplateConfig = {
   imageUrl: "",
   name: { x: 0.5, y: 0.4, size: 56, color: "#1a1a1a", visible: true },
@@ -173,6 +364,9 @@ export default function CertificateStudio() {
       canvas.width = imageRef.current.naturalWidth;
       canvas.height = imageRef.current.naturalHeight;
       ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
+
+      // Cleanly remove/cover baked-in placeholder text ("John Doe" and "Computer Science - 3rd Year")
+      coverPlaceholderAreas(ctx, canvas, config);
     } else {
       // Default empty canvas
       canvas.width = 1024;
