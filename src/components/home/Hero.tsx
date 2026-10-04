@@ -47,8 +47,6 @@ function TypingEffect() {
   );
 }
 
-const TECH_TAGS = ["Next.js", "Firebase", "Gemini AI", "TypeScript", "DevOps", "Open Source"];
-
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
@@ -79,10 +77,36 @@ export function Hero() {
           className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center text-center md:items-start md:text-left z-20"
         >
           {/* Eyebrow */}
-          <motion.div variants={fadeUp} className="mb-6">
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+              },
+            }}
+            className="mb-6"
+          >
             <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Student Technology Club  VCE
+              <motion.span
+                className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                animate={{
+                  scale: [1, 1.25, 1],
+                  opacity: [0.7, 1, 0.7],
+                  boxShadow: [
+                    "0 0 0px rgba(52, 211, 153, 0.4)",
+                    "0 0 8px rgba(52, 211, 153, 0.8)",
+                    "0 0 0px rgba(52, 211, 153, 0.4)",
+                  ],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              STUDENT TECHNOLOGY CLUB · VCE
             </span>
           </motion.div>
 
@@ -132,18 +156,6 @@ export function Hero() {
             >
               Connect AI
             </CTAButton>
-          </motion.div>
-
-          {/* Tech stack tags */}
-          <motion.div variants={fadeUp} className="flex flex-wrap gap-2 justify-center md:justify-start">
-            {TECH_TAGS.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider border border-white/[0.07] bg-[#0D0F1A] text-white/35 rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
           </motion.div>
         </motion.div>
 
