@@ -330,7 +330,7 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
   }
 }
 
-export async function createNotification(notification: Omit<UserNotification, "id">): Promise<string> {
+export async function createNotification(notification: Omit<UserNotification, "id" | "createdAt">): Promise<string> {
   const newNotif: UserNotification = {
     id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     ...notification,
