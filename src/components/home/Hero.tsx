@@ -52,13 +52,13 @@ const TECH_TAGS = ["Next.js", "Firebase", "Gemini AI", "TypeScript", "DevOps", "
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const leftY  = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
+  const leftY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
   const rightY = useTransform(scrollYProgress, [0, 1], ["0%", "5%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.9], [1, 0]);
 
   return (
     <section ref={ref} className="relative min-h-[100svh] flex items-center overflow-hidden pt-20 pb-10 md:pt-0 md:pb-0">
-      
+
       {/* Background */}
       <BackgroundClient />
 
@@ -70,114 +70,114 @@ export function Hero() {
 
       <div className="relative z-10 container-grid items-center min-h-full md:min-h-[90vh] py-12 md:pt-24 md:pb-16 gap-y-12 md:gap-y-0">
 
-          {/* â”€â”€ LEFT: content â”€â”€â”€ */}
-          <motion.div
-            style={{ y: leftY, opacity }}
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center text-center md:items-start md:text-left z-20"
+        {/* â”€â”€ LEFT: content â”€â”€â”€ */}
+        <motion.div
+          style={{ y: leftY, opacity }}
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center text-center md:items-start md:text-left z-20"
+        >
+          {/* Eyebrow */}
+          <motion.div variants={fadeUp} className="mb-6">
+            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Student Technology Club  VCE
+            </span>
+          </motion.div>
+
+          {/* Heading â€” word-by-word stagger */}
+          <motion.h1
+            variants={fadeUp}
+            className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
           >
-            {/* Eyebrow */}
-            <motion.div variants={fadeUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Student Technology Club Â· VCE
+            We Build.<br />
+            <span className="text-highlight">We Ship.</span><br />
+            We Connect.
+          </motion.h1>
+
+          {/* Typing subline */}
+          <motion.p
+            variants={fadeUp}
+            className="font-display font-semibold uppercase tracking-widest text-white/30 mb-4 md:mb-6 text-[10px] md:text-label"
+          >
+            <TypingEffect />
+          </motion.p>
+
+          {/* Description */}
+          <motion.p
+            variants={fadeUp}
+            className="text-sm md:text-body text-white/40 mb-8 max-w-sm md:max-w-md"
+          >
+            The official technology community at Vardhaman College of
+            Engineering. Real software, epic events, and real career outcomes.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
+            <CTAButton
+              href="/events"
+              variant="primary"
+              size="md"
+              icon={<ArrowRight className="w-4 h-4 text-current" />}
+            >
+              Explore Events
+            </CTAButton>
+            <CTAButton
+              href="/connect-ai"
+              variant="secondary"
+              size="md"
+              icon={<Sparkles className="w-4 h-4 text-purple-400" />}
+              iconPosition="left"
+            >
+              Connect AI
+            </CTAButton>
+          </motion.div>
+
+          {/* Tech stack tags */}
+          <motion.div variants={fadeUp} className="flex flex-wrap gap-2 justify-center md:justify-start">
+            {TECH_TAGS.map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider border border-white/[0.07] bg-[#0D0F1A] text-white/35 rounded-full"
+              >
+                {tag}
               </span>
-            </motion.div>
-
-            {/* Heading â€” word-by-word stagger */}
-            <motion.h1
-              variants={fadeUp}
-              className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
-            >
-              We Build.<br />
-              <span className="text-highlight">We Ship.</span><br />
-              We Connect.
-            </motion.h1>
-
-            {/* Typing subline */}
-            <motion.p
-              variants={fadeUp}
-              className="font-display font-semibold uppercase tracking-widest text-white/30 mb-4 md:mb-6 text-[10px] md:text-label"
-            >
-              <TypingEffect />
-            </motion.p>
-
-            {/* Description */}
-            <motion.p
-              variants={fadeUp}
-              className="text-sm md:text-body text-white/40 mb-8 max-w-sm md:max-w-md"
-            >
-              The official technology community at Vardhaman College of
-              Engineering. Real software, epic events, and real career outcomes.
-            </motion.p>
-
-            {/* CTAs */}
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
-              <CTAButton
-                href="/events"
-                variant="primary"
-                size="md"
-                icon={<ArrowRight className="w-4 h-4 text-current" />}
-              >
-                Explore Events
-              </CTAButton>
-              <CTAButton
-                href="/connect-ai"
-                variant="secondary"
-                size="md"
-                icon={<Sparkles className="w-4 h-4 text-purple-400" />}
-                iconPosition="left"
-              >
-                Connect AI
-              </CTAButton>
-            </motion.div>
-
-            {/* Tech stack tags */}
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-2 justify-center md:justify-start">
-              {TECH_TAGS.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider border border-white/[0.07] bg-[#0D0F1A] text-white/35 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </motion.div>
+            ))}
           </motion.div>
+        </motion.div>
 
-          {/* â”€â”€ RIGHT: 3D logo â”€â”€â”€ */}
-          <motion.div
-            style={{ y: rightY }}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10 w-full"
-          >
-            <div className="relative w-[280px] sm:w-[320px] md:w-[90%] lg:w-[580px] md:max-w-[580px] mx-auto aspect-square">
-              <div className="absolute inset-[8%] rounded-full pointer-events-none"
-                style={{ background: "radial-gradient(ellipse,rgba(147,51,234,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
-              />
-              <div className="absolute inset-0">
-                <LogoCanvas />
-              </div>
+        {/* â”€â”€ RIGHT: 3D logo â”€â”€â”€ */}
+        <motion.div
+          style={{ y: rightY }}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10 w-full"
+        >
+          <div className="relative w-[280px] sm:w-[320px] md:w-[90%] lg:w-[580px] md:max-w-[580px] mx-auto aspect-square">
+            <div className="absolute inset-[8%] rounded-full pointer-events-none"
+              style={{ background: "radial-gradient(ellipse,rgba(147,51,234,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
+            />
+            <div className="absolute inset-0">
+              <LogoCanvas />
             </div>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5, duration: 0.7 }}
-              className="mt-4 md:mt-6 relative z-20 flex flex-col items-center gap-1 select-none"
-            >
-              <p className="font-black  uppercase tracking-[0.2em] text-white/70 text-[10px] md:text-base">
-                Connect Club
-              </p>
-              <p className="eyebrow text-[7px] md:text-[9px] text-white/25">Vardhaman College of Engineering</p>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5, duration: 0.7 }}
+            className="mt-4 md:mt-6 relative z-20 flex flex-col items-center gap-1 select-none"
+          >
+            <p className="font-black  uppercase tracking-[0.2em] text-white/70 text-[10px] md:text-base">
+              Connect Club
+            </p>
+            <p className="eyebrow text-[7px] md:text-[9px] text-white/25">Vardhaman College of Engineering</p>
           </motion.div>
+        </motion.div>
 
-        </div>
+      </div>
 
       {/* Scroll hint */}
       <motion.div
