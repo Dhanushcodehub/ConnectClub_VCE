@@ -2,17 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import Link from "next/link";
-import dynamic from "next/dynamic";
 import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
-import { BackgroundClient } from "../three/BackgroundClient";
-
-const LogoCanvas = dynamic(
-  () => import("@/components/three/HeroCanvas"),
-  { ssr: false, loading: () => null }
-);
 
 const PHRASES = [
   "Engineering Excellence.",
@@ -49,32 +41,44 @@ function TypingEffect() {
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const leftY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
-  const rightY = useTransform(scrollYProgress, [0, 1], ["0%", "5%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.9], [1, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
 
   return (
     <section ref={ref} className="relative min-h-[100svh] flex items-center overflow-hidden pt-20 pb-10 md:pt-0 md:pb-0">
 
-      {/* Background */}
-      <BackgroundClient />
-
-      {/* Ambient glows */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-[55%] h-full bg-[radial-gradient(ellipse_at_center,rgba(147,51,234,0.15),transparent_65%)] md:bg-[radial-gradient(ellipse_at_60%_50%,rgba(147,51,234,0.1),transparent_65%)]" />
-        <div className="absolute right-[5%] md:right-[15%] top-[20%] md:top-[30%] w-[250px] md:w-[300px] h-[250px] md:h-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.07),transparent_70%)]" />
+      {/* Brightened Hero Background Video in Loop */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <video
+          ref={videoRef}
+          src="/hero1.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover scale-[1.02] brightness-125 contrast-105"
+        />
+        {/* Subtle lateral gradient to ensure left text readability while keeping right sphere bright */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+        {/* Soft bottom blend to transition smoothly into the next section */}
+        <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-background via-transparent to-transparent" />
+        {/* Bottom-left corner shield covering Gemini logo */}
+        <div className="absolute bottom-0 left-0 w-80 h-36 bg-gradient-to-tr from-black via-black/90 to-transparent pointer-events-none z-10" />
       </div>
 
-      <div className="relative z-10 container-grid items-center min-h-full md:min-h-[90vh] py-12 md:pt-24 md:pb-16 gap-y-12 md:gap-y-0">
+      {/* Container: Left-aligned content matching the screenshot */}
+      <div className="relative z-10 container-grid items-center min-h-full md:min-h-[90vh] py-12 md:pt-24 md:pb-16">
 
-        {/* â”€â”€ LEFT: content â”€â”€â”€ */}
+        {/* ── LEFT: content aligned to left ─── */}
         <motion.div
           style={{ y: leftY, opacity }}
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center text-center md:items-start md:text-left z-20"
+          className="col-span-4 md:col-span-7 lg:col-span-6 flex flex-col items-start text-left z-20"
         >
           {/* Eyebrow */}
           <motion.div
@@ -88,7 +92,7 @@ export function Hero() {
             }}
             className="mb-6"
           >
-            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A] text-[10px] md:text-label font-bold tracking-widest uppercase text-white/60">
+            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A]/85 backdrop-blur-md text-[10px] md:text-label font-bold tracking-widest uppercase text-white/70 shadow-lg">
               <motion.span
                 className="w-1.5 h-1.5 rounded-full bg-emerald-400"
                 animate={{
@@ -110,7 +114,7 @@ export function Hero() {
             </span>
           </motion.div>
 
-          {/* Heading â€” word-by-word stagger */}
+          {/* Heading — word-by-word stagger */}
           <motion.h1
             variants={fadeUp}
             className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
@@ -123,7 +127,7 @@ export function Hero() {
           {/* Typing subline */}
           <motion.p
             variants={fadeUp}
-            className="font-display font-semibold uppercase tracking-widest text-white/30 mb-4 md:mb-6 text-[10px] md:text-label"
+            className="font-display font-semibold uppercase tracking-widest text-white/40 mb-4 md:mb-6 text-[10px] md:text-label"
           >
             <TypingEffect />
           </motion.p>
@@ -131,14 +135,14 @@ export function Hero() {
           {/* Description */}
           <motion.p
             variants={fadeUp}
-            className="text-sm md:text-body text-white/40 mb-8 max-w-sm md:max-w-md"
+            className="text-sm md:text-body text-white/60 mb-8 max-w-sm md:max-w-md leading-relaxed"
           >
             The official technology community at Vardhaman College of
             Engineering. Real software, epic events, and real career outcomes.
           </motion.p>
 
           {/* CTAs */}
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0 mb-8">
+          <motion.div variants={fadeUp} className="flex flex-row items-center gap-4 w-full sm:w-auto mb-8">
             <CTAButton
               href="/events"
               variant="primary"
@@ -159,37 +163,12 @@ export function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* â”€â”€ RIGHT: 3D logo â”€â”€â”€ */}
-        <motion.div
-          style={{ y: rightY }}
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="col-span-4 md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center z-10 w-full"
-        >
-          <div className="relative w-[280px] sm:w-[320px] md:w-[90%] lg:w-[580px] md:max-w-[580px] mx-auto aspect-square">
-            <div className="absolute inset-[8%] rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(ellipse,rgba(147,51,234,0.22) 0%,transparent 68%)", filter: "blur(24px)" }}
-            />
-            <div className="absolute inset-0">
-              <LogoCanvas />
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, duration: 0.7 }}
-            className="mt-4 md:mt-6 relative z-20 flex flex-col items-center gap-1 select-none"
-          >
-            <p className="font-black  uppercase tracking-[0.2em] text-white/70 text-[10px] md:text-base">
-              Connect Club
-            </p>
-            <p className="eyebrow text-[7px] md:text-[9px] text-white/25">Vardhaman College of Engineering</p>
-          </motion.div>
-        </motion.div>
+        {/* Right side remains completely open so the sphere in hero.mp4 is fully visible */}
+        <div className="hidden md:block col-span-5 lg:col-span-6 pointer-events-none" />
 
       </div>
+
+
 
       {/* Scroll hint */}
       <motion.div
@@ -211,4 +190,3 @@ export function Hero() {
     </section>
   );
 }
-
