@@ -27,7 +27,7 @@ export function FeaturedEvent() {
           </motion.div>
           <motion.h2
             variants={fadeUp}
-            className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white"
+            className="text-h2 font-display font-black uppercase tracking-tighter text-white"
           >
             What&apos;s{" "}
             <span className="text-highlight">Coming Up</span>

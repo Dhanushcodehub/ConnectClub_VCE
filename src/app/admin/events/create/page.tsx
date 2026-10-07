@@ -47,6 +47,14 @@ export default function CreateEventPage() {
         ...formData,
         id: slug,
       });
+
+      // Instantly revalidate the public cache so users see the changes
+      await fetch("/api/admin/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: ["/events", "/"] }),
+      });
+
       router.push("/admin/events");
     } catch (error) {
       console.error("Error creating event:", error);

@@ -168,8 +168,11 @@
   }
 
   .text-highlight {
-    @apply text-primary inline-block font-normal;
+    @apply text-primary inline-block font-normal font-sigmar;
     text-shadow: 0 0 24px rgba(147, 51, 234, 0.5);
+    font-size: 1.3em;
+    line-height: 1;
+    vertical-align: text-bottom;
   }
 
   /* ── Glow button ─────────────────────────────────────── */

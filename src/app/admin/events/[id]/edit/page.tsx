@@ -65,6 +65,14 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
       await updateDoc(doc(db, "events", id), {
         ...formData,
       });
+
+      // Instantly revalidate the public cache so users see the changes
+      await fetch("/api/admin/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: ["/events", "/"] }),
+      });
+
       router.push("/admin/events");
     } catch (error) {
       console.error("Error updating event:", error);

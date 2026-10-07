@@ -19,7 +19,7 @@ export function CTA() {
           >
             <motion.h2
               variants={fadeUp}
-              className="text-4xl md:text-6xl font-sigmar font-normal uppercase tracking-tighter text-white mb-6 whitespace-nowrap"
+              className="text-h2 font-display font-black uppercase tracking-tighter text-white mb-6 whitespace-nowrap"
             >
               GET IN <span className="text-highlight ml-2 md:ml-4">TOUCH</span>
             </motion.h2>

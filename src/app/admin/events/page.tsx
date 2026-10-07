@@ -39,6 +39,13 @@ export default function AdminEventsPage() {
       try {
         await deleteDoc(doc(db, "events", id));
         setEvents(events.filter(e => e.id !== id));
+        
+        // Instantly revalidate the public cache
+        await fetch("/api/admin/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: ["/events", "/"] }),
+        });
       } catch (error) {
         console.error("Error deleting event:", error);
         alert("Failed to delete event.");

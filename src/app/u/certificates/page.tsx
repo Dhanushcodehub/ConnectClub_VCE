@@ -93,14 +93,14 @@ export default function MyCertificatesPage() {
                 </div>
 
                 <div className="flex items-center gap-3 mt-auto">
-                  <a
+                  <Link
                     href={`/certificate/${cert.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm"
                   >
                     <ExternalLink className="w-4 h-4" /> View Certificate
-                  </a>
+                  </Link>
                 </div>
               </div>
             </motion.div>

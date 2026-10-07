@@ -67,7 +67,7 @@ export function Mission() {
           >
             <motion.h2
               variants={fadeUp}
-              className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white mb-6"
+              className="text-h2 font-display font-black uppercase tracking-tighter text-white mb-6"
             >
               We bridge the gap between{" "}
               <span className="text-highlight">

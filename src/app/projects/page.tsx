@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getProjects } from "@/lib/firebase/api";
 import ProjectsClient from "./ProjectsClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // Cache for 1 hour, but will manually revalidate on updates
 
 export const metadata: Metadata = {
   title: "Projects",

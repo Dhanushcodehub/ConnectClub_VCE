@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getEvents } from "@/lib/firebase/api";
 import EventsClient from "./EventsClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // Cache for 1 hour, but will manually revalidate on updates
 
 export const metadata: Metadata = {
   title: "Events",

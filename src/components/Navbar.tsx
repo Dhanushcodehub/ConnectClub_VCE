@@ -105,6 +105,7 @@ export function Navbar() {
                 width={120}
                 height={32}
                 priority
+                unoptimized
                 className="h-8 w-auto object-contain brightness-0 invert transition-transform duration-300 group-hover:scale-105"
               />
               <div className="hidden sm:flex items-baseline">

@@ -10,6 +10,9 @@ export const metadata = {
   description: 'View the verified certificate of participation.',
 };
 
+export const revalidate = 2592000; // Cache for 30 days - Certificates are immutable and this saves reads & time
+
+
 async function getCertificateData(id: string) {
   const app = getAdminApp();
   const db = getFirestore(app);

@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   serverExternalPackages: ['firebase-admin', 'jwks-rsa', 'jose'],
   images: {
+    loader: 'custom',
+    loaderFile: './src/lib/cloudinaryLoader.ts',
     remotePatterns: [
       {
         protocol: 'https',

@@ -14,12 +14,25 @@ export async function requireAdminRequest(request: Request) {
 export async function requireStaffRequest(request: Request) {
   const decodedToken = await verifyRequestToken(request);
   if (
-    decodedToken.role !== "admin" &&
-    decodedToken.role !== "member" &&
-    decodedToken.email !== "admin@connectclubvce.in"
+    decodedToken.role === "admin" ||
+    decodedToken.role === "member" ||
+    decodedToken.email === "admin@connectclubvce.in"
   ) {
+    return decodedToken;
+  }
+
+  // Fallback: check Firestore users collection for tier
+  const { getFirestore } = await import("firebase-admin/firestore");
+  const { getAdminApp } = await import("@/lib/firebase/admin");
+  const primaryApp = getAdminApp();
+  const primaryDb = getFirestore(primaryApp);
+  const userDoc = await primaryDb.collection("users").doc(decodedToken.uid).get();
+  const tier = userDoc.data()?.tier;
+
+  if (tier !== "Core Team" && tier !== "Executive Board") {
     throw new Error("FORBIDDEN");
   }
+
   return decodedToken;
 }
 

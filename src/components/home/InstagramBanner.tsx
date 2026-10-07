@@ -44,7 +44,7 @@ export function InstagramBanner() {
           </motion.div>
           <motion.h2
             variants={fadeUp}
-            className="text-h2 font-sigmar font-normal uppercase tracking-wide text-white"
+            className="text-h2 font-display font-black uppercase tracking-wide text-white"
           >
             Stay <span className="text-highlight">Updated</span>
           </motion.h2>

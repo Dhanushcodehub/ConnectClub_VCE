@@ -76,6 +76,14 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
       await updateDoc(doc(db, "projects", id), {
         ...formData,
       });
+
+      // Instantly revalidate the public cache so users see the changes
+      await fetch("/api/admin/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: ["/projects", "/"] }),
+      });
+
       router.push("/admin/projects");
     } catch (error) {
       console.error("Error updating project:", error);

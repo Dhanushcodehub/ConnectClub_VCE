@@ -39,6 +39,13 @@ export default function AdminProjectsPage() {
       try {
         await deleteDoc(doc(db, "projects", id));
         setProjects(projects.filter(p => p.id !== id));
+        
+        // Instantly revalidate the public cache
+        await fetch("/api/admin/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: ["/projects", "/"] }),
+        });
       } catch (error) {
         console.error("Error deleting project:", error);
         alert("Failed to delete project.");

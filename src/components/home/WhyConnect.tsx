@@ -83,7 +83,7 @@ export function WhyConnect() {
           </motion.div>
           <motion.h2
             variants={fadeUp}
-            className="text-h2 font-sigmar font-normal uppercase tracking-tighter text-white"
+            className="text-h2 font-display font-black uppercase tracking-tighter text-white"
           >
             Why{" "}
             <span className="text-highlight">Connect?</span>

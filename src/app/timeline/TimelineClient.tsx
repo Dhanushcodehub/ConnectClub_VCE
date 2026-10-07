@@ -27,7 +27,7 @@ export default function TimelinePage() {
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start 80%", "end 80%"],
+    offset: ["start center", "end center"],
   });
 
   const scaleY = useSpring(scrollYProgress, {
@@ -69,7 +69,7 @@ export default function TimelinePage() {
         
         {/* Glowing Progress Line */}
         <motion.div 
-          className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary to-[#00f2fe] -translate-x-1/2 origin-top z-10 shadow-[0_0_20px_rgba(0,112,243,0.8)]"
+          className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary to-[#c084fc] -translate-x-1/2 origin-top z-10 shadow-[0_0_20px_rgba(147,51,234,0.8)]"
           style={{ scaleY }}
         />
 
@@ -99,12 +99,12 @@ export default function TimelinePage() {
                 <motion.div 
                   initial={{ 
                     borderColor: "rgba(255, 255, 255, 0.1)", 
-                    boxShadow: "0 0 0px rgba(0,112,243,0)",
+                    boxShadow: "0 0 0px rgba(147,51,234,0)",
                     backgroundColor: "#0C0C0E"
                   }}
                   whileInView={{ 
-                    borderColor: "rgba(0, 112, 243, 1)", 
-                    boxShadow: "0 0 20px rgba(0,112,243,0.8)",
+                    borderColor: "rgba(147, 51, 234, 1)", 
+                    boxShadow: "0 0 20px rgba(147,51,234,0.8)",
                     backgroundColor: "#0C0C0E"
                   }}
                   viewport={{ once: true, margin: "-40% 0px -40% 0px" }}
@@ -116,7 +116,7 @@ export default function TimelinePage() {
                      whileInView={{ scale: 1, opacity: 1 }}
                      viewport={{ once: true, margin: "-40% 0px -40% 0px" }}
                      transition={{ duration: 0.4, delay: 0.2 }}
-                     className="w-full h-full bg-primary rounded-full shadow-[0_0_10px_rgba(0,112,243,0.8)]"
+                     className="w-full h-full bg-primary rounded-full shadow-[0_0_10px_rgba(147,51,234,0.8)]"
                   />
                 </motion.div>
 
@@ -130,7 +130,7 @@ export default function TimelinePage() {
                        whileInView={{ scale: 1, opacity: 1 }}
                        viewport={{ once: true, margin: "-20% 0px" }}
                        transition={{ duration: 0.5 }}
-                       className="w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_rgba(0,112,243,0.8)] shrink-0" 
+                       className="w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_rgba(147,51,234,0.8)] shrink-0" 
                      />
                      <div className="flex items-center gap-3">
                         <span className="text-primary font-black text-2xl tracking-tight shrink-0">{event.year}</span>
@@ -145,13 +145,13 @@ export default function TimelinePage() {
                       {isEven ? (
                         <>
                           <span className="text-label text-primary font-bold uppercase tracking-[0.2em]">{event.month}</span>
-                          <span className="w-12 h-[2px] bg-primary rounded-full shadow-[0_0_10px_rgba(0,112,243,0.5)]" />
+                          <span className="w-12 h-[2px] bg-primary rounded-full shadow-[0_0_10px_rgba(147,51,234,0.5)]" />
                           <span className="text-primary font-black text-4xl lg:text-5xl tracking-tighter opacity-90">{event.year}</span>
                         </>
                       ) : (
                         <>
                           <span className="text-primary font-black text-4xl lg:text-5xl tracking-tighter opacity-90">{event.year}</span>
-                          <span className="w-12 h-[2px] bg-primary rounded-full shadow-[0_0_10px_rgba(0,112,243,0.5)]" />
+                          <span className="w-12 h-[2px] bg-primary rounded-full shadow-[0_0_10px_rgba(147,51,234,0.5)]" />
                           <span className="text-label text-primary font-bold uppercase tracking-[0.2em]">{event.month}</span>
                         </>
                       )}

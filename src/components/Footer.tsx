@@ -32,6 +32,7 @@ export function Footer() {
                 alt="Connect Club Logo" 
                 width={160}
                 height={64}
+                unoptimized
                 className="w-32 lg:w-40 h-auto object-contain brightness-0 invert opacity-90 group-hover:opacity-100 transition-all group-hover:scale-105 origin-center md:origin-left"
               />
             </Link>

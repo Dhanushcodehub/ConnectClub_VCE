@@ -120,7 +120,7 @@ export function Hero() {
             className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
           >
             We Build.<br />
-            <span className="text-highlight">We Ship.</span><br />
+            We Ship.<br />
             We Connect.
           </motion.h1>
 
