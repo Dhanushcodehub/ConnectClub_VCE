@@ -111,7 +111,7 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-transparent overflow-hidden text-white">
+    <div className="flex flex-col md:flex-row h-[100svh] bg-transparent overflow-hidden text-white">
       {pathname !== "/member/login" && <MemberSidebar memberProfile={memberProfile} />}
       <main className="flex-1 overflow-y-auto relative" data-lenis-prevent>
         {children}
