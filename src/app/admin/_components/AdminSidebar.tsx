@@ -23,6 +23,7 @@ import {
   Bell,
   Ticket,
   ClipboardList,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -40,6 +41,11 @@ const navItems = [
     name: "Feedback Forms",
     path: "/admin/feedback",
     icon: ClipboardList,
+  },
+  {
+    name: "Letter Editor",
+    path: "/admin/letter-editor",
+    icon: FileText,
   },
   { name: "Club Chat", path: "/admin/chat", icon: MessageSquare },
   {

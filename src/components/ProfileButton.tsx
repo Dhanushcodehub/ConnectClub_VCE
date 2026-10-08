@@ -68,7 +68,7 @@ export function ProfileButton() {
             title="Profile Menu"
           >
             {photoURL ? (
-              <Image src={photoURL} alt="Profile" fill sizes="40px" className="object-cover" referrerPolicy="no-referrer" />
+              <Image src={photoURL} alt="Profile" fill sizes="40px" className="object-cover" referrerPolicy="no-referrer" unoptimized />
             ) : (
               <>{user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}</>
             )}

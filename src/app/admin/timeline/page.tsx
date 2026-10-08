@@ -172,56 +172,87 @@ export default function AdminTimelinePage() {
           </button>
         </header>
 
-        <div className="p-8">
-          <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 bg-white/5 text-white/50 text-sm">
-                  <th className="px-6 py-4 font-medium">Order</th>
-                  <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium">Title</th>
-                  <th className="px-6 py-4 font-medium">Media</th>
-                  <th className="px-6 py-4 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-white/80">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-white/50">Loading milestones...</td>
-                  </tr>
-                ) : milestones.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-white/50">No milestones found.</td>
-                  </tr>
-                ) : (
-                  milestones.map((milestone) => (
-                    <tr key={milestone.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-medium text-white/50">{milestone.order}</td>
-                      <td className="px-6 py-4 text-white/80 font-medium">
-                        {milestone.month} {milestone.year}
-                      </td>
-                      <td className="px-6 py-4">{milestone.title}</td>
-                      <td className="px-6 py-4">
-                         {milestone.mediaType === 'video' ? (
-                            <Film className="w-5 h-5 text-primary" />
-                         ) : (
-                            <ImageIcon className="w-5 h-5 text-primary" />
-                         )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => handleOpenModal(milestone)} className="p-2 text-white/50 hover:text-white transition-colors inline-flex" aria-label="Edit">
+        <div className="p-8 max-w-5xl mx-auto">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+              <p className="text-white/50 font-medium">Loading timeline...</p>
+            </div>
+          ) : milestones.length === 0 ? (
+            <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Film className="w-8 h-8 text-white/20" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No milestones yet</h3>
+              <p className="text-white/50 mb-6 max-w-md mx-auto">Your timeline is empty. Add your first milestone to start tracking the history of Connect Club.</p>
+              <button 
+                onClick={() => handleOpenModal()} 
+                className="bg-white/5 text-white hover:bg-white/10 border border-white/10 px-6 py-2.5 rounded-lg font-medium transition-colors"
+              >
+                Add First Milestone
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {milestones.map((milestone, index) => (
+                <div key={milestone.id} className="flex gap-6 group">
+                  {/* Timeline Node & Line */}
+                  <div className="flex flex-col items-center pt-2">
+                    <div className="w-12 h-12 rounded-full bg-[#0c0c0e] border border-white/10 flex items-center justify-center shrink-0 group-hover:border-primary/50 group-hover:bg-primary/10 transition-all shadow-xl z-10 relative">
+                       {milestone.mediaType === 'video' ? (
+                          <Film className="w-5 h-5 text-primary" />
+                       ) : (
+                          <ImageIcon className="w-5 h-5 text-primary" />
+                       )}
+                    </div>
+                    {/* Vertical connecting line - hidden on the very last item */}
+                    {index !== milestones.length - 1 && (
+                      <div className="w-px h-full bg-gradient-to-b from-white/10 to-transparent mt-4 mb-2"></div>
+                    )}
+                  </div>
+
+                  {/* Content Card */}
+                  <div className="flex-1 bg-[#0c0c0e] border border-white/5 rounded-2xl p-6 hover:border-white/10 transition-colors shadow-lg">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-xs font-bold text-primary uppercase tracking-wider">{milestone.month} {milestone.year}</span>
+                          <span className="text-[10px] font-medium text-white/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">Order: {milestone.order}</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-primary transition-colors">{milestone.title}</h3>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 shrink-0 bg-white/5 p-1 rounded-xl border border-white/5">
+                        <button 
+                          onClick={() => handleOpenModal(milestone)} 
+                          className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                          aria-label="Edit"
+                        >
                           <Edit2 className="w-4 h-4" />
+                          <span className="hidden md:inline">Edit</span>
                         </button>
-                        <button onClick={() => handleDelete(milestone.id!, milestone.title)} className="p-2 text-red-400/50 hover:text-red-400 transition-colors ml-2" aria-label="Delete">
+                        <div className="w-px h-4 bg-white/10"></div>
+                        <button 
+                          onClick={() => handleDelete(milestone.id!, milestone.title)} 
+                          className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          aria-label="Delete"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                    
+                    {milestone.description && (
+                      <p className="text-white/60 text-sm leading-relaxed max-w-3xl">
+                        {milestone.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Modal */}

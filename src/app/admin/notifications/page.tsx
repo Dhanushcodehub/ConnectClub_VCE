@@ -618,25 +618,25 @@ export default function AdminNotificationsPage() {
         <div className="lg:col-span-5 xl:col-span-4 space-y-6">
           {/* Live Mobile / Student Dashboard Preview Card */}
           <div className="rounded-3xl bg-[#111116] border border-zinc-800 p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <Smartphone className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider truncate">
                   Live Student Preview
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-300 bg-emerald-950 border border-emerald-700 px-2.5 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-300 bg-emerald-950 border border-emerald-700 px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   Real-time
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsPreviewModalOpen(true)}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors border border-zinc-700"
+                  className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors border border-zinc-700 whitespace-nowrap shrink-0"
                   title="Open full interactive preview"
                 >
-                  <Eye className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5 shrink-0" />
                   <span>Preview</span>
                 </button>
               </div>

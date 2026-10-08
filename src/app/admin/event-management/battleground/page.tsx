@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, Loader2, AlertCircle, CheckCircle2, Calendar, Briefcase, ShieldCheck } from "lucide-react";
+import { Search, Users, Loader2, AlertCircle, CheckCircle2, Eye, CreditCard, Calendar, Briefcase, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
 interface Registration {
   id: string;
@@ -62,131 +63,276 @@ export default function BattleGroundAdminPage() {
     );
   });
 
-  return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0C0C0E] p-8 rounded-3xl border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="relative z-10">
-          <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
-            <Ticket className="w-8 h-8 text-orange-500" />
-            BattleGrounds Directory
-          </h1>
-          <p className="text-white/60">View live external registrations for BattleGround 2k26.</p>
-        </div>
+  const getTeamSize = (reg: Registration) => reg.teamSize || ((reg.members?.length || 0) + 1);
+  const getTeamFee = (reg: Registration) => getTeamSize(reg) * 50;
 
-        <div className="relative z-10">
-          <button 
-            onClick={fetchRegistrations} 
-            disabled={isLoading}
-            className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
-          >
-            <Search className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
+  // Stats calculations
+  const totalTeams = registrations.length;
+  const verifiedTeams = registrations.filter(r => r.status === "verified").length;
+  const pendingTeams = totalTeams - verifiedTeams;
+  const totalMembers = registrations.reduce((sum, r) => sum + getTeamSize(r), 0);
+  const revenueVerified = registrations.filter(r => r.status === "verified").reduce((sum, r) => sum + getTeamFee(r), 0);
+  
+  const approvalRate = totalTeams > 0 ? Math.round((verifiedTeams / totalTeams) * 100) : 0;
+
+  // Chart 1: Daily Registrations (Last 7 Days)
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return {
+      dateStr: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), // "2 Oct"
+      dateKey: d.toISOString().split('T')[0],
+      count: 0
+    };
+  });
+
+  registrations.forEach(reg => {
+    if (reg.timestamp) {
+      const regDate = new Date(reg.timestamp);
+      const dateKey = regDate.toISOString().split('T')[0];
+      const dayData = last7Days.find(d => d.dateKey === dateKey);
+      if (dayData) {
+        dayData.count++;
+      }
+    }
+  });
+
+  // Chart 2: Team Size Distribution
+  const sizeDistMap = new Map<number, number>();
+  registrations.forEach(reg => {
+    const size = getTeamSize(reg);
+    sizeDistMap.set(size, (sizeDistMap.get(size) || 0) + 1);
+  });
+  const sizeDistributionData = Array.from(sizeDistMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([size, count]) => ({
+      name: `${size} Members`,
+      count
+    }));
+
+  return (
+    <div className="p-6 md:p-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-white uppercase tracking-wider">Dashboard</h1>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
-          <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
-            <Users className="w-7 h-7 text-orange-500" />
+      {/* Top Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
+            <Users className="w-6 h-6 text-cyan-400" />
           </div>
-          <div>
-            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Total Teams</div>
-            <div className="text-3xl font-bold text-white">{registrations.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
-          <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-            <Users className="w-7 h-7 text-blue-500" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Total Members</div>
-            <div className="text-3xl font-bold text-white">
-              {registrations.reduce((acc, reg) => acc + (reg.members?.length || 0) + 1, 0)}
-            </div>
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">{totalTeams}</div>
+            <div className="text-xs font-medium text-white/50">Total Teams</div>
+            <div className="text-[10px] text-cyan-400 mt-1 flex items-center gap-1">↑ Live count</div>
           </div>
         </div>
 
-        <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
-          <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-7 h-7 text-green-500" />
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6 text-green-500" />
           </div>
-          <div>
-            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Verified Teams</div>
-            <div className="text-3xl font-bold text-white">
-              {registrations.filter(r => r.status === "verified").length}
-            </div>
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">{verifiedTeams}</div>
+            <div className="text-xs font-medium text-white/50">Verified</div>
+            <div className="text-[10px] text-green-500 mt-1">{approvalRate}% approval rate</div>
+          </div>
+        </div>
+
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+            <Eye className="w-6 h-6 text-yellow-500" />
+          </div>
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">{pendingTeams}</div>
+            <div className="text-xs font-medium text-white/50">Pending Review</div>
+            <div className="text-[10px] text-green-500 mt-1">Awaiting verification</div>
+          </div>
+        </div>
+
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+            <Users className="w-6 h-6 text-purple-400" />
+          </div>
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">{totalMembers}</div>
+            <div className="text-xs font-medium text-white/50">Total Members</div>
+            <div className="text-[10px] text-green-500 mt-1">Across all teams</div>
+          </div>
+        </div>
+
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center shrink-0">
+            <CreditCard className="w-6 h-6 text-pink-400" />
+          </div>
+          <div className="flex flex-col">
+            <div className="text-2xl font-bold text-white">₹{revenueVerified}</div>
+            <div className="text-xs font-medium text-white/50">Revenue Verified</div>
+            <div className="text-[10px] text-green-500 mt-1">Confirmed payments</div>
           </div>
         </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 flex items-start gap-4">
-          <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-lg font-bold text-red-500 mb-2">Error</h3>
-            <p className="text-white/80">{error}</p>
+            <h3 className="text-sm font-bold text-red-500">Error fetching registrations</h3>
+            <p className="text-xs text-white/70">{error}</p>
           </div>
         </div>
       )}
 
-      {/* Quick Tools */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Line Chart */}
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-6">
+          <div className="flex items-center gap-2 border-l-4 border-cyan-400 pl-3 mb-6">
+            <h2 className="text-sm font-bold text-white">Daily Registrations (Last 7 Days)</h2>
+          </div>
+          <div className="h-[250px] w-full mt-4">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                 <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={last7Days}>
+                  <XAxis 
+                    dataKey="dateStr" 
+                    stroke="#ffffff40" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    dy={10}
+                  />
+                  <YAxis 
+                    stroke="#ffffff40" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    dx={-10}
+                    domain={[0, 'dataMax + 5']}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#10121a', borderColor: '#ffffff20', borderRadius: '8px' }}
+                    itemStyle={{ color: '#06b6d4' }}
+                    labelStyle={{ color: '#fff' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#06b6d4" 
+                    strokeWidth={2}
+                    dot={{ fill: '#06b6d4', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Bar Chart */}
+        <div className="bg-[#10121a] border border-white/5 rounded-xl p-6">
+          <div className="flex items-center gap-2 border-l-4 border-cyan-400 pl-3 mb-6">
+            <h2 className="text-sm font-bold text-white">Team Size Distribution</h2>
+          </div>
+          <div className="h-[250px] w-full mt-4">
+            {isLoading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                 <Loader2 className="w-6 h-6 animate-spin text-fuchsia-400" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sizeDistributionData} barSize={60}>
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#ffffff40" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    dy={10}
+                  />
+                  <YAxis 
+                    stroke="#ffffff40" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    dx={-10}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#10121a', borderColor: '#ffffff20', borderRadius: '8px' }}
+                    itemStyle={{ color: '#e879f9' }}
+                    labelStyle={{ color: '#fff' }}
+                    cursor={{ fill: '#ffffff05' }}
+                  />
+                  <Bar dataKey="count" fill="#f0abfc">
+                     {sizeDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill="#f472b6" />
+                     ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Tools Row (Optional since they have the dashboard look) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link 
           href="/admin/event-management/battleground/attendance"
-          className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+          className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl p-4 flex items-center justify-between transition-colors group"
         >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
-              <Calendar className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
+              <Calendar className="w-4 h-4" />
             </div>
-            <span className="font-bold text-white group-hover:text-blue-400 transition-colors">Mark Attendance</span>
+            <span className="font-semibold text-white group-hover:text-blue-400 transition-colors text-sm">Mark Attendance</span>
           </div>
         </Link>
         <Link 
           href="/admin/event-management/battleground/member-lists"
-          className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+          className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between transition-colors group"
         >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400 group-hover:scale-110 transition-transform">
-              <Briefcase className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-400 group-hover:scale-110 transition-transform">
+              <Briefcase className="w-4 h-4" />
             </div>
-            <span className="font-bold text-white group-hover:text-amber-400 transition-colors">Document Editor</span>
+            <span className="font-semibold text-white group-hover:text-amber-400 transition-colors text-sm">Document Editor</span>
           </div>
         </Link>
         <Link 
           href="/admin/event-management/battleground/certificates"
-          className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-2xl p-5 flex items-center justify-between transition-colors group"
+          className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-xl p-4 flex items-center justify-between transition-colors group"
         >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400 group-hover:scale-110 transition-transform">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-            <span className="font-bold text-white group-hover:text-purple-400 transition-colors">Issue Certificates</span>
+            <span className="font-semibold text-white group-hover:text-purple-400 transition-colors text-sm">Issue Certificates</span>
           </div>
         </Link>
       </div>
 
-      {/* Main Content */}
-      <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl overflow-hidden flex flex-col">
+      {/* Main Table Content */}
+      <div className="bg-[#10121a] border border-white/5 rounded-xl overflow-hidden flex flex-col">
         {/* Toolbar */}
-        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <h2 className="text-xl font-bold text-white">Participants Directory</h2>
+        <div className="p-5 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+          <h2 className="text-sm font-bold text-white">Recent Registrations</h2>
           
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <input
               type="text"
-              placeholder="Search by team name, lead name, roll no, or BG ID..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111114] border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-orange-500/50 transition-colors"
+              className="w-full bg-[#171923] border border-white/5 rounded-lg py-1.5 pl-9 pr-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50 transition-colors"
             />
           </div>
         </div>
@@ -195,61 +341,50 @@ export default function BattleGroundAdminPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
-              <tr className="bg-white/[0.02] border-b border-white/5">
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Team Name (BG ID)</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider">Members</th>
-                <th className="px-6 py-4 text-xs font-semibold text-white/50 uppercase tracking-wider text-right">Status</th>
+              <tr className="border-b border-white/5 bg-[#0d0f14]">
+                <th className="px-5 py-4 text-[10px] font-bold text-white/40 uppercase tracking-wider">Team Name (Click to View)</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-white/40 uppercase tracking-wider">Lead</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-white/40 uppercase tracking-wider">Size</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-white/40 uppercase tracking-wider">Fee</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-white/40 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/5 text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-white/50">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-500" />
-                    Connecting to live BattleGrounds Database...
+                  <td colSpan={5} className="px-5 py-12 text-center text-white/50">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3 text-cyan-500" />
+                    Connecting...
                   </td>
                 </tr>
               ) : filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-white/50">
-                    {searchQuery ? "No matching registrations found." : "No registrations found in the 'registrations' collection."}
+                  <td colSpan={5} className="px-5 py-12 text-center text-white/50">
+                    {searchQuery ? "No matching registrations found." : "No recent registrations found."}
                   </td>
                 </tr>
               ) : (
                 filteredRegistrations.map((reg) => (
                   <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-white flex flex-col gap-1">
-                        <span>{reg.teamName}</span>
-                        <span className="text-xs text-white/40 font-mono">{reg.bgId}</span>
+                    <td className="px-5 py-3">
+                      <div className="font-semibold text-white flex items-center gap-2">
+                        {reg.teamName}
+                        <div className="w-1 h-1 rounded-full bg-cyan-400"></div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-2">
-                        {/* Lead */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white/90">{reg.leadName} (Lead)</span>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 font-mono text-[10px] font-semibold border border-orange-500/20">
-                            {reg.leadRollNo}
-                          </span>
-                        </div>
-                        {/* Other Members */}
-                        {reg.members && reg.members.length > 0 && (
-                          <div className="flex flex-col gap-1 border-l-2 border-white/10 pl-2 ml-1">
-                            {reg.members.map((member: any, i: number) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className="text-xs text-white/70">{member.name}</span>
-                                <span className="text-[9px] text-white/40 font-mono">{member.roll || member.rollNo}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    <td className="px-5 py-3">
+                      <span className="text-white/80 font-medium">{reg.leadName}</span>
                     </td>
-                    <td className="px-6 py-4 text-right align-top">
-                      <div className="flex flex-col items-end">
-                        <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${reg.status === "verified" ? "text-green-400" : "text-amber-300"}`}>
-                          <CheckCircle2 className="w-3 h-3" /> {reg.status}
+                    <td className="px-5 py-3">
+                      <span className="text-white/80 font-medium">{getTeamSize(reg)}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-green-400 font-medium">₹{getTeamFee(reg)}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-[#0d0f14] border ${reg.status === "verified" ? "border-green-500/20 text-green-500" : "border-yellow-500/20 text-yellow-500"}`}>
+                          {reg.status}
                         </span>
                       </div>
                     </td>

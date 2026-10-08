@@ -128,7 +128,6 @@ export default function AdminMembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("All");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -375,29 +374,6 @@ export default function AdminMembersPage() {
 
         {/* Header Right Actions */}
         <div className="flex items-center gap-2.5">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 text-xs">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={cn(
-                "p-1.5 rounded-lg transition-all flex items-center gap-1",
-                viewMode === "grid" ? "bg-primary text-white shadow-sm" : "text-white/50 hover:text-white"
-              )}
-              title="Grid / Cards View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={cn(
-                "p-1.5 rounded-lg transition-all flex items-center gap-1",
-                viewMode === "table" ? "bg-primary text-white shadow-sm" : "text-white/50 hover:text-white"
-              )}
-              title="Table View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
 
           <button
             onClick={() => handleOpenModal()}
@@ -562,7 +538,7 @@ export default function AdminMembersPage() {
               </button>
             )}
           </div>
-        ) : viewMode === "grid" ? (
+        ) : (
           /* Cards / Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
             {filteredMembers.map((member) => {
@@ -571,29 +547,29 @@ export default function AdminMembersPage() {
               const avatarStyle = getAvatarStyle(member.name);
 
               return (
-                <motion.div
+                <div
                   key={member.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-3xl bg-[#0c0c0e] border border-white/10 hover:border-purple-500/30 p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/5 group relative overflow-hidden"
+                  className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-colors shadow-lg flex flex-col h-full group relative overflow-hidden"
                 >
+                  {/* Subtle top gradient */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
                   {/* Top Bar: Tier Badge, Order, and Actions */}
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div
-                        className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5",
-                          tierBadge
-                        )}
-                      >
+                    <div className="flex items-center justify-between gap-2 mb-6">
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider flex items-center gap-1.5",
+                        tierBadge
+                      )}>
                         {tierIcon}
                         <span>{member.tier}</span>
-                      </div>
+                      </span>
 
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-mono font-medium text-white/40 bg-white/5 px-2 py-0.5 rounded-md">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 p-1 rounded-xl border border-white/5">
+                        <span className="text-[10px] font-mono font-medium text-white/40 px-2 py-0.5 rounded-md">
                           #{member.order}
                         </span>
+                        <div className="w-px h-3 bg-white/10 mx-0.5"></div>
                         <button
                           onClick={() => handleOpenModal(member)}
                           className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -603,7 +579,7 @@ export default function AdminMembersPage() {
                         </button>
                         <button
                           onClick={() => setDeleteModalMember(member)}
-                          className="p-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                           title="Delete member"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -714,141 +690,9 @@ export default function AdminMembersPage() {
                       </span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
-          </div>
-        ) : (
-          /* Table View */
-          <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-white/5 bg-white/5 text-white/50 text-xs">
-                    <th className="px-6 py-4 font-semibold w-16">Order</th>
-                    <th className="px-6 py-4 font-semibold">Member</th>
-                    <th className="px-6 py-4 font-semibold">Tier & Role</th>
-                    <th className="px-6 py-4 font-semibold">Department</th>
-                    <th className="px-6 py-4 font-semibold">Roll No</th>
-                    <th className="px-6 py-4 font-semibold">Social</th>
-                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="text-white/80 divide-y divide-white/5">
-                  {filteredMembers.map((member) => {
-                    const tierBadge = getTierBadgeStyle(member.tier);
-                    const tierIcon = getTierIcon(member.tier);
-                    const avatarStyle = getAvatarStyle(member.name);
-
-                    return (
-                      <tr key={member.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4 font-mono text-xs text-white/50">
-                          #{member.order}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            {member.imageUrl ? (
-                              <img
-                                src={member.imageUrl}
-                                alt={member.name}
-                                className="w-9 h-9 rounded-xl object-cover border border-white/10 shrink-0"
-                              />
-                            ) : (
-                              <div
-                                className={cn(
-                                  "w-9 h-9 rounded-xl bg-gradient-to-tr flex items-center justify-center font-bold text-xs shrink-0",
-                                  avatarStyle
-                                )}
-                              >
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-semibold text-white text-sm">{member.name}</div>
-                              {member.email && (
-                                <div className="text-[11px] text-white/40">{member.email}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col items-start gap-1">
-                            <span
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1",
-                                tierBadge
-                              )}
-                            >
-                              {tierIcon}
-                              <span>{member.tier}</span>
-                            </span>
-                            <span className="text-xs text-white/70 font-medium">{member.position}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-white/60">
-                          {member.department || "-"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="inline-flex items-center gap-1.5 font-mono text-xs text-white/80 bg-white/5 px-2 py-0.5 rounded">
-                            <span>{member.rollNo}</span>
-                            <button
-                              onClick={() => handleCopyRoll(member.rollNo)}
-                              className="text-white/40 hover:text-white"
-                            >
-                              {copiedRoll === member.rollNo ? (
-                                <Check className="w-3 h-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {member.linkedinUrl && (
-                              <a
-                                href={member.linkedinUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white/40 hover:text-[#0077b5]"
-                              >
-                                <LinkedInIcon className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            {member.instaUrl && (
-                              <a
-                                href={member.instaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white/40 hover:text-pink-400"
-                              >
-                                <InstagramIcon className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleOpenModal(member)}
-                            className="p-1.5 text-white/50 hover:text-white transition-colors inline-flex rounded-lg hover:bg-white/10"
-                            aria-label="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteModalMember(member)}
-                            className="p-1.5 text-red-400/50 hover:text-red-400 transition-colors ml-1.5 inline-flex rounded-lg hover:bg-red-500/10"
-                            aria-label="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
       </div>
@@ -1120,6 +964,40 @@ export default function AdminMembersPage() {
                               }}
                             />
                             <span className="text-xs font-medium text-blue-100">{perm.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-[10px] uppercase tracking-wider text-orange-400 mb-2 font-bold mt-4">
+                        Battleground Event Tools
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { id: "battleground_attendance", label: "Attendance" },
+                          { id: "battleground_members_list", label: "Lists" },
+                          { id: "battleground_certificates", label: "Certificates" },
+                        ].map((perm) => (
+                          <label
+                            key={perm.id}
+                            className="flex items-center gap-2 bg-orange-900/10 p-2.5 rounded-xl border border-orange-500/20 cursor-pointer hover:bg-orange-900/20 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              className="w-3.5 h-3.5 rounded text-orange-500 focus:ring-orange-500/50 bg-black/50 border-orange-500/30"
+                              checked={formData.permissions?.includes(perm.id) || false}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  permissions: checked
+                                    ? [...(prev.permissions || []), perm.id]
+                                    : (prev.permissions || []).filter((p) => p !== perm.id),
+                                }));
+                              }}
+                            />
+                            <span className="text-xs font-medium text-orange-100">{perm.label}</span>
                           </label>
                         ))}
                       </div>

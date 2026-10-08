@@ -96,7 +96,7 @@ export default function UserDashboard() {
       >
         <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
           {profile.photoURL ? (
-            <Image src={profile.photoURL} alt={profile.name} fill className="object-cover" />
+            <Image src={profile.photoURL} alt={profile.name} fill className="object-cover" unoptimized />
           ) : (
             <span className="text-2xl font-display font-bold text-primary">
               {getInitials(profile.name || "User")}

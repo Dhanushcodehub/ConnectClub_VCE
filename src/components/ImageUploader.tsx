@@ -101,50 +101,60 @@ export default function ImageUploader({ onUpload, className, defaultImage }: Ima
   };
 
   return (
-    <div className={cn("relative group border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-primary/50 transition-colors bg-white/5", className)}>
-      
-      {preview && !isUploading ? (
-        <div className="relative w-full h-full">
-          <img src={preview} alt="Upload preview" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <button 
-              type="button"
-              onClick={() => {
-                setPreview(null);
-                onUpload(""); // clear it
-              }}
-              className="p-2 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"
-            >
-              <X className="w-5 h-5" />
-            </button>
+    <div className="space-y-3 w-full">
+      <div className={cn("relative group border-2 border-dashed border-white/10 rounded-xl overflow-hidden hover:border-primary/40 transition-all bg-white/[0.02] flex flex-col justify-center", className || "h-48")}>
+        
+        {preview && !isUploading ? (
+          <div className="relative w-full h-full">
+            <img src={preview} alt="Upload preview" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button 
+                type="button"
+                onClick={() => {
+                  setPreview(null);
+                  onUpload(""); // clear it
+                }}
+                className="p-3 bg-red-500/90 text-white rounded-full hover:scale-110 hover:bg-red-500 transition-all shadow-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
-          {isUploading ? (
-            <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-              <div className="text-sm font-medium text-white/80">{progress}%</div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <UploadCloud className="w-8 h-8 text-white/50 mb-3 group-hover:text-primary transition-colors" />
-              <p className="text-sm font-medium text-white/80">Click to upload banner</p>
-              <p className="text-xs text-white/40 mt-1">PNG, JPG up to 5MB</p>
-            </div>
-          )}
-          <input 
-            type="file" 
-            className="hidden" 
-            accept="image/*" 
-            onChange={handleFileChange}
-            disabled={isUploading}
-          />
-        </label>
-      )}
+        ) : (
+          <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-6">
+            {isUploading ? (
+              <div className="flex flex-col items-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
+                <div className="text-sm font-medium text-white/80">{progress}%</div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                  <UploadCloud className="w-6 h-6 text-white/40 group-hover:text-primary transition-colors" />
+                </div>
+                <p className="text-sm font-medium text-white/80 mb-1">Click to upload image</p>
+                <p className="text-xs text-white/40">PNG, JPG up to 5MB</p>
+              </div>
+            )}
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
+          </label>
+        )}
+
+        {error && (
+          <div className="absolute top-2 left-2 right-2 p-2 bg-red-500/90 text-white text-xs text-center rounded-lg backdrop-blur-md shadow-lg">
+            {error}
+          </div>
+        )}
+      </div>
 
       {!preview && !isUploading && (
-        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <input
             type="url"
             value={manualUrl}
@@ -155,22 +165,16 @@ export default function ImageUploader({ onUpload, className, defaultImage }: Ima
                 handleManualSubmit(e);
               }
             }}
-            placeholder="Or paste image URL..."
-            className="flex-1 bg-black/50 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-primary backdrop-blur-md"
+            placeholder="Or paste an image URL..."
+            className="flex-1 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-primary/50 transition-colors"
           />
           <button 
             type="button" 
             onClick={handleManualSubmit}
-            className="bg-primary text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors"
+            className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap shrink-0 flex items-center justify-center"
           >
-            Set
+            Set URL
           </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="absolute top-2 left-2 right-2 p-2 bg-red-500/90 text-white text-xs text-center rounded-lg backdrop-blur-md">
-          {error}
         </div>
       )}
     </div>

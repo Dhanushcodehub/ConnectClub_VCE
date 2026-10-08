@@ -30,6 +30,12 @@ const INSPIREX_NAV_ITEMS = [
   { name: "Certificates", path: "/member/event-management/inspirex/certificates", icon: ImageIcon, permission: "inspirex_certificates" },
 ];
 
+const BATTLEGROUND_NAV_ITEMS = [
+  { name: "Attendance", path: "/member/event-management/battleground/attendance", icon: Calendar, permission: "battleground_attendance" },
+  { name: "Members List", path: "/member/event-management/battleground/member-lists", icon: Briefcase, permission: "battleground_members_list" },
+  { name: "Certificates", path: "/member/event-management/battleground/certificates", icon: ImageIcon, permission: "battleground_certificates" },
+];
+
 export default function MemberSidebar({ memberProfile }: { memberProfile: ConnectMember | null }) {
   const pathname = usePathname();
 
@@ -45,6 +51,7 @@ export default function MemberSidebar({ memberProfile }: { memberProfile: Connec
   );
 
   const inspirexItems = INSPIREX_NAV_ITEMS.filter(item => permissions.includes(item.permission));
+  const battlegroundItems = BATTLEGROUND_NAV_ITEMS.filter(item => permissions.includes(item.permission));
 
   return (
     <aside className="w-72 border-r border-white/5 bg-card/50 backdrop-blur-xl flex flex-col hidden md:flex shrink-0 z-50 shadow-2xl">
@@ -135,6 +142,45 @@ export default function MemberSidebar({ memberProfile }: { memberProfile: Connec
                   <span 
                     className={`font-medium transition-colors relative z-10 ${
                       isActive ? "text-blue-400 font-semibold" : "text-white/60 group-hover:text-white"
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {battlegroundItems.length > 0 && (
+          <div className="pt-4 pb-2 border-t border-white/5">
+            <p className="px-4 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Battleground Event Tools</p>
+            {battlegroundItems.map((item) => {
+              const isActive = pathname.startsWith(item.path);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.path}
+                  className="relative flex items-center px-4 py-3.5 rounded-2xl transition-all group overflow-hidden"
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="member-sidebar-active"
+                      className="absolute inset-0 bg-orange-500/10 border border-orange-500/20 rounded-2xl"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  
+                  <Icon 
+                    className={`w-5 h-5 mr-3 transition-colors relative z-10 ${
+                      isActive ? "text-orange-400" : "text-white/40 group-hover:text-orange-200"
+                    }`} 
+                  />
+                  <span 
+                    className={`font-medium transition-colors relative z-10 ${
+                      isActive ? "text-orange-400 font-semibold" : "text-white/60 group-hover:text-white"
                     }`}
                   >
                     {item.name}

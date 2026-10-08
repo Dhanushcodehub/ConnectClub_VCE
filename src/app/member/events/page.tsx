@@ -57,54 +57,73 @@ export default function MemberEventsPage() {
         </header>
 
         <div className="p-8">
-          <div className="bg-card border border-white/5 rounded-3xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 bg-white/5 text-white/50 text-sm">
-                  <th className="px-6 py-4 font-medium">Event Name</th>
-                  <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-white/80">
-                {loading ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-white/50">Loading events...</td>
-                  </tr>
-                ) : events.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-white/50">No events found in database.</td>
-                  </tr>
-                ) : (
-                  events.map((event) => (
-                    <tr key={event.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-medium text-white">{event.title}</td>
-                      <td className="px-6 py-4 text-white/60">{event.date}</td>
-                      <td className="px-6 py-4">
-                        <span className={cn(
-                          "px-3 py-1 rounded-full text-xs font-semibold border",
-                          event.status === "Upcoming" ? "bg-primary/20 text-primary border-primary/20" :
-                          event.status === "Ongoing" ? "bg-green-500/20 text-green-400 border-green-500/20" :
-                          "bg-white/10 text-white/80 border-white/10"
-                        )}>
-                          {event.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link href={`/member/events/${event.id}/edit`} className="p-2 text-white/50 hover:text-white transition-colors inline-flex" aria-label="Edit">
-                          <Edit2 className="w-4 h-4" />
-                        </Link>
-                        <button onClick={() => handleDelete(event.id, event.title)} className="p-2 text-red-400/50 hover:text-red-400 transition-colors ml-2" aria-label="Delete">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-white/50 font-medium">Loading events...</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-16 text-center max-w-2xl mx-auto">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-white/20" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No events yet</h3>
+              <p className="text-white/50 mb-6 max-w-md mx-auto">Get started by creating your first event to engage with the community.</p>
+              <Link 
+                href="/member/events/create" 
+                className="bg-white/5 text-white hover:bg-white/10 border border-white/10 px-6 py-2.5 rounded-lg font-medium transition-colors inline-block"
+              >
+                Create First Event
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {events.map((event) => (
+                <div key={event.id} className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-colors shadow-lg flex flex-col h-full group relative overflow-hidden">
+                  
+                  {/* Subtle top gradient */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  <div className="flex justify-between items-start mb-6">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider",
+                      event.status === "Upcoming" ? "bg-primary/20 text-primary border-primary/20" :
+                      event.status === "Ongoing" ? "bg-green-500/10 text-green-400 border-green-500/20" :
+                      "bg-white/5 text-white/50 border-white/5"
+                    )}>
+                      {event.status}
+                    </span>
+                    
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 p-1 rounded-xl border border-white/5">
+                      <Link href={`/member/events/${event.id}/edit`} className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </Link>
+                      <div className="w-px h-3 bg-white/10"></div>
+                      <button onClick={() => handleDelete(event.id, event.title)} className="p-1.5 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary transition-colors">{event.title}</h3>
+                  <p className="text-sm text-white/50 line-clamp-3 flex-1 leading-relaxed mb-6">
+                    {event.description || "No description available for this event."}
+                  </p>
+                  
+                  <div className="mt-auto pt-4 border-t border-white/5 space-y-2">
+                     <div className="flex items-center text-xs text-white/60">
+                        <span className="w-14 font-medium text-white/40">Date</span>
+                        <span className="flex-1 truncate">{event.date}</span>
+                     </div>
+                     <div className="flex items-center text-xs text-white/60">
+                        <span className="w-14 font-medium text-white/40">Venue</span>
+                        <span className="flex-1 truncate">{event.venue || "TBA"}</span>
+                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
     </div>
   );
