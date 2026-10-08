@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/contexts/AuthContext";
-// import { issueBattlegroundCertificates } from "../issue-action"; // Will be implemented in issue-action.ts
+import { issueBattlegroundCertificates } from "../issue-action";
 
 interface TemplateConfig {
   imageUrl: string;
@@ -442,10 +442,9 @@ export default function BattlegroundCertificateStudio() {
 
     setIssuing(true);
     try {
-      toast.error("Certificates backend generation for Battleground to be implemented.");
-      // const result = await issueBattlegroundCertificates();
-      // if (result.success) toast.success(result.message);
-      // else toast.error(result.message);
+      const result = await issueBattlegroundCertificates();
+      if (result.success) toast.success(result.message);
+      else toast.error(result.message);
     } catch (error: any) {
       toast.error("Error issuing certificates: " + error.message);
     } finally {

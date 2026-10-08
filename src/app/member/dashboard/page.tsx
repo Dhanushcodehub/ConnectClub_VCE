@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Calendar, LayoutGrid, Image as ImageIcon, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, LayoutGrid, Image as ImageIcon, ArrowRight, Sparkles, FileText } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
@@ -50,6 +50,7 @@ export default function MemberDashboard() {
     { title: "Manage Events", icon: <Calendar className="w-8 h-8 text-primary" />, href: "/member/events", desc: "View and edit club events", permission: "events" },
     { title: "Manage Projects", icon: <LayoutGrid className="w-8 h-8 text-blue-400" />, href: "/member/projects", desc: "Update project showcase", permission: "projects" },
     { title: "Manage Gallery", icon: <ImageIcon className="w-8 h-8 text-purple-400" />, href: "/member/gallery", desc: "Upload event photos", permission: "gallery" },
+    { title: "Letter Editor", icon: <FileText className="w-8 h-8 text-emerald-400" />, href: "/member/letter-editor", desc: "Generate professional letters", permission: "letter_editor" },
   ];
 
   const quickLinks = allQuickLinks.filter(link => profile?.permissions?.includes(link.permission));

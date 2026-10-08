@@ -907,7 +907,7 @@ export default function AdminMembersPage() {
                         General Portal Sections
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {["events", "projects", "timeline", "gallery"].map((permission) => (
+                        {["events", "projects", "timeline", "gallery", "letter_editor"].map((permission) => (
                           <label
                             key={permission}
                             className="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
@@ -927,7 +927,7 @@ export default function AdminMembersPage() {
                               }}
                             />
                             <span className="text-xs font-medium text-white capitalize">
-                              {permission}
+                              {permission.replace('_', ' ')}
                             </span>
                           </label>
                         ))}

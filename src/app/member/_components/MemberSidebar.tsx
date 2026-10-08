@@ -11,7 +11,8 @@ import {
   Briefcase, 
   Clock, 
   Image as ImageIcon,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ConnectMember } from "@/lib/firebase/members";
@@ -22,6 +23,7 @@ const ALL_NAV_ITEMS = [
   { name: "Projects", path: "/member/projects", icon: Briefcase, permission: "projects" },
   { name: "Timeline", path: "/member/timeline", icon: Clock, permission: "timeline" },
   { name: "Gallery", path: "/member/gallery", icon: ImageIcon, permission: "gallery" },
+  { name: "Letter Editor", path: "/member/letter-editor", icon: FileText, permission: "letter_editor" },
 ];
 
 const INSPIREX_NAV_ITEMS = [
