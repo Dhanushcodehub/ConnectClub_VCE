@@ -87,8 +87,8 @@ export default function MemberProjectsPage() {
                   <div className="flex justify-between items-start mb-6">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                      project.status === "LIVE" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
-                      project.status === "ARCHIVED" ? "bg-white/5 text-white/50 border-white/5" :
+                      project.status === "Live" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+                      project.status === "Archived" ? "bg-white/5 text-white/50 border-white/5" :
                       "bg-blue-500/10 text-blue-400 border-blue-500/20"
                     )}>
                       {project.status}
