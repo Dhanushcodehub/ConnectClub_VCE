@@ -42,14 +42,10 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
 
         // Prevent verified users from being stuck on the verification page
         if (user.emailVerified && pathname === "/u/verify") {
-          router.replace(role === "admin" ? "/admin" : "/u/dashboard");
+          router.replace(role === "member" ? "/member/dashboard" : "/u/dashboard");
           return;
         }
 
-        if (role === "admin") {
-          router.replace("/admin");
-          return;
-        }
         if (role === "member") {
           router.replace("/member/dashboard");
           return;
@@ -91,7 +87,7 @@ function ProtectedUserLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
   
-  if ((role === "admin" || role === "member") && !isAuthPage && !isPublicProfile) {
+  if (role === "member" && !isAuthPage && !isPublicProfile) {
     return null;
   }
 
