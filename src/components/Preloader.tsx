@@ -95,10 +95,10 @@ export function Preloader() {
             transition={{ duration: 0.2 }}
             style={{
               position: "absolute",
-              right: "max(1rem, calc(9.2% - 130px))",
-              bottom: "max(1rem, calc(16.3% - 68px))",
+              right: "max(1rem, calc(9.2% - 105px))",
+              bottom: "max(1rem, calc(16.3% - 58px))",
             }}
-            className="z-30 flex items-center gap-3 px-8 py-6 rounded-full bg-[#08090f] hover:bg-[#121624] border border-white/20 text-white shadow-[0_10px_30px_14px_#08090f,0_12px_40px_rgba(0,0,0,0.95)] group cursor-pointer transition-all active:scale-95 pointer-events-auto"
+            className="z-30 flex items-center gap-3.5 px-8 py-7 rounded-full bg-[#08090f] hover:bg-[#121624] border border-white/20 text-white shadow-[0_0_28px_16px_#08090f,0_12px_40px_rgba(0,0,0,0.95)] group cursor-pointer transition-all active:scale-95 pointer-events-auto"
             title="Click to enter website"
           >
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
