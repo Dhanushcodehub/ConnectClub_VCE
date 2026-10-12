@@ -86,24 +86,26 @@ export function Preloader() {
             className="w-full h-full object-cover cursor-pointer brightness-105"
           />
 
-          {/* Corner shield: Deep opaque gradient backing specifically to hide Gemini logo in bottom-right */}
-          <div className="absolute bottom-0 right-0 w-80 h-36 bg-gradient-to-tl from-black via-black/95 to-transparent pointer-events-none z-20" />
-
-          {/* Bottom-right: Covers Gemini logo with "Entering the website..." button/pill */}
+          {/* Positioned directly over the Gemini logo: 100% solid opacity with increased vertical padding to completely hide watermark */}
           <motion.button
             type="button"
             onClick={handleDismiss}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="absolute bottom-6 right-6 z-30 flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#090b10]/95 hover:bg-[#121622] backdrop-blur-2xl border border-white/15 text-white shadow-[0_12px_40px_rgba(0,0,0,0.9)] group cursor-pointer transition-all active:scale-95 pointer-events-auto"
+            initial={{ opacity: 1, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "absolute",
+              right: "max(1rem, calc(9.2% - 130px))",
+              bottom: "max(1rem, calc(16.3% - 54px))",
+            }}
+            className="z-30 flex items-center gap-3 px-7 py-5 rounded-full bg-[#08090f] hover:bg-[#121624] border border-white/20 text-white shadow-[0_12px_40px_rgba(0,0,0,0.95)] group cursor-pointer transition-all active:scale-95 pointer-events-auto"
             title="Click to enter website"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-mono tracking-wider uppercase text-white/90">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+            <span className="text-xs font-mono tracking-wider uppercase font-semibold text-white whitespace-nowrap">
               Entering the website...
             </span>
-            <ArrowRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
           </motion.button>
 
           {/* Bottom subtle progress line */}
