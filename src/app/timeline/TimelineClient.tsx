@@ -5,14 +5,13 @@ import { motion, useScroll, useSpring } from "framer-motion";
 import Image from "next/image";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { getMilestones, ConnectMilestone } from "@/lib/firebase/timeline";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function TimelinePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [timelineEvents, setTimelineEvents] = useState<ConnectMilestone[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -37,14 +36,7 @@ export default function TimelinePage() {
     restDelta: 0.001
   });
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredEvents = normalizedQuery
-    ? timelineEvents.filter((event) =>
-        [event.title, event.description, event.month, event.year]
-          .filter(Boolean)
-          .some((field) => String(field).toLowerCase().includes(normalizedQuery))
-      )
-    : timelineEvents;
+  const filteredEvents = timelineEvents;
 
   return (
     <div className="w-full min-h-screen pt-32 pb-24 md:pt-48 md:pb-32 relative overflow-hidden">
@@ -69,28 +61,6 @@ export default function TimelinePage() {
           <p className="text-body text-white/50 max-w-2xl">
             From a small group of enthusiasts to the leading tech community on campus. See how we've grown over the years.
           </p>
-
-          <div className="relative w-full max-w-md mt-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search milestones..."
-              aria-label="Search timeline"
-              className="w-full bg-white/[0.04] border border-white/10 rounded-2xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.07] transition-all text-left"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
         </motion.div>
       </motion.div>
 
@@ -112,20 +82,7 @@ export default function TimelinePage() {
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="w-full py-32 flex flex-col items-center justify-center gap-4 text-center text-white/50">
-              <span>
-                {normalizedQuery
-                  ? `No milestones match “${query.trim()}”.`
-                  : "No milestones found."}
-              </span>
-              {normalizedQuery && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="px-4 py-2 rounded-xl text-xs bg-white/10 hover:bg-white/15 text-white transition-colors"
-                >
-                  Clear search
-                </button>
-              )}
+              <span>No milestones found.</span>
             </div>
           ) : (
             filteredEvents.map((event, idx) => {

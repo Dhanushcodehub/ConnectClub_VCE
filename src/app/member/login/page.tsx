@@ -19,17 +19,13 @@ export default function MemberLoginPage() {
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const router = useRouter();
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/member/dashboard");
-      }
+      router.push("/member/dashboard");
     }
-  }, [user, role, authLoading, router]);
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

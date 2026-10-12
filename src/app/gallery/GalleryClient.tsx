@@ -13,7 +13,6 @@ import {
   Images,
   ChevronLeft,
   ChevronRight,
-  Search,
 } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 
@@ -161,7 +160,6 @@ export default function GalleryPage() {
   const [mounted, setMounted] = useState(false);
   const [galleryItems, setGalleryItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(24);
 
   useEffect(() => {
@@ -198,20 +196,10 @@ export default function GalleryPage() {
     };
   }, [selectedMedia]);
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const matchedImages = galleryItems.filter((img) => {
-    if (activeTab !== "All" && img.category !== activeTab) return false;
-    if (!normalizedQuery) return true;
-    return [img.alt, img.album, img.category]
-      .filter(Boolean)
-      .some((field) => String(field).toLowerCase().includes(normalizedQuery));
-  });
+  const matchedImages = galleryItems.filter(
+    (img) => activeTab === "All" || img.category === activeTab
+  );
   const filteredImages = matchedImages.slice(0, visibleCount);
-
-  const handleQueryChange = (value: string) => {
-    setQuery(value);
-    setVisibleCount(24);
-  };
 
   const selectTab = (tab: Category) => {
     setActiveTab(tab);
@@ -301,29 +289,7 @@ export default function GalleryPage() {
             ))}
           </div>
 
-          {/* Search */}
-          <div className="relative w-full max-w-md mt-5">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
-              placeholder="Search moments..."
-              aria-label="Search gallery"
-              className="w-full bg-white/[0.04] border border-white/10 rounded-2xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.07] transition-all"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => handleQueryChange("")}
-                aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </motion.div>
+          </motion.div>
       </motion.div>
 
       {/* ── Marquee Gallery Rows ────────────────────────────────────────── */}
@@ -338,24 +304,11 @@ export default function GalleryPage() {
         <div className="flex flex-col items-center justify-center py-40 border border-dashed border-white/10 rounded-3xl mx-6 md:mx-12">
           <Images className="w-14 h-14 text-white/15 mb-5" />
           <p className="text-white/40 font-medium text-lg">
-            {normalizedQuery
-              ? "No media matches your search."
-              : "No media in this category yet."}
+            No media in this category yet.
           </p>
           <p className="text-white/25 text-sm mt-1">
-            {normalizedQuery
-              ? "Try a different keyword or clear the search."
-              : "Check back soon for updates."}
+            Check back soon for updates.
           </p>
-          {normalizedQuery && (
-            <button
-              type="button"
-              onClick={() => handleQueryChange("")}
-              className="mt-5 px-4 py-2 rounded-xl text-xs bg-white/10 hover:bg-white/15 text-white transition-colors"
-            >
-              Clear search
-            </button>
-          )}
         </div>
       ) : (
         <motion.div

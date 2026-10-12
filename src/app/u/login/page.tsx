@@ -35,8 +35,6 @@ export default function UserLoginPage() {
     if (!authLoading && user) {
       if (!user.emailVerified) {
         router.push(`/u/verify?email=${encodeURIComponent(user.email || "")}`);
-      } else if (role === "admin") {
-        router.push("/admin");
       } else if (role === "member") {
         router.push("/member/dashboard");
       } else if (profile) {

@@ -42,9 +42,7 @@ export default function UserRegisterPage() {
   useEffect(() => {
     // Only redirect if the user's email is verified (Google auth is pre-verified)
     if (!authLoading && user && user.emailVerified && !showOnboarding) {
-      if (role === "admin") {
-        router.push("/admin");
-      } else if (role === "member") {
+      if (role === "member") {
         router.push("/member/dashboard");
       } else if (profile) {
         router.push("/u/dashboard");
