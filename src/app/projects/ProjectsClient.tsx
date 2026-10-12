@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Code2, Heart, MessageCircle } from "lucide-react";
+import { ArrowRight, Code2, Heart, MessageCircle, Search, X } from "lucide-react";
 import { ConnectProject } from "@/lib/data/projects";
 import { getProjects } from "@/lib/firebase/api";
 import { getApprovedUserProjects } from "@/lib/firebase/users";
@@ -13,6 +13,8 @@ import { staggerContainer, fadeUp } from "@/lib/animations";
 export default function ProjectsClient({ initialProjects }: { initialProjects: ConnectProject[] }) {
   const [projects, setProjects] = useState(initialProjects);
   const [isLoading, setIsLoading] = useState(initialProjects.length === 0);
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -54,6 +56,21 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
     }).catch(() => setIsLoading(false));
   }, []);
 
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProjects = normalizedQuery
+    ? projects.filter((project) =>
+        [project.name, project.description, ...(project.technologies || [])]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(normalizedQuery))
+      )
+    : projects;
+  const visibleProjects = filteredProjects.slice(0, visibleCount);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setVisibleCount(6);
+  };
+
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 md:pt-36 md:pb-20 relative">
       {/* Page Header */}
@@ -77,6 +94,28 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
           We don't just talk about technology. We build it. Explore
           the tools and platforms shipped by Connect Club members.
         </motion.p>
+
+        <motion.div variants={fadeUp} className="mt-6 relative w-full max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            placeholder="Search projects or tech stack..."
+            aria-label="Search projects"
+            className="w-full bg-white/[0.04] border border-white/10 rounded-2xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.07] transition-all"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => handleQueryChange("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </motion.div>
       </motion.div>
 
       {/* Skeleton Loading State */}
@@ -115,8 +154,8 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
           animate="visible"
           className="w-full grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-y-12 gap-x-6"
         >
-          {projects.map((project, idx) => {
-            const isFeatured = idx === 0;
+          {visibleProjects.map((project, idx) => {
+            const isFeatured = idx === 0 && !normalizedQuery;
 
             return (
               <motion.div
@@ -235,9 +274,32 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: C
         </motion.div>
       )}
 
-      {projects.length === 0 && !isLoading && (
+      {!isLoading && filteredProjects.length === 0 && (
         <div className="col-span-full text-center py-24">
-          <p className="text-body font-bold text-white/30 uppercase tracking-widest">No projects found.</p>
+          <p className="text-body font-bold text-white/30 uppercase tracking-widest">
+            {normalizedQuery ? "No projects match your search." : "No projects found."}
+          </p>
+          {normalizedQuery && (
+            <button
+              type="button"
+              onClick={() => handleQueryChange("")}
+              className="mt-4 px-4 py-2 rounded-xl text-xs bg-white/10 hover:bg-white/15 text-white transition-colors"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      )}
+
+      {!isLoading && filteredProjects.length > visibleCount && (
+        <div className="col-span-full flex justify-center mt-4">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((count) => count + 6)}
+            className="px-6 py-3 rounded-2xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-white text-xs font-bold uppercase tracking-widest transition-all"
+          >
+            Load more ({filteredProjects.length - visibleCount} left)
+          </button>
         </div>
       )}
     </div>

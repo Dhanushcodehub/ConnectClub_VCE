@@ -17,12 +17,7 @@ export default async function PublicProfilePage({
   const profile = await getUserProfile(id);
   
   if (!profile) {
-    return (
-      <div className="text-white text-center p-20">
-        <h1>Profile not found for ID: {id}</h1>
-        <p>Debug info: getUserProfile returned null.</p>
-      </div>
-    );
+    notFound();
   }
 
   const userProjects = await getUserProjects(id);

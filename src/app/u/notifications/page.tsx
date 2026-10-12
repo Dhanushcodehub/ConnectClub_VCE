@@ -85,6 +85,7 @@ export default function NotificationsPage() {
         setLoading(false);
       },
       (error) => {
+        if ((error as { code?: string })?.code === "permission-denied") { setLoading(false); return; }
         console.error("Error subscribing to notifications:", error);
         toast.error("Failed to load notifications.");
         setLoading(false);

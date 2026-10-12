@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Sparkles, GraduationCap } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, GraduationCap, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { checkUserExists } from "@/lib/firebase/users";
@@ -20,6 +20,10 @@ export default function UserLoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   const router = useRouter();
   const { user, role, profile, loading: authLoading } = useAuth();
@@ -62,6 +66,24 @@ export default function UserLoginPage() {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
       setLoading(false);
+    }
+  };
+
+  const handlePasswordRecovery = async (e?: { preventDefault(): void }) => {
+    e?.preventDefault();
+    setError("");
+    setRecoveryMessage("");
+    setRecoveryLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, recoveryEmail.trim().toLowerCase());
+      setRecoveryMessage("If this account is registered, a password-reset email has been sent. Check your inbox (and spam).");
+      setRecoveryEmail("");
+    } catch (err) {
+      console.error(err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -117,7 +139,17 @@ export default function UserLoginPage() {
             </motion.div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              if (recoveryOpen) {
+                e.preventDefault();
+                void handlePasswordRecovery();
+                return;
+              }
+              handleLogin(e);
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Email</label>
               <input
@@ -131,7 +163,23 @@ export default function UserLoginPage() {
             </div>
             
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Password</label>
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Password</label>
+                {!recoveryOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryOpen(true);
+                      setError("");
+                      setRecoveryMessage("");
+                      setRecoveryEmail(email);
+                    }}
+                    className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <input
                 type="password"
                 required
@@ -142,20 +190,70 @@ export default function UserLoginPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || googleLoading}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-6 shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] uppercase tracking-[0.2em] text-xs"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </button>
+            {recoveryOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl"
+              >
+                <p className="text-[11px] text-white/50">
+                  Enter your registered email and we will send a link to set a new password.
+                </p>
+                <input
+                  type="email"
+                  required
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm"
+                  placeholder="student@vardhaman.org"
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handlePasswordRecovery()}
+                    disabled={recoveryLoading || !recoveryEmail.trim()}
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 rounded-xl text-[11px] uppercase tracking-[0.15em] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {recoveryLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Mail className="w-4 h-4" />
+                    )}
+                    Send reset link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryOpen(false);
+                      setRecoveryMessage("");
+                    }}
+                    className="text-[11px] text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+                {recoveryMessage && (
+                  <p className="text-[11px] text-emerald-400">{recoveryMessage}</p>
+                )}
+              </motion.div>
+            )}
+
+            {!recoveryOpen && (
+              <button
+                type="submit"
+                disabled={loading || googleLoading}
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-6 shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] uppercase tracking-[0.2em] text-xs"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </button>
+            )}
           </form>
 
           <button

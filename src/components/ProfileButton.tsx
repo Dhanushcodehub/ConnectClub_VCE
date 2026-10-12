@@ -111,6 +111,9 @@ export function ProfileButton() {
                         <Bell className="w-4 h-4" /> Notifications
                       </Link>
                       <Link href="/u/profile" onClick={() => setUserDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                        <UserCircle className="w-4 h-4" /> Edit Profile
+                      </Link>
+                      <Link href="/u/settings" onClick={() => setUserDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors">
                         <Settings className="w-4 h-4" /> Settings
                       </Link>
                     </>

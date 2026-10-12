@@ -26,11 +26,13 @@ import {
   UserCheck, 
   ShieldCheck, 
   Globe, 
-  ChevronDown 
+  ChevronDown,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { downloadCsv, timestampForFilename, type CsvCell } from "@/lib/csv";
 
 // Notification type options matching existing notification infrastructure
 const MESSAGE_TYPES = [
@@ -196,6 +198,10 @@ export default function AdminStudentsPage() {
           setIsRefreshing(false);
         },
         (error) => {
+          if ((error as { code?: string })?.code === "permission-denied") {
+            setLoading(false);
+            return;
+          }
           console.error("Realtime subscription error, falling back to getAllUsers:", error);
           getAllUsers()
             .then((data) => {
@@ -394,6 +400,29 @@ export default function AdminStudentsPage() {
     setSelectedProvider("All");
   };
 
+  const handleExportCsv = () => {
+    if (filteredStudents.length === 0) {
+      toast.error("Nothing to export with the current filters.");
+      return;
+    }
+    const rows: CsvCell[][] = [
+      ["Name", "Email", "Roll No", "Department", "Year", "Provider", "Projects", "Certificates", "Joined"],
+      ...filteredStudents.map((student) => [
+        student.name,
+        student.email,
+        student.rollNo,
+        student.department ?? "",
+        student.yearOfStudy ?? "",
+        student.provider,
+        student.projectsCount,
+        student.certificatesCount,
+        student.createdAt?.toDate ? student.createdAt.toDate().toISOString() : "",
+      ]),
+    ];
+    downloadCsv(`connect-club-students-${timestampForFilename()}`, rows);
+    toast.success(`Exported ${filteredStudents.length} student(s).`);
+  };
+
   return (
     <div className="flex flex-col min-h-full pb-16 bg-transparent">
       {/* ──────────────────────────────────────────────────────────
@@ -421,6 +450,14 @@ export default function AdminStudentsPage() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all"
+            title="Export the currently filtered list as CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}

@@ -117,13 +117,18 @@ export default function AdminTimelinePage() {
         uploadData.append('file', file);
         uploadData.append('type', formData.mediaType);
 
+        const token = await user?.getIdToken();
         const res = await fetch('/api/upload', {
           method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: uploadData
         });
 
-        if (!res.ok) throw new Error("Upload failed");
-        
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || errData.details || `Upload failed (${res.status})`);
+        }
+
         const data = await res.json();
         finalMediaUrl = data.secure_url;
         setIsUploading(false);

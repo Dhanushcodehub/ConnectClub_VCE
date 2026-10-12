@@ -116,6 +116,8 @@ export function GlobalChatListener() {
         for (const id of seenAdminDMIds) {
           if (!windowIds.has(id)) seenAdminDMIds.delete(id);
         }
+      }, () => {
+        // Swallow: this listener often dies mid sign-out, which is fine.
       });
     } else {
       // Member only listens to their own DM room

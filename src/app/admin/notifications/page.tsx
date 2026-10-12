@@ -180,6 +180,7 @@ export default function AdminNotificationsPage() {
         setHistoryLoading(false);
       },
       (err) => {
+        if ((err as { code?: string })?.code === "permission-denied") { setHistoryLoading(false); return; }
         console.error("Error fetching notification history:", err);
         setHistoryLoading(false);
       }

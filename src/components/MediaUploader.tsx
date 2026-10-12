@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { UploadCloud, X, Loader2, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/firebase/config";
 
 interface MediaUploaderProps {
   onUpload: (url: string) => void;
@@ -55,8 +56,10 @@ export default function MediaUploader({ onUpload, className, defaultMedia }: Med
         setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
       }, 500);
 
+      const token = await auth?.currentUser?.getIdToken();
       const res = await fetch(`/api/upload`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       }).finally(() => clearInterval(progressInterval));
 

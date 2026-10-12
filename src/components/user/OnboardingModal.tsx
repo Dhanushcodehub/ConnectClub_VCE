@@ -92,10 +92,12 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
     setLoading(true);
 
     try {
+      const token = await user.getIdToken();
       const res = await fetch("/api/auth/complete-profile", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           uid: user.uid,
@@ -116,7 +118,10 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       // Fire-and-forget background sync for external events (e.g. InspireX registrations done before CC account creation)
       fetch("/api/users/retroactive-sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ userId: user.uid, rollNo: formData.rollNo })
       }).catch(err => console.error("Retroactive sync failed:", err));
 

@@ -23,6 +23,7 @@ import {
   Bell,
   Ticket,
   ClipboardList,
+  Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -34,6 +35,7 @@ const navItems = [
   { name: "Gallery", path: "/admin/gallery", icon: ImageIcon },
   { name: "Students", path: "/admin/students", icon: GraduationCap },
   { name: "Members", path: "/admin/members", icon: Users },
+  { name: "Admin Access", path: "/admin/admin-access", icon: Shield },
   { name: "Inquiries", path: "/admin/messages", icon: Mail },
   { name: "Notifications", path: "/admin/notifications", icon: Bell },
   {

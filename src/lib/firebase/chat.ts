@@ -34,11 +34,39 @@ export async function sendChatMessage(message: Omit<ChatMessage, "id" | "timesta
   }
 }
 
+export type ChatErrorCallback = (error: Error) => void;
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+/**
+ * Translate Firestore failures into something a user can act on. Permission
+ * and index errors otherwise surface as opaque codes that look like a crash.
+ */
+export function describeChatError(error: unknown): string {
+  const err = error as { code?: string; message?: string };
+  const code = err?.code || "";
+  if (code === "permission-denied") {
+    return "You do not have permission to read this conversation. Your role may need to be refreshed — try signing out and back in.";
+  }
+  if (code === "failed-precondition" || /index/i.test(err?.message || "")) {
+    return "A required search index is still being created. Wait a minute for Firestore to finish building it, then retry.";
+  }
+  if (code === "unavailable") {
+    return "Cannot reach the chat service. Check your connection and retry.";
+  }
+  return err?.message || "Something went wrong loading the conversation.";
+}
+
 /**
  * Subscribe to the latest 100 chat messages.
  * Returns an unsubscribe function.
  */
-export function subscribeToMessages(callback: (messages: ChatMessage[]) => void) {
+export function subscribeToMessages(
+  callback: (messages: ChatMessage[]) => void,
+  onError?: ChatErrorCallback
+) {
   if (typeof window === "undefined") return () => {};
 
   const q = query(
@@ -66,7 +94,10 @@ export function subscribeToMessages(callback: (messages: ChatMessage[]) => void)
     // Reverse to get oldest-to-newest order for displaying
     callback(messages.reverse());
   }, (error) => {
+    const code = (error as { code?: string })?.code;
+    if (code === "permission-denied") return; // mid sign-out; listener tears down
     console.error("Error subscribing to messages:", error);
+    onError?.(toError(error));
   });
 
   return unsubscribe;
@@ -146,7 +177,11 @@ export async function sendDirectMessage(message: Omit<DirectMessage, "id" | "tim
  * Subscribe to the direct messages between admin and a specific member.
  * Returns an unsubscribe function.
  */
-export function subscribeToDirectMessages(roomId: string, callback: (messages: DirectMessage[]) => void) {
+export function subscribeToDirectMessages(
+  roomId: string,
+  callback: (messages: DirectMessage[]) => void,
+  onError?: ChatErrorCallback
+) {
   if (typeof window === "undefined") return () => {};
 
   const q = query(
@@ -176,7 +211,10 @@ export function subscribeToDirectMessages(roomId: string, callback: (messages: D
     // Reverse to get oldest-to-newest order for displaying
     callback(messages.reverse());
   }, (error) => {
+    const code = (error as { code?: string })?.code;
+    if (code === "permission-denied") return; // mid sign-out; listener tears down
     console.error("Error subscribing to DMs:", error);
+    onError?.(toError(error));
   });
 
   return unsubscribe;
@@ -219,7 +257,8 @@ export async function markMessagesAsRead(roomId: string, currentUserEmail: strin
 export function subscribeToUnreadCounts(
   currentUserEmail: string, 
   role: "admin" | "member", 
-  callback: (counts: Record<string, number>) => void
+  callback: (counts: Record<string, number>) => void,
+  onError?: ChatErrorCallback
 ) {
   if (typeof window === "undefined") return () => {};
 
@@ -253,7 +292,10 @@ export function subscribeToUnreadCounts(
     
     callback(counts);
   }, (error) => {
+    const code = (error as { code?: string })?.code;
+    if (code === "permission-denied") return; // mid sign-out; listener tears down
     console.error("Error subscribing to unread counts:", error);
+    onError?.(toError(error));
   });
 
   return unsubscribe;
@@ -300,6 +342,7 @@ export function subscribeToTypingStatus(roomId: string, currentUserEmail: string
     
     callback(typingUsers);
   }, (error) => {
+    if ((error as { code?: string })?.code === "permission-denied") return;
     console.error("Error subscribing to typing status:", error);
   });
 }
@@ -363,6 +406,7 @@ export function subscribeToLastMessages(callback: (lastMessages: Record<string, 
     
     callback(lastMessages);
   }, (error) => {
+    if ((error as { code?: string })?.code === "permission-denied") return;
     console.error("Error subscribing to last messages:", error);
   });
 }

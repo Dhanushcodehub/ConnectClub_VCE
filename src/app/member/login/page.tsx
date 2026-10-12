@@ -1,18 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Sparkles, Users } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, Users, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { getFirebaseErrorMessage } from "@/lib/utils";
 
 export default function MemberLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
   const router = useRouter();
   const { user, role, loading: authLoading } = useAuth();
 
@@ -36,8 +41,26 @@ export default function MemberLoginPage() {
       // AuthContext will handle the redirect based on the role
     } catch (err: any) {
       console.error(err);
-      setError("Invalid email or password. Please try again.");
+      setError(getFirebaseErrorMessage(err));
       setLoading(false);
+    }
+  };
+
+  const handlePasswordRecovery = async (e?: { preventDefault(): void }) => {
+    e?.preventDefault();
+    setError("");
+    setRecoveryMessage("");
+    setRecoveryLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, recoveryEmail.trim().toLowerCase());
+      setRecoveryMessage("If this account is registered, a password-reset email has been sent. Check your inbox (and spam).");
+      setRecoveryEmail("");
+    } catch (err) {
+      console.error(err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -127,7 +150,17 @@ export default function MemberLoginPage() {
               </motion.div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form
+              onSubmit={(e) => {
+                if (recoveryOpen) {
+                  e.preventDefault();
+                  void handlePasswordRecovery();
+                  return;
+                }
+                handleLogin(e);
+              }}
+              className="space-y-5"
+            >
               <div className="space-y-2 relative">
                 <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Club Email</label>
                 <div className="relative group/input">
@@ -143,7 +176,23 @@ export default function MemberLoginPage() {
               </div>
               
               <div className="space-y-2 relative">
-                <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Password</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-white/40">Password</label>
+                  {!recoveryOpen && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecoveryOpen(true);
+                        setError("");
+                        setRecoveryMessage("");
+                        setRecoveryEmail(email);
+                      }}
+                      className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <div className="relative group/input">
                   <input
                     type="password"
@@ -156,20 +205,70 @@ export default function MemberLoginPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    Sign In 
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
+              {recoveryOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-3 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl"
+                >
+                  <p className="text-xs text-white/50">
+                    Enter your club email and we will send you a link to set a new password.
+                  </p>
+                  <input
+                    type="email"
+                    required
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-3 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all text-sm"
+                    placeholder="you@connectclub.com"
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handlePasswordRecovery()}
+                      disabled={recoveryLoading || !recoveryEmail.trim()}
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-2xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {recoveryLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Mail className="w-4 h-4" />
+                      )}
+                      Send reset link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecoveryOpen(false);
+                        setRecoveryMessage("");
+                      }}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      Back to login
+                    </button>
+                  </div>
+                  {recoveryMessage && (
+                    <p className="text-xs text-emerald-400">{recoveryMessage}</p>
+                  )}
+                </motion.div>
+              )}
+
+              {!recoveryOpen && (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      Sign In 
+                      <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              )}
             </form>
           </motion.div>
         </div>

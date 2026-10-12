@@ -264,6 +264,9 @@ export default function UserRegisterPage() {
                 type="password"
                 required
                 name="password"
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"

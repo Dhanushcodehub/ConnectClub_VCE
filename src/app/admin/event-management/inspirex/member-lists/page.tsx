@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { describeError } from "@/lib/errors";
 
 // --- Types ---
 interface PreviewRow {
@@ -99,12 +100,12 @@ export default function MemberListsPage() {
           const text = await res.text();
           let errData;
           try { errData = JSON.parse(text); } catch(e) {}
-          throw new Error(errData?.error || `HTTP ${res.status}: ${text.substring(0, 50)}`);
+          throw new Error(errData?.details || errData?.error || `HTTP ${res.status}: ${text.substring(0, 50)}`);
         }
         
         const data = await res.json();
         
-        if (!data.success) throw new Error(data.error || "Failed to fetch registrations");
+        if (!data.success) throw new Error(data.details || data.error || "Failed to fetch registrations");
 
         const allRegistrations: any[] = data.data;
         const groups: Record<string, { label: string; rows: any[]; filename: string }> = {};
@@ -182,7 +183,7 @@ export default function MemberListsPage() {
 
       } catch (err: any) {
         console.error(err);
-        toast.error(err.message || "Error loading registration data");
+        toast.error(describeError(err, "Error loading registration data"), { duration: 8000 });
       } finally {
         setIsLoading(false);
       }

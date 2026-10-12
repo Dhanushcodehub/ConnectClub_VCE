@@ -13,6 +13,7 @@ import {
   Images,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 
@@ -160,6 +161,8 @@ export default function GalleryPage() {
   const [mounted, setMounted] = useState(false);
   const [galleryItems, setGalleryItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(24);
 
   useEffect(() => {
     setMounted(true);
@@ -195,9 +198,25 @@ export default function GalleryPage() {
     };
   }, [selectedMedia]);
 
-  const filteredImages = galleryItems.filter(
-    (img) => activeTab === "All" || img.category === activeTab
-  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const matchedImages = galleryItems.filter((img) => {
+    if (activeTab !== "All" && img.category !== activeTab) return false;
+    if (!normalizedQuery) return true;
+    return [img.alt, img.album, img.category]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(normalizedQuery));
+  });
+  const filteredImages = matchedImages.slice(0, visibleCount);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setVisibleCount(24);
+  };
+
+  const selectTab = (tab: Category) => {
+    setActiveTab(tab);
+    setVisibleCount(24);
+  };
 
   /* Split items into 3 rows */
   const row1: MediaItem[] = [];
@@ -269,7 +288,7 @@ export default function GalleryPage() {
             {categories.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => selectTab(tab)}
                 className={cn(
                   "relative px-5 py-2 rounded-full text-[12px] font-bold uppercase tracking-wider transition-all duration-300 border whitespace-nowrap",
                   activeTab === tab
@@ -280,6 +299,29 @@ export default function GalleryPage() {
                 {tab}
               </button>
             ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full max-w-md mt-5">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              placeholder="Search moments..."
+              aria-label="Search gallery"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-2xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.07] transition-all"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => handleQueryChange("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </motion.div>
       </motion.div>
@@ -296,11 +338,24 @@ export default function GalleryPage() {
         <div className="flex flex-col items-center justify-center py-40 border border-dashed border-white/10 rounded-3xl mx-6 md:mx-12">
           <Images className="w-14 h-14 text-white/15 mb-5" />
           <p className="text-white/40 font-medium text-lg">
-            No media in this category yet.
+            {normalizedQuery
+              ? "No media matches your search."
+              : "No media in this category yet."}
           </p>
           <p className="text-white/25 text-sm mt-1">
-            Check back soon for updates.
+            {normalizedQuery
+              ? "Try a different keyword or clear the search."
+              : "Check back soon for updates."}
           </p>
+          {normalizedQuery && (
+            <button
+              type="button"
+              onClick={() => handleQueryChange("")}
+              className="mt-5 px-4 py-2 rounded-xl text-xs bg-white/10 hover:bg-white/15 text-white transition-colors"
+            >
+              Clear search
+            </button>
+          )}
         </div>
       ) : (
         <motion.div
@@ -333,6 +388,18 @@ export default function GalleryPage() {
             onItemClick={openLightbox}
           />
         </motion.div>
+      )}
+
+      {!loading && matchedImages.length > filteredImages.length && (
+        <div className="flex justify-center mt-10 px-6">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((count) => count + 24)}
+            className="px-6 py-3 rounded-2xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-white text-xs font-bold uppercase tracking-widest transition-all"
+          >
+            Load more ({matchedImages.length - filteredImages.length} left)
+          </button>
+        </div>
       )}
 
       {/* ── Premium Lightbox ────────────────────────────────────────────── */}

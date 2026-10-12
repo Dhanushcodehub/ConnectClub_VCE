@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { getMembers, ConnectMember, MemberTier } from "@/lib/firebase/members";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 
 export default function TeamPage() {
   const [members, setMembers] = useState<ConnectMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -20,10 +21,19 @@ export default function TeamPage() {
     load();
   }, []);
 
-  const getTierMembers = (tier: MemberTier) => members.filter(m => m.tier === tier);
+  const normalizedQuery = query.trim().toLowerCase();
+  const baseMembers = normalizedQuery
+    ? members.filter((m) =>
+        [m.name, m.position, m.department, m.rollNo, m.tier]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(normalizedQuery))
+      )
+    : members;
 
-  const renderTierSection = (title: string, tier: MemberTier, isLarge: boolean = false) => {
-    const tierMembers = getTierMembers(tier);
+  const getTierMembers = (tier: MemberTier) => baseMembers.filter(m => m.tier === tier);
+
+  const renderTierSection = (title: string, sectionMembers: ConnectMember[], isLarge: boolean = false) => {
+    const tierMembers = sectionMembers;
     if (tierMembers.length === 0) return null;
 
     return (
@@ -74,7 +84,7 @@ export default function TeamPage() {
                 {/* Department Badge - overlaid on photo */}
                 <div className="absolute top-4 left-4 z-10">
                   <div className="bg-primary/20 text-primary border border-primary/30 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full backdrop-blur-md">
-                    {member.department || tier}
+                    {member.department || member.tier}
                   </div>
                 </div>
               </div>
@@ -163,6 +173,37 @@ export default function TeamPage() {
         </motion.div>
       </motion.div>
 
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="w-full container-grid mb-8 relative z-10"
+      >
+        <motion.div variants={fadeUp} className="col-span-full flex justify-center">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, role, department..."
+              aria-label="Search team members"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-2xl pl-11 pr-10 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.07] transition-all"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+
       <div className="w-full container-grid relative z-20">
         {loading ? (
           <div className="col-span-full py-32 flex justify-center items-center">
@@ -172,12 +213,33 @@ export default function TeamPage() {
           <div className="col-span-full py-32 flex justify-center items-center text-white/50">
             No team members found. Add some from the admin dashboard.
           </div>
+        ) : baseMembers.length === 0 ? (
+          <div className="col-span-full py-32 flex flex-col items-center justify-center gap-4 text-center">
+            <p className="text-white/50 text-sm">No team members match “{query.trim()}”.</p>
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="px-4 py-2 rounded-xl text-xs bg-white/10 hover:bg-white/15 text-white transition-colors"
+            >
+              Clear search
+            </button>
+          </div>
         ) : (
           <div className="col-span-full px-4 md:px-0">
-            {renderTierSection("Executive Board", "Executive Board", true)}
-            {renderTierSection("Core Team", "Core Team")}
-            {renderTierSection("Volunteers", "Volunteers")}
-            {renderTierSection("Alumni Legacy", "Alumni")}
+            {normalizedQuery ? (
+              renderTierSection(
+                baseMembers.length === 1 ? "1 Result" : `${baseMembers.length} Results`,
+                baseMembers,
+                true
+              )
+            ) : (
+              <>
+                {renderTierSection("Executive Board", getTierMembers("Executive Board"), true)}
+                {renderTierSection("Core Team", getTierMembers("Core Team"))}
+                {renderTierSection("Volunteers", getTierMembers("Volunteers"))}
+                {renderTierSection("Alumni Legacy", getTierMembers("Alumni"))}
+              </>
+            )}
           </div>
         )}
       </div>

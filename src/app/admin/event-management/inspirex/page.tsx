@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2, Calendar, Briefcase } from "lucide-react";
+import { Search, Ticket, Users, Loader2, AlertCircle, ShieldCheck, CheckCircle2, Calendar, Briefcase, XCircle, Ban } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Registration {
   id: string;
@@ -11,7 +12,7 @@ interface Registration {
   rollNo: string;
   email: string;
   phone: string;
-  status: "pending" | "approved";
+  status: "pending" | "approved" | "rejected";
   ticketId: string | null;
   registeredAt: string | null;
   approvedAt: string | null;
@@ -25,6 +26,7 @@ export default function InspirexAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [actingOn, setActingOn] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchRegistrations();
@@ -50,6 +52,35 @@ export default function InspirexAdminPage() {
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleDecision(reg: Registration, action: "approve" | "reject") {
+    if (!user || actingOn) return;
+    setActingOn(reg.id);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/admin/approve-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ externalDocId: reg.id, action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to ${action} registration`);
+
+      toast.success(
+        action === "approve"
+          ? `Approved ${reg.name} and issued a ticket.`
+          : `Rejected ${reg.name}'s registration.`
+      );
+      await fetchRegistrations();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Action failed.");
+    } finally {
+      setActingOn(null);
     }
   }
 
@@ -89,7 +120,7 @@ export default function InspirexAdminPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Users className="w-7 h-7 text-primary" />
@@ -97,6 +128,18 @@ export default function InspirexAdminPage() {
           <div>
             <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Total Registrations</div>
             <div className="text-3xl font-bold text-white">{registrations.length}</div>
+          </div>
+        </div>
+
+        <div className="bg-[#0C0C0E] border border-white/5 rounded-2xl p-6 flex items-center gap-6">
+          <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Ban className="w-7 h-7 text-amber-400" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-white/50 uppercase tracking-wider mb-1">Pending Approval</div>
+            <div className="text-3xl font-bold text-white">
+              {registrations.filter(r => r.status === "pending").length}
+            </div>
           </div>
         </div>
 
@@ -233,11 +276,54 @@ export default function InspirexAdminPage() {
                       <div className="text-xs text-white/40 mt-0.5">{reg.phone || "-"}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${reg.status === "approved" ? "text-green-400" : "text-amber-300"}`}>
-                          <CheckCircle2 className="w-3 h-3" /> {reg.status}
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
+                            reg.status === "approved"
+                              ? "text-green-400"
+                              : reg.status === "rejected"
+                                ? "text-red-400"
+                                : "text-amber-300"
+                          }`}
+                        >
+                          {reg.status === "approved" ? (
+                            <CheckCircle2 className="w-3 h-3" />
+                          ) : reg.status === "rejected" ? (
+                            <XCircle className="w-3 h-3" />
+                          ) : (
+                            <Ban className="w-3 h-3" />
+                          )}
+                          {reg.status}
                         </span>
-                        <span className="text-white/30 text-[10px] font-mono mt-1">{reg.ticketId || 'External'}</span>
+
+                        <span className="text-white/30 text-[10px] font-mono">{reg.ticketId || "External"}</span>
+
+                        {reg.status === "pending" && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDecision(reg, "approve")}
+                              disabled={actingOn !== null}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500/15 hover:bg-green-500/25 border border-green-500/25 text-green-400 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {actingOn === reg.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="w-3 h-3" />
+                              )}
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDecision(reg, "reject")}
+                              disabled={actingOn !== null}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 text-red-400 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Reject
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

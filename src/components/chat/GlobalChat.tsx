@@ -13,11 +13,12 @@ import {
   addReaction,
   removeReaction,
   fetchOlderMessages,
+  describeChatError,
   CHAT_PAGE_SIZE
 } from "@/lib/firebase/chat";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { ConnectMember } from "@/lib/firebase/members";
-import { Send, Loader2, User, ArrowLeft, Check, CheckCheck, X, Reply, ChevronDown, Smile, Mic } from "lucide-react";
+import { Send, Loader2, User, ArrowLeft, Check, CheckCheck, X, Reply, ChevronDown, Smile, Mic, AlertTriangle, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const AVATAR_GRADIENTS = [
@@ -82,6 +83,12 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  // Firestore denials (rules/indexes) used to be swallowed by console.error,
+  // leaving a spinner forever. Surface them and offer a retry.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [subscribeAttempt, setSubscribeAttempt] = useState(0);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; senderName: string } | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -107,32 +114,47 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
   useEffect(() => {
     if (!user) return;
     setIsLoading(true);
+    setLoadError(null);
+
+    const handleError = (error: Error) => {
+      setIsLoading(false);
+      setLoadError(describeChatError(error));
+    };
 
     let unsubscribeMessages: () => void;
     if (isDM) {
-      unsubscribeMessages = subscribeToDirectMessages(dmRoomId, (msgs) => {
-        setMessages(msgs);
-        setIsLoading(false);
-        markMessagesAsRead(dmRoomId, user.email || "");
-        
-        // Track unread if not at bottom
-        if (showScrollBottom) {
-           // Basic unread approximation
-           setUnreadCount(prev => prev + 1);
-        } else {
-           scrollToBottom();
-        }
-      });
+      unsubscribeMessages = subscribeToDirectMessages(
+        dmRoomId,
+        (msgs) => {
+          setMessages(msgs);
+          setIsLoading(false);
+          setLoadError(null);
+          markMessagesAsRead(dmRoomId, user.email || "");
+
+          // Track unread if not at bottom
+          if (showScrollBottom) {
+             // Basic unread approximation
+             setUnreadCount(prev => prev + 1);
+          } else {
+             scrollToBottom();
+          }
+        },
+        handleError
+      );
     } else {
-      unsubscribeMessages = subscribeToMessages((msgs) => {
-        setMessages(msgs);
-        setIsLoading(false);
-        if (showScrollBottom) {
-           setUnreadCount(prev => prev + 1);
-        } else {
-           scrollToBottom();
-        }
-      });
+      unsubscribeMessages = subscribeToMessages(
+        (msgs) => {
+          setMessages(msgs);
+          setIsLoading(false);
+          setLoadError(null);
+          if (showScrollBottom) {
+             setUnreadCount(prev => prev + 1);
+          } else {
+             scrollToBottom();
+          }
+        },
+        handleError
+      );
     }
 
     const unsubscribeTyping = subscribeToTypingStatus(dmRoomId || "global", user.email || "", (users) => {
@@ -143,7 +165,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
       unsubscribeMessages();
       unsubscribeTyping();
     };
-  }, [dmRoomId, user, isDM]);
+  }, [dmRoomId, user, isDM, subscribeAttempt]);
 
   const scrollToBottom = useCallback((smooth = false) => {
     if (messagesEndRef.current) {
@@ -180,6 +202,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
       setHasMoreHistory(hasMore);
     } catch (error) {
       console.error("Failed to load older messages:", error);
+      setHistoryError(describeChatError(error));
     } finally {
       setIsLoadingOlder(false);
     }
@@ -255,6 +278,10 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
       scrollToBottom(true);
     } catch (err) {
       console.error("Error sending message:", err);
+      // Put the text back so a failed send never silently discards it.
+      setInputValue(msgData.text);
+      setReplyingTo(replyingTo);
+      setSendError(describeChatError(err));
     } finally {
       setIsSending(false);
     }
@@ -312,6 +339,22 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
         {isLoading ? (
           <div className="flex justify-center p-4">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+            <p className="text-sm text-gray-300 max-w-md">{loadError}</p>
+            <button
+              onClick={() => {
+                setLoadError(null);
+                setIsLoading(true);
+                setSubscribeAttempt((n) => n + 1);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Retry
+            </button>
           </div>
         ) : (
           [...olderMessages, ...messages].map((msg, index, allMsgs) => {
@@ -433,6 +476,15 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
           })
         )}
 
+        {historyError && (
+          <div className="flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs px-3 py-2 rounded-lg">
+            <span>{historyError}</span>
+            <button onClick={() => setHistoryError(null)} className="p-1 hover:bg-white/10 rounded">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {typingUsers.length > 0 && (
           <div className="flex items-end gap-2 mb-2">
              <div className="w-7 h-7" />
@@ -472,6 +524,15 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
       {/* Input Area */}
       <div className="bg-[#111116] border-t border-white/10 flex flex-col z-10">
         
+        {sendError && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-red-500/10 border-t border-red-500/30 text-red-300 text-xs">
+            <span>{sendError}</span>
+            <button onClick={() => setSendError(null)} className="p-1 hover:bg-white/10 rounded">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Reply Preview */}
         {replyingTo && (
           <div className="flex items-center justify-between px-4 py-2 bg-[#1C1C21] border-l-4 border-primary mx-4 mt-2 rounded-tr rounded-br shadow-inner">

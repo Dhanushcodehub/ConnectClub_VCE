@@ -127,8 +127,10 @@ export default function AdminGalleryPage() {
         formData.append('type', fileType);
 
         // Upload to our secure API route
+        const token = await user?.getIdToken();
         const response = await fetch('/api/upload', {
           method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,
         });
 

@@ -30,12 +30,14 @@ import {
   Award,
   Crown,
   GraduationCap,
-  HeartHandshake
+  HeartHandshake,
+  Download
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { downloadCsv, timestampForFilename, type CsvCell } from "@/lib/csv";
 
 const InstagramIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg
@@ -272,6 +274,27 @@ export default function AdminMembersPage() {
     setTimeout(() => setCopiedRoll(null), 2000);
   };
 
+  const handleExportCsv = () => {
+    if (filteredMembers.length === 0) {
+      toast.error("Nothing to export with the current filters.");
+      return;
+    }
+    const rows: CsvCell[][] = [
+      ["Name", "Tier", "Position", "Department", "Roll No", "Email", "Permissions"],
+      ...filteredMembers.map((member) => [
+        member.name,
+        member.tier,
+        member.position,
+        member.department ?? "",
+        member.rollNo,
+        member.email ?? "",
+        (member.permissions || []).join(" | "),
+      ]),
+    ];
+    downloadCsv(`connect-club-members-${timestampForFilename()}`, rows);
+    toast.success(`Exported ${filteredMembers.length} member(s).`);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -282,14 +305,17 @@ export default function AdminMembersPage() {
         const uploadFormData = new FormData();
         uploadFormData.append('file', uploadFile);
         uploadFormData.append('type', 'image');
-        
+
+        const uploadToken = await user?.getIdToken();
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
+          headers: uploadToken ? { Authorization: `Bearer ${uploadToken}` } : {},
           body: uploadFormData,
         });
 
         if (!uploadResponse.ok) {
-          throw new Error('Failed to upload image');
+          const uploadError = await uploadResponse.json().catch(() => ({}));
+          throw new Error(uploadError.error || 'Failed to upload image');
         }
 
         const uploadResult = await uploadResponse.json();
@@ -398,6 +424,15 @@ export default function AdminMembersPage() {
               <List className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          <button
+            onClick={handleExportCsv}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/10 flex items-center gap-1.5 transition-all"
+            title="Export the currently filtered list as CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
 
           <button
             onClick={() => handleOpenModal()}
