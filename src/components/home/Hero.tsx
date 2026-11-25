@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
+import { BackgroundClient } from "@/components/three/BackgroundClient";
 
 const PHRASES = [
   "Engineering Excellence.",
@@ -50,23 +51,25 @@ export function Hero() {
   return (
     <section ref={ref} className="relative min-h-[100svh] flex items-center overflow-hidden pt-20 pb-10 md:pt-0 md:pb-0">
 
-      {/* Brightened Hero Background Video in Loop */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <video
-          ref={videoRef}
-          src="/hero1.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover scale-[1.02] brightness-125 contrast-105"
-        />
-        {/* Subtle lateral gradient to ensure left text readability while keeping right sphere bright */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
-        {/* Soft bottom blend to transition smoothly into the next section */}
-        <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-background via-transparent to-transparent" />
-        {/* Bottom-left corner shield covering Gemini logo */}
-        <div className="absolute bottom-0 left-0 w-80 h-36 bg-gradient-to-tr from-black via-black/90 to-transparent pointer-events-none z-10" />
+      {/* Solid background layer for mix-blend-mode to resolve against */}
+      <div className="absolute inset-0 bg-background z-[min(-2)] pointer-events-none" style={{ zIndex: -2 }} />
+
+      {/* Interactive Grid Background */}
+      <BackgroundClient />
+
+      {/* ── RIGHT: Globe Video (Responsive: faded center on mobile, right-aligned on desktop) ─── */}
+      <div className="absolute inset-0 flex items-center justify-center md:justify-end pointer-events-none z-0 mix-blend-screen overflow-hidden">
+        <div className="w-full md:w-1/2 lg:w-7/12 flex justify-center items-center opacity-30 md:opacity-100 md:pr-8 lg:pr-12 lg:translate-x-4 pt-20 md:pt-0">
+          <video
+            ref={videoRef}
+            src="/globe.webm"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-auto max-w-[500px] md:max-w-[800px] lg:max-w-[850px] object-contain scale-[1.3] md:scale-[1.1] lg:scale-[1.15]"
+          />
+        </div>
       </div>
 
       {/* Container: Left-aligned content matching the screenshot */}
@@ -92,9 +95,9 @@ export function Hero() {
             }}
             className="mb-6"
           >
-            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 bg-[#0D0F1A]/85 backdrop-blur-md text-[10px] md:text-label font-bold tracking-widest uppercase text-white/70 shadow-lg">
+            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-md border border-white/10 bg-[#0D0F1A]/85 backdrop-blur-md text-[10px] md:text-label font-bold tracking-widest uppercase text-white/70 shadow-lg">
               <motion.span
-                className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                className="w-1.5 h-1.5 rounded-md bg-emerald-400"
                 animate={{
                   scale: [1, 1.25, 1],
                   opacity: [0.7, 1, 0.7],
@@ -120,7 +123,7 @@ export function Hero() {
             className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
           >
             We Build.<br />
-            <span className="text-highlight">We Ship.</span><br />
+            We Ship.<br />
             We Connect.
           </motion.h1>
 
@@ -163,7 +166,7 @@ export function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Right side remains completely open so the sphere in hero.mp4 is fully visible */}
+        {/* Right side remains completely open so the sphere video is visible behind it */}
         <div className="hidden md:block col-span-5 lg:col-span-6 pointer-events-none" />
 
       </div>
