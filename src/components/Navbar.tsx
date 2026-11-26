@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, useScroll, useSpring, useTransform } from "framer-motion";
-import { Menu, X, Sparkles, UserCircle, LayoutDashboard, FolderGit2, Bell, Settings, LogOut, Calendar, Award } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/contexts/AuthContext";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
 
 import { ProfileButton } from "./ProfileButton";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -24,12 +21,9 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [openPathname, setOpenPathname] = useState<string | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
-
-  const { user, role } = useAuth();
+  const mobileOpen = openPathname === pathname;
 
   const { scrollY } = useScroll();
   const { scrollYProgress } = useScroll();
@@ -48,23 +42,6 @@ export function Navbar() {
     ["0 4px 20px rgba(0,0,0,0.3)", "0 16px 40px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)"]
   );
 
-  useEffect(() => {
-    setMobileOpen(false);
-    setUserDropdownOpen(false);
-  }, [pathname]);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setUserDropdownOpen(false);
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
-  const photoURL = user?.photoURL; // Add profile?.photoURL if available in the context
-
   return (
     <>
       {/* Scroll progress bar */}
@@ -76,7 +53,7 @@ export function Navbar() {
         }}
       />
 
-      <div className="fixed top-5 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none md:pr-[15px]">
+      <div className="fixed top-3 sm:top-5 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none md:pr-[15px]">
         <motion.header
           initial={{ y: -72, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -85,7 +62,7 @@ export function Navbar() {
         >
           {/* Animated glass pill tied directly to scroll */}
           <motion.div
-            className="w-full mx-auto overflow-visible flex items-center justify-between px-5 py-3"
+            className="w-full mx-auto overflow-visible flex items-center justify-between gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3"
             style={{ 
               maxWidth: navMaxWidth,
               backgroundColor: navBg,
@@ -98,20 +75,20 @@ export function Navbar() {
             }}
           >
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 z-50 relative">
+            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0 z-50 relative min-w-0">
               <Image 
                 src="/logo/navbarlogo.png" 
                 alt="Connect Club Logo" 
                 width={120}
                 height={32}
                 priority
-                className="h-8 w-auto object-contain brightness-0 invert transition-transform duration-300 group-hover:scale-105"
+                className="h-7 sm:h-8 w-auto object-contain brightness-0 invert transition-transform duration-300 group-hover:scale-105"
               />
               <div className="hidden sm:flex items-baseline">
-                <span className=" text-secondary font-black text-xl tracking-tighter text-white group-hover:text-white transition-colors">
-                  Connect<p>  </p>
+                <span className="font-black text-xl tracking-tighter text-white group-hover:text-white transition-colors">
+                  Connect
                 </span>
-                <span className="text-secondary font-black text-xl leading-none ml-1.5">  Club</span>
+                <span className="text-secondary font-black text-xl leading-none ml-1.5">Club</span>
                 <motion.span
                   animate={{ opacity: [1, 0.4, 1] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
@@ -123,13 +100,13 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
                   className={cn(
-                    "relative py-1 text-[11px] lg:text-[12px] font-display font-black uppercase tracking-wider transition-all duration-300 group",
+                    "relative py-1 text-[11px] xl:text-[12px] font-display font-black uppercase tracking-wider transition-all duration-300 group",
                     pathname === link.href
                       ? "text-white"
                       : "text-white/60 hover:text-white"
@@ -145,8 +122,8 @@ export function Navbar() {
             </nav>
 
             {/* CTA + hamburger */}
-            <div className="flex items-center gap-3">
-              <div className="hidden md:block">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              <div className="hidden lg:block">
                 <CTAButton
                   href="/connect-ai"
                   variant="primary"
@@ -162,9 +139,11 @@ export function Navbar() {
 
 
               <button
-                className="md:hidden p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
-                onClick={() => setMobileOpen(!mobileOpen)}
+                type="button"
+                className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                onClick={() => setOpenPathname(mobileOpen ? null : pathname)}
                 aria-label="Toggle menu"
+                aria-expanded={mobileOpen}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {mobileOpen ? (
@@ -194,7 +173,7 @@ export function Navbar() {
       {/* Mobile dropdown */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed top-[84px] inset-x-4 z-40 flex justify-center pointer-events-none">
+          <div className="fixed top-[74px] sm:top-[84px] inset-x-3 sm:inset-x-4 z-40 flex justify-center pointer-events-none">
             <motion.div
               initial={{ opacity: 0, height: 0, y: -10 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
@@ -203,7 +182,7 @@ export function Navbar() {
               className="w-full overflow-hidden pointer-events-auto"
               style={{ maxWidth: "750px" }} // Matches the initial navbar size
             >
-              <div className="p-3 flex flex-col gap-1 bg-[rgba(12,12,14,0.98)] backdrop-blur-3xl rounded-2xl border border-white/10 shadow-2xl">
+              <div className="p-3 max-h-[calc(100svh-92px)] overflow-y-auto flex flex-col gap-1 bg-[rgba(12,12,14,0.98)] backdrop-blur-3xl rounded-2xl border border-white/10 shadow-2xl">
                 {navLinks.map((link, i) => (
                   <motion.div key={link.name}
                     initial={{ opacity: 0, x: -10 }}
@@ -211,8 +190,9 @@ export function Navbar() {
                     transition={{ delay: i * 0.05 + 0.1 }}>
                     <Link
                       href={link.href}
+                      onClick={() => setOpenPathname(null)}
                       className={cn(
-                        "block px-4 py-3 rounded-xl text-[14px] font-display font-black italic uppercase tracking-widest transition-all",
+                        "flex items-center min-h-[44px] px-4 py-2.5 rounded-xl text-[14px] font-display font-black italic uppercase tracking-widest transition-all",
                         pathname === link.href
                           ? "text-white bg-white/10 border border-white/10"
                           : "text-white/60 hover:text-white hover:bg-white/5"

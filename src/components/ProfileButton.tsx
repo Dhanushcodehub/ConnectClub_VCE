@@ -45,7 +45,7 @@ export function ProfileButton() {
   const photoURL = profile?.photoURL || user?.photoURL;
 
   return (
-    <div className="flex items-center justify-end gap-3 relative">
+    <div className="flex items-center justify-end gap-2 sm:gap-3 relative">
       {loading ? (
         <div className="w-10 h-10 rounded-full bg-white/5 animate-pulse border border-white/10 shadow-lg backdrop-blur-md" />
       ) : user ? (
@@ -81,7 +81,7 @@ export function ProfileButton() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 mt-3 w-56 bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
+                className="absolute right-0 mt-3 w-56 max-w-[calc(100vw-2rem)] bg-[#0C0C0E]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
               >
                 <div className="px-4 py-3 border-b border-white/10 bg-white/[0.02]">
                   <p className="text-sm font-semibold text-white truncate">{user.displayName || "User"}</p>
@@ -130,7 +130,7 @@ export function ProfileButton() {
       ) : (
         <Link
           href="/u/login"
-          className="group relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] text-white overflow-hidden bg-primary/10 border border-primary/30 transition-all duration-300 hover:bg-primary/20 hover:border-primary/50 hover:shadow-[0_0_25px_rgba(0,102,255,0.3)] hover:scale-[1.02] active:scale-[0.98]"
+          className="group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 min-h-[40px] sm:min-h-0 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.2em] text-white overflow-hidden bg-primary/10 border border-primary/30 transition-all duration-300 hover:bg-primary/20 hover:border-primary/50 hover:shadow-[0_0_25px_rgba(0,102,255,0.3)] hover:scale-[1.02] active:scale-[0.98]"
         >
           {/* Shimmer sweep effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />

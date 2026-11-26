@@ -18,6 +18,7 @@ export interface CTAButtonProps {
   target?: string;
   rel?: string;
   fullWidth?: boolean;
+  wrapperClassName?: string;
 }
 
 export function CTAButton({
@@ -33,6 +34,7 @@ export function CTAButton({
   target,
   rel,
   fullWidth = false,
+  wrapperClassName,
 }: CTAButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0, opacity: 0 });
@@ -125,7 +127,7 @@ export function CTAButton({
 
   if (href && !disabled) {
     return (
-      <Link href={href} target={target} rel={rel} className={fullWidth ? "w-full flex" : "inline-flex"}>
+      <Link href={href} target={target} rel={rel} className={cn(fullWidth ? "w-full flex" : "inline-flex", wrapperClassName)}>
         {content}
       </Link>
     );
@@ -136,7 +138,7 @@ export function CTAButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={fullWidth ? "w-full flex" : "inline-flex"}
+      className={cn(fullWidth ? "w-full flex" : "inline-flex", wrapperClassName)}
     >
       {content}
     </button>

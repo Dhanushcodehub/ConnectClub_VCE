@@ -65,6 +65,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-white;
   }
@@ -120,12 +123,19 @@
   .container-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 24px; /* Strict 24px gutters */
+    gap: 16px;
     max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 24px;
-    padding-right: 24px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  @media (min-width: 640px) {
+    .container-grid {
+      gap: 24px;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
   }
   @media (min-width: 768px) {
     .container-grid {

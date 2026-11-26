@@ -9,6 +9,11 @@ export function GridBackground() {
   const posRef = useRef({ x: -9999, y: -9999 });
 
   useEffect(() => {
+    const isTouchOrReduced =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (isTouchOrReduced) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       posRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -16,8 +21,9 @@ export function GridBackground() {
     const tick = () => {
       const { x, y } = posRef.current;
       if (spotlightRef.current) {
-        spotlightRef.current.style.webkitMaskImage = `radial-gradient(400px circle at ${x}px ${y}px, black, transparent)`;
-        (spotlightRef.current.style as any).maskImage = `radial-gradient(400px circle at ${x}px ${y}px, black, transparent)`;
+        const gradient = `radial-gradient(400px circle at ${x}px ${y}px, black, transparent)`;
+        spotlightRef.current.style.webkitMaskImage = gradient;
+        spotlightRef.current.style.maskImage = gradient;
       }
       if (orbRef.current) {
         orbRef.current.style.left = `${x}px`;

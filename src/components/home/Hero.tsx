@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -14,12 +14,13 @@ const PHRASES = [
   "Shipping Real Products.",
 ];
 
-function TypingEffect() {
+function TypingEffect({ reducedMotion }: { reducedMotion: boolean }) {
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState("");
   const [del, setDel] = useState(false);
 
   useEffect(() => {
+    if (reducedMotion) return;
     const cur = PHRASES[idx];
     let t: ReturnType<typeof setTimeout>;
     if (!del && text.length < cur.length)
@@ -28,9 +29,17 @@ function TypingEffect() {
       t = setTimeout(() => setDel(true), 2000);
     else if (del && text.length > 0)
       t = setTimeout(() => setText(text.slice(0, -1)), 30);
-    else { setDel(false); setIdx((i) => (i + 1) % PHRASES.length); }
+    else
+      t = setTimeout(() => {
+        setDel(false);
+        setIdx((i) => (i + 1) % PHRASES.length);
+      }, 0);
     return () => clearTimeout(t);
-  }, [text, del, idx]);
+  }, [text, del, idx, reducedMotion]);
+
+  if (reducedMotion) {
+    return <span className="text-primary">{PHRASES[0]}</span>;
+  }
 
   return (
     <>
@@ -43,13 +52,41 @@ function TypingEffect() {
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const shouldReduceMotion = Boolean(useReducedMotion());
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const leftY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (shouldReduceMotion) {
+      video.pause();
+      return;
+    }
+
+    // Pause the globe video when scrolled out of view to save mobile GPU/battery
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [shouldReduceMotion]);
+
   return (
-    <section ref={ref} className="relative min-h-[100svh] flex items-center overflow-hidden pt-20 pb-10 md:pt-0 md:pb-0">
+    <section
+      ref={ref}
+      className="relative min-h-[100svh] flex flex-col justify-center md:flex-row md:items-center overflow-hidden overflow-x-clip pt-20 pb-6 md:pt-0 md:pb-0"
+    >
 
       {/* Solid background layer for mix-blend-mode to resolve against */}
       <div className="absolute inset-0 bg-background z-[min(-2)] pointer-events-none" style={{ zIndex: -2 }} />
@@ -57,31 +94,16 @@ export function Hero() {
       {/* Interactive Grid Background */}
       <BackgroundClient />
 
-      {/* ── RIGHT: Globe Video (Responsive: faded center on mobile, right-aligned on desktop) ─── */}
-      <div className="absolute inset-0 flex items-center justify-center md:justify-end pointer-events-none z-0 mix-blend-screen overflow-hidden">
-        <div className="w-full md:w-1/2 lg:w-7/12 flex justify-center items-center opacity-30 md:opacity-100 md:pr-8 lg:pr-12 lg:translate-x-4 pt-20 md:pt-0">
-          <video
-            ref={videoRef}
-            src="/globe.webm"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-auto max-w-[500px] md:max-w-[800px] lg:max-w-[850px] object-contain scale-[1.3] md:scale-[1.1] lg:scale-[1.15]"
-          />
-        </div>
-      </div>
-
-      {/* Container: Left-aligned content matching the screenshot */}
-      <div className="relative z-10 container-grid items-center min-h-full md:min-h-[90vh] py-12 md:pt-24 md:pb-16">
+      {/* Container: Left-aligned content matching desktop, stacked cleanly above globe on mobile */}
+      <div className="relative z-10 w-full container-grid items-center md:min-h-[90vh] py-4 sm:py-6 md:pt-24 md:pb-16">
 
         {/* ── LEFT: content aligned to left ─── */}
         <motion.div
-          style={{ y: leftY, opacity }}
+          style={shouldReduceMotion ? undefined : { y: leftY, opacity }}
           variants={staggerContainer}
-          initial="hidden"
+          initial={shouldReduceMotion ? false : "hidden"}
           animate="visible"
-          className="col-span-4 md:col-span-7 lg:col-span-6 flex flex-col items-start text-left z-20"
+          className="col-span-4 md:col-span-4 lg:col-span-6 flex flex-col items-start text-left z-20 min-w-0"
         >
           {/* Eyebrow */}
           <motion.div
@@ -93,34 +115,38 @@ export function Hero() {
                 transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
               },
             }}
-            className="mb-6"
+            className="mb-4 sm:mb-5 md:mb-6 max-w-full"
           >
-            <span className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-md border border-white/10 bg-[#0D0F1A]/85 backdrop-blur-md text-[10px] md:text-label font-bold tracking-widest uppercase text-white/70 shadow-lg">
+            <span className="inline-flex items-center gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 md:py-2 rounded-md border border-white/10 bg-[#0D0F1A]/85 backdrop-blur-md text-[9px] sm:text-[10px] md:text-label font-bold tracking-[0.12em] sm:tracking-widest uppercase text-white/70 shadow-lg max-w-full">
               <motion.span
-                className="w-1.5 h-1.5 rounded-md bg-emerald-400"
-                animate={{
-                  scale: [1, 1.25, 1],
-                  opacity: [0.7, 1, 0.7],
-                  boxShadow: [
-                    "0 0 0px rgba(52, 211, 153, 0.4)",
-                    "0 0 8px rgba(52, 211, 153, 0.8)",
-                    "0 0 0px rgba(52, 211, 153, 0.4)",
-                  ],
-                }}
+                className="w-1.5 h-1.5 shrink-0 rounded-md bg-emerald-400"
+                animate={
+                  shouldReduceMotion
+                    ? undefined
+                    : {
+                        scale: [1, 1.25, 1],
+                        opacity: [0.7, 1, 0.7],
+                        boxShadow: [
+                          "0 0 0px rgba(52, 211, 153, 0.4)",
+                          "0 0 8px rgba(52, 211, 153, 0.8)",
+                          "0 0 0px rgba(52, 211, 153, 0.4)",
+                        ],
+                      }
+                }
                 transition={{
                   duration: 2,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
               />
-              STUDENT TECHNOLOGY CLUB · VCE
+              <span className="truncate">STUDENT TECHNOLOGY CLUB · VCE</span>
             </span>
           </motion.div>
 
           {/* Heading — word-by-word stagger */}
           <motion.h1
             variants={fadeUp}
-            className="text-h1 font-anton font-normal uppercase tracking-wide text-white mb-4 md:mb-6 leading-[1.05]"
+            className="text-[clamp(34px,9.5vw,44px)] sm:text-[clamp(40px,6vw,64px)] font-anton font-normal uppercase tracking-wide text-white mb-3 sm:mb-4 md:mb-6 leading-[1.03] sm:leading-[1.1]"
           >
             We Build.<br />
             We Ship.<br />
@@ -130,26 +156,28 @@ export function Hero() {
           {/* Typing subline */}
           <motion.p
             variants={fadeUp}
-            className="font-display font-semibold uppercase tracking-widest text-white/40 mb-4 md:mb-6 text-[10px] md:text-label"
+            className="font-display font-semibold uppercase tracking-widest text-white/40 mb-3 sm:mb-4 md:mb-6 text-[10px] sm:text-[11px] md:text-label min-h-[1.5em]"
           >
-            <TypingEffect />
+            <TypingEffect reducedMotion={shouldReduceMotion} />
           </motion.p>
 
           {/* Description */}
           <motion.p
             variants={fadeUp}
-            className="text-sm md:text-body text-white/60 mb-8 max-w-sm md:max-w-md leading-relaxed"
+            className="text-[14px] sm:text-[15px] md:text-body text-white/65 md:text-white/60 mb-6 md:mb-8 max-w-full sm:max-w-sm md:max-w-md leading-relaxed"
           >
             The official technology community at Vardhaman College of
             Engineering. Real software, epic events, and real career outcomes.
           </motion.p>
 
           {/* CTAs */}
-          <motion.div variants={fadeUp} className="flex flex-row items-center gap-4 w-full sm:w-auto mb-8">
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto mb-2 sm:mb-4 md:mb-8">
             <CTAButton
               href="/events"
               variant="primary"
               size="md"
+              wrapperClassName="w-full sm:w-auto flex sm:inline-flex"
+              className="w-full sm:w-auto"
               icon={<ArrowRight className="w-4 h-4 text-current" />}
             >
               Explore Events
@@ -158,6 +186,8 @@ export function Hero() {
               href="/connect-ai"
               variant="secondary"
               size="md"
+              wrapperClassName="w-full sm:w-auto flex sm:inline-flex"
+              className="w-full sm:w-auto"
               icon={<Sparkles className="w-4 h-4 text-purple-400" />}
               iconPosition="left"
             >
@@ -166,30 +196,45 @@ export function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Right side remains completely open so the sphere video is visible behind it */}
-        <div className="hidden md:block col-span-5 lg:col-span-6 pointer-events-none" />
+        {/* Right side remains open on tablet/desktop so the sphere video is visible behind it */}
+        <div className="hidden md:block md:col-span-2 lg:col-span-6 pointer-events-none" />
 
       </div>
 
-
+      {/* ── RIGHT / MOBILE BOTTOM: Globe Video (stacked cleanly on mobile without text overlap, right-aligned overlay on md+) ─── */}
+      <div className="relative md:absolute md:inset-0 flex items-center justify-center md:justify-end pointer-events-none z-0 mix-blend-screen overflow-hidden w-full mt-2 md:mt-0">
+        <div className="w-full md:w-1/2 lg:w-7/12 flex justify-center items-center opacity-85 md:opacity-100 md:pr-8 lg:pr-12 lg:translate-x-4">
+          <video
+            ref={videoRef}
+            src="/globe.webm"
+            autoPlay={!shouldReduceMotion}
+            loop={!shouldReduceMotion}
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            className="w-[220px] min-[375px]:w-[260px] sm:w-[320px] md:w-full h-auto max-w-full md:max-w-[800px] lg:max-w-[850px] object-contain scale-100 md:scale-[1.1] lg:scale-[1.15]"
+          />
+        </div>
+      </div>
 
       {/* Scroll hint */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.5, duration: 1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 hidden md:flex"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex-col items-center gap-2 hidden md:flex"
       >
         <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/20">Scroll</span>
         <motion.div
-          animate={{ y: [0, 6, 0] }}
+          animate={shouldReduceMotion ? undefined : { y: [0, 6, 0] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
         >
           <ArrowDown className="w-4 h-4 text-white/20" />
         </motion.div>
       </motion.div>
 
-      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-30" />
+      <div className="absolute bottom-0 inset-x-0 h-16 md:h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-30" />
     </section>
   );
 }

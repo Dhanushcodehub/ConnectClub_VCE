@@ -49,7 +49,7 @@ export default function Home() {
         }}
       />
       <Hero />
-      <div className="relative">
+      <div className="relative overflow-x-clip">
         {/* Grid background behind all sections */}
         <div className="absolute inset-0 bg-grid-pattern pointer-events-none z-0" />
         <StickyStats />
