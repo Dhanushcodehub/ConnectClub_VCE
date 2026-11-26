@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { User, onAuthStateChanged, getIdTokenResult } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
 import { getUserProfile, ConnectUser } from "@/lib/firebase/users";
@@ -25,63 +25,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<"admin" | "member" | "user" | null>(null);
   const [profile, setProfile] = useState<ConnectUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => isFirebaseConfigured && Boolean(auth));
+  const authEventIdRef = useRef(0);
 
   const refreshProfile = async () => {
-    if (user) {
-      const p = await getUserProfile(user.uid);
+    const current = auth?.currentUser ?? user;
+    if (current) {
+      const p = await getUserProfile(current.uid);
       setProfile(p);
     }
   };
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
-      setLoading(false);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      
-      if (currentUser) {
-        try {
-          // Force refresh on first load to get latest custom claims
-          const idTokenResult = await getIdTokenResult(currentUser, true);
-          
-          if (idTokenResult.claims.role === "member") {
-            setRole("member");
-          } else if (idTokenResult.claims.role === "user") {
-            setRole("user");
-            // Load user profile from Firestore
-            const userProfile = await getUserProfile(currentUser.uid);
-            setProfile(userProfile);
-          } else if (idTokenResult.claims.role === "admin") {
-            setRole("admin");
-          } else {
-            // Check if the user has a profile in the users collection (Google sign-in without claim yet)
-            const userProfile = await getUserProfile(currentUser.uid);
-            if (userProfile) {
-              setRole("user");
-              setProfile(userProfile);
-            } else {
-              // Fallback for new/incomplete accounts
-              if (currentUser.email === "admin@connectclubvce.in") {
-                setRole("admin");
-              } else {
-                // Not an admin, no profile yet. Leave as user so they can complete onboarding.
-                setRole("user");
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching custom claims:", error);
-          setRole(null); // Fail safe to lowest privilege
-        }
-      } else {
+      const eventId = ++authEventIdRef.current;
+
+      if (!currentUser) {
+        setUser(null);
         setRole(null);
         setProfile(null);
+        setLoading(false);
+        return;
       }
 
+      // Keep loading=true until role and Firestore profile finish resolving
+      // so route guards and login pages do not flash onboarding prematurely.
+      setLoading(true);
+
+      let resolvedRole: "admin" | "member" | "user" | null = null;
+      let resolvedProfile: ConnectUser | null = null;
+
+      try {
+        // Force refresh to pick up latest custom claims
+        const idTokenResult = await getIdTokenResult(currentUser, true);
+        if (eventId !== authEventIdRef.current) return;
+
+        if (idTokenResult.claims.role === "member") {
+          resolvedRole = "member";
+        } else if (idTokenResult.claims.role === "user") {
+          resolvedRole = "user";
+          resolvedProfile = await getUserProfile(currentUser.uid);
+        } else if (idTokenResult.claims.role === "admin") {
+          resolvedRole = "admin";
+          resolvedProfile = await getUserProfile(currentUser.uid);
+        } else {
+          // Check if the user has a profile in the users collection (Google sign-in without claim yet)
+          resolvedProfile = await getUserProfile(currentUser.uid);
+          if (resolvedProfile) {
+            resolvedRole = "user";
+          } else if (currentUser.email === "admin@connectclubvce.in") {
+            resolvedRole = "admin";
+          } else {
+            // Not an admin, no profile yet. Leave as user so they can complete onboarding.
+            resolvedRole = "user";
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching custom claims:", error);
+        resolvedRole = null; // Fail safe to lowest privilege
+        resolvedProfile = null;
+      }
+
+      if (eventId !== authEventIdRef.current) return;
+
+      setUser(currentUser);
+      setRole(resolvedRole);
+      setProfile(resolvedProfile);
       setLoading(false);
     });
 

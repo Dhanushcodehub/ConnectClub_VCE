@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, sendEmailVerification, GoogleAuthProvider, User } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { useState, useEffect, useRef } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
+import { signInWithGooglePopup } from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Sparkles, GraduationCap, ChevronDown } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { checkUserExists } from "@/lib/firebase/users";
 import OnboardingModal from "@/components/user/OnboardingModal";
 import Link from "next/link";
 import { getFirebaseErrorMessage } from "@/lib/utils";
@@ -25,37 +25,37 @@ export default function UserRegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const router = useRouter();
   const { user, role, profile, loading: authLoading } = useAuth();
+  const googleInFlightRef = useRef(false);
+
+  const needsOnboarding = Boolean(
+    !authLoading && user && user.emailVerified && role !== "member" && !profile
+  );
 
   // Prefetch the OTP verification page immediately so transition is instant
   useEffect(() => {
     router.prefetch("/u/verify");
   }, [router]);
 
-  // onAuthStateChanged in AuthContext already detects the user after redirect.
-  // This useEffect reacts to the auth state change and routes accordingly.
-
+  // onAuthStateChanged in AuthContext detects the user after auth changes.
+  // This useEffect reacts to the resolved auth state and routes accordingly.
   useEffect(() => {
     // Only redirect if the user's email is verified (Google auth is pre-verified)
-    if (!authLoading && user && user.emailVerified && !showOnboarding) {
+    if (!authLoading && user && user.emailVerified) {
       if (role === "member") {
         router.push("/member/dashboard");
       } else if (profile) {
         router.push("/u/dashboard");
-      } else if (!profile) {
-        setPendingUser(user);
-        setShowOnboarding(true);
       }
     }
-  }, [user, role, profile, authLoading, router, showOnboarding]);
+  }, [user, role, profile, authLoading, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
 
@@ -68,19 +68,19 @@ export default function UserRegisterPage() {
           const yearPrefix = roll.substring(0, 2);
           const entryType = roll.charAt(4);
           const branchCode = roll.substring(6, 8);
-          
+
           // 1. Calculate Year of Study
           const admissionYear = parseInt("20" + yearPrefix);
           if (!isNaN(admissionYear)) {
             const currentYear = new Date().getFullYear();
             const currentMonth = new Date().getMonth(); // 0 = Jan, 6 = Jul
             let academicYear = currentYear - admissionYear;
-            
+
             // Academic year typically increments around July/August
             if (currentMonth >= 6) {
               academicYear += 1;
             }
-            
+
             // Lateral entry (5) students skip 1st year
             if (entryType === '5') {
               academicYear += 1;
@@ -104,7 +104,7 @@ export default function UserRegisterPage() {
             "67": "DS",
             "72": "AI&ML"
           };
-          
+
           if (branchMap[branchCode]) {
             newData.department = branchMap[branchCode];
           }
@@ -118,7 +118,7 @@ export default function UserRegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
 
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters.");
@@ -142,26 +142,32 @@ export default function UserRegisterPage() {
       }
 
       // Initiate sign-in and redirect without blocking UI
-      signInWithEmailAndPassword(auth, formData.email, formData.password).catch(() => {});
+      if (isFirebaseConfigured && auth) {
+        signInWithEmailAndPassword(auth, formData.email, formData.password).catch(() => { });
+      }
       router.replace(`/u/verify?email=${encodeURIComponent(formData.email)}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(getFirebaseErrorMessage(err) || "Failed to create account. Please try again.");
+      setError(getFirebaseErrorMessage(err));
       setLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
+    if (googleInFlightRef.current || loading || googleLoading) return;
+    googleInFlightRef.current = true;
     setError("");
+    setOnboardingDismissed(false);
     setGoogleLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // Popup resolves and local useEffect catches the new user and routes them.
-    } catch (err: any) {
+      await signInWithGooglePopup();
+      // Popup resolves and AuthContext + useEffect catch the new user and route them.
+    } catch (err: unknown) {
       console.error(err);
-      setError(getFirebaseErrorMessage(err) || "Failed to sign in with Google. Please try again.");
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      googleInFlightRef.current = false;
       setGoogleLoading(false);
     }
   };
@@ -169,14 +175,14 @@ export default function UserRegisterPage() {
   return (
     <>
       <div className="min-h-screen w-full bg-[#0c0c0e] flex flex-col items-center justify-center pt-20 pb-12 px-6 sm:px-12 relative overflow-hidden font-sans">
-        
+
         {/* Background elements */}
         <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
         <div className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px]" />
         <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
 
         <div className="w-full max-w-[500px] relative z-10 mt-4">
-          
+
           <div className="flex justify-center mb-0">
             <img src="/logo/logo-transparent.png" alt="Connect Club" className="h-28 sm:h-32 w-auto object-contain brightness-0 invert" />
           </div>
@@ -186,11 +192,11 @@ export default function UserRegisterPage() {
               <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Create Account</span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl font-black font-heading text-white leading-[1.1] tracking-tight mb-4 uppercase">
               Build Your <span className="text-primary">Network.</span>
             </h1>
-            
+
             <p className="text-sm text-white/50 leading-relaxed max-w-[400px] mx-auto font-medium">
               Connect Club - 2026. Elevate your engineering journey. Create a student account to apply.
             </p>
@@ -215,7 +221,7 @@ export default function UserRegisterPage() {
                 placeholder="Your name"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Roll Number</label>
@@ -255,7 +261,7 @@ export default function UserRegisterPage() {
                 placeholder="you@example.com"
               />
             </div>
-            
+
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 ml-1">Password</label>
               <input
@@ -339,14 +345,17 @@ export default function UserRegisterPage() {
             className="w-full mt-4 bg-white text-black font-bold py-4 px-6 rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center space-x-3 shadow-sm uppercase tracking-[0.2em] text-xs"
           >
             {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Signing up...</span>
+              </>
             ) : (
               <>
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 <span>Sign up with Google</span>
               </>
@@ -370,11 +379,11 @@ export default function UserRegisterPage() {
         </div>
       </div>
 
-      {showOnboarding && pendingUser && (
-        <OnboardingModal 
-          isOpen={showOnboarding} 
-          onClose={() => setShowOnboarding(false)} 
-          user={pendingUser} 
+      {needsOnboarding && !onboardingDismissed && user && (
+        <OnboardingModal
+          isOpen={needsOnboarding && !onboardingDismissed}
+          onClose={() => setOnboardingDismissed(true)}
+          user={user}
         />
       )}
     </>

@@ -5,6 +5,7 @@ import { User, getIdTokenResult } from "firebase/auth";
 import { Loader2, Sparkles, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { refreshProfile } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -112,8 +114,9 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
         throw new Error(data.error || "Failed to complete profile.");
       }
 
-      // Force token refresh to get updated custom claims
+      // Force token refresh to get updated custom claims and sync profile in AuthContext
       await getIdTokenResult(user, true);
+      await refreshProfile();
       
       // Fire-and-forget background sync for external events (e.g. InspireX registrations done before CC account creation)
       fetch("/api/users/retroactive-sync", {
@@ -127,9 +130,9 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
       router.push("/u/dashboard");
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Something went wrong.");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
       setLoading(false);
     }
   };
