@@ -10,7 +10,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
 function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -39,6 +39,11 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (user && pathname !== "/member/login") {
+        if (role === "admin") {
+          router.replace("/admin");
+          return;
+        }
+
         if (user.email) {
           try {
             let currentProfile = memberProfile;
@@ -72,7 +77,7 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
 
     checkAuth();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, pathname, router]);
+  }, [user, role, loading, pathname, router]);
 
   if (loading || (user && profileLoading && pathname !== "/member/login")) {
     return (
@@ -84,6 +89,11 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
 
   // If not logged in and not on login page, render nothing while redirecting
   if (!user && pathname !== "/member/login") {
+    return null;
+  }
+  
+  // If user is an admin and not on login page, render nothing while redirecting
+  if (role === "admin" && pathname !== "/member/login") {
     return null;
   }
 
@@ -103,7 +113,7 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col md:flex-row h-[100svh] bg-transparent overflow-hidden text-white">
       {pathname !== "/member/login" && <MemberSidebar memberProfile={memberProfile} />}
-      <main className="flex-1 min-h-0 overflow-y-auto relative" data-lenis-prevent>
+      <main className="flex-1 overflow-y-auto relative" data-lenis-prevent>
         {children}
       </main>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Calendar, LayoutGrid, Image as ImageIcon, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, LayoutGrid, Image as ImageIcon, ArrowRight, Sparkles, FileText } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
@@ -50,6 +50,7 @@ export default function MemberDashboard() {
     { title: "Manage Events", icon: <Calendar className="w-8 h-8 text-primary" />, href: "/member/events", desc: "View and edit club events", permission: "events" },
     { title: "Manage Projects", icon: <LayoutGrid className="w-8 h-8 text-blue-400" />, href: "/member/projects", desc: "Update project showcase", permission: "projects" },
     { title: "Manage Gallery", icon: <ImageIcon className="w-8 h-8 text-purple-400" />, href: "/member/gallery", desc: "Upload event photos", permission: "gallery" },
+    { title: "Letter Editor", icon: <FileText className="w-8 h-8 text-emerald-400" />, href: "/member/letter-editor", desc: "Generate professional letters", permission: "letter_editor" },
   ];
 
   const quickLinks = allQuickLinks.filter(link => profile?.permissions?.includes(link.permission));
@@ -58,14 +59,14 @@ export default function MemberDashboard() {
     <div className="p-8 md:p-12">
       <div className="mb-12">
         <h1 className="text-4xl md:text-5xl font-black font-heading text-white mb-4">
-          Welcome back, <span className="text-primary">{user?.email?.split('@')[0]}</span>!
+          Welcome back, <span className="text-primary break-all">{user?.email?.split('@')[0]}</span>!
         </h1>
         <p className="text-white/60 text-lg max-w-2xl">
           This is your member portal. You can manage events, projects, and the gallery from here. Your permissions are active based on your assigned role.
         </p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* Quick Links */}
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -80,7 +81,7 @@ export default function MemberDashboard() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{link.title}</h3>
               <p className="text-white/50 text-sm mb-6 flex-grow">{link.desc}</p>
-              <div className="text-primary text-sm font-medium flex items-center group-hover:underline">
+              <div className="text-primary text-sm font-medium flex items-center group-hover:underline mt-auto">
                 Open <ArrowRight className="w-4 h-4 ml-1" />
               </div>
             </Link>

@@ -8,15 +8,29 @@ import { subscribeToMessages, subscribeToDirectMessages } from "@/lib/firebase/c
 import { collection, query, onSnapshot, orderBy, limit, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
+/** Fire a native OS notification if permission is granted */
+function fireOSNotification(title: string, body: string, onClick?: () => void) {
+  if (typeof window === "undefined") return;
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  const n = new Notification(title, {
+    body,
+    icon: "/favicon.ico",
+    badge: "/favicon.ico",
+  });
+  if (onClick) n.onclick = () => { window.focus(); onClick(); };
+}
+
 export function GlobalChatListener() {
   const { user, role } = useAuth();
   const { toast } = useNotifications();
   const pathname = usePathname();
-  
+
   // Track if it's the initial load so we don't spam notifications for old messages
   const initialLoadRef = useRef(true);
   const lastGlobalMsgIdRef = useRef<string | null>(null);
-  
+
+  // ── 1. Chat & DM listener ─────────────────────────────────────────────────
   useEffect(() => {
     // Only staff (admins and club members) participate in club/DM chat.
     if (!user || !user.email || (role !== "admin" && role !== "member")) return;
@@ -26,42 +40,34 @@ export function GlobalChatListener() {
     // Listen to Global Chat
     const unsubscribeGlobal = subscribeToMessages((messages) => {
       if (messages.length === 0) return;
-      
-      const latestMsg = messages[messages.length - 1]; // Because we reverse it in subscribeToMessages
-      
+
+      const latestMsg = messages[messages.length - 1];
+
       // If it's initial load, just record the latest ID and don't notify
       if (initialLoadRef.current) {
         lastGlobalMsgIdRef.current = latestMsg.id || null;
-        
-        // Give it a tiny delay to mark initial load as false, so both listeners can initialize
         if (!initTimer) {
           initTimer = setTimeout(() => { initialLoadRef.current = false; }, 1000);
         }
         return;
       }
 
-      // If it's a new message, not from me, and I'm not looking at the global chat right now
       if (
-        latestMsg.id !== lastGlobalMsgIdRef.current && 
+        latestMsg.id !== lastGlobalMsgIdRef.current &&
         latestMsg.senderEmail !== user.email
       ) {
         lastGlobalMsgIdRef.current = latestMsg.id || null;
-        
-        // Don't notify if we are currently looking at the global chat
-        const isViewingGlobalChat = (pathname === '/admin/chat' || pathname === '/member/chat') && 
-          // Assuming activeRoom state in those pages handles it, but loosely:
+
+        const isViewingGlobalChat = (pathname === '/admin/chat' || pathname === '/member/chat') &&
           !document.hidden;
-          
+
         if (!isViewingGlobalChat || document.hidden) {
-          toast(
-            `Club Chat: ${latestMsg.senderName}`, 
-            latestMsg.text,
-            () => { window.location.href = role === "admin" ? "/admin/chat" : "/member/chat"; }
-          );
-          
-          // Request browser notification if permitted
-          if (Notification.permission === "granted" && document.hidden) {
-            new Notification(`Club Chat: ${latestMsg.senderName}`, { body: latestMsg.text });
+          const goToChat = () => { window.location.href = role === "admin" ? "/admin/chat" : "/member/chat"; };
+          toast(`Club Chat: ${latestMsg.senderName}`, latestMsg.text, goToChat);
+
+          // Native OS popup only when tab is hidden
+          if (document.hidden) {
+            fireOSNotification(`Club Chat: ${latestMsg.senderName}`, latestMsg.text, goToChat);
           }
         }
       }
@@ -69,89 +75,74 @@ export function GlobalChatListener() {
 
     // Listen to Direct Messages
     let unsubscribeDM: () => void = () => {};
-    
+
     if (role === "admin") {
-      // Admin needs to listen to ALL DMs where they are not the sender.
-      // Listen to the latest few, not just one: two DMs arriving together
-      // used to toast only the newest and silently swallow the other.
       const q = query(
         collection(db, "direct_messages"),
         orderBy("timestamp", "desc"),
         limit(10)
       );
-      
+
       let initialAdminDMLoad = true;
       const seenAdminDMIds = new Set<string>();
-      
+
       unsubscribeDM = onSnapshot(q, (snapshot) => {
         if (snapshot.empty) return;
-        
+
         const docs = snapshot.docs;
-        
+
         if (initialAdminDMLoad) {
           docs.forEach((d) => seenAdminDMIds.add(d.id));
           initialAdminDMLoad = false;
           return;
         }
-        
-        // Oldest-first so multiple new messages toast in order.
+
         for (const doc of [...docs].reverse()) {
           const data = doc.data();
           if (seenAdminDMIds.has(doc.id)) continue;
           seenAdminDMIds.add(doc.id);
-          
+
           if (data.senderEmail === user.email) continue;
-          
-          if (!document.hidden && pathname === '/admin/chat') continue; // Might be viewing it
-          
-          toast(
-            `DM from ${data.senderName}`, 
-            data.text,
-            () => { window.location.href = "/admin/chat"; }
-          );
-          
-          if (Notification.permission === "granted" && document.hidden) {
-            new Notification(`DM from ${data.senderName}`, { body: data.text });
+          if (!document.hidden && pathname === '/admin/chat') continue;
+
+          const goToChat = () => { window.location.href = "/admin/chat"; };
+          toast(`DM from ${data.senderName}`, data.text, goToChat);
+
+          if (document.hidden) {
+            fireOSNotification(`DM from ${data.senderName}`, data.text, goToChat);
           }
         }
-        
-        // Keep the seen-set bounded to the query window.
+
         const windowIds = new Set(docs.map((d) => d.id));
         for (const id of seenAdminDMIds) {
           if (!windowIds.has(id)) seenAdminDMIds.delete(id);
         }
-      }, () => {
-        // Swallow: this listener often dies mid sign-out, which is fine.
-      });
+      }, () => {});
     } else {
-      // Member only listens to their own DM room
       let initialMemberDMLoad = true;
       let lastMemberDMMsgId: string | null = null;
-      
+
       unsubscribeDM = subscribeToDirectMessages(user.email, (messages) => {
         if (messages.length === 0) return;
-        
+
         const latestMsg = messages[messages.length - 1];
-        
+
         if (initialMemberDMLoad) {
           lastMemberDMMsgId = latestMsg.id || null;
           initialMemberDMLoad = false;
           return;
         }
-        
+
         if (latestMsg.id !== lastMemberDMMsgId && latestMsg.senderEmail !== user.email) {
           lastMemberDMMsgId = latestMsg.id || null;
-          
+
           if (!document.hidden && pathname === '/member/chat') return;
-          
-          toast(
-            `DM from Admin`, 
-            latestMsg.text,
-            () => { window.location.href = "/member/chat"; }
-          );
-          
-          if (typeof Notification !== "undefined" && Notification.permission === "granted" && document.hidden) {
-            new Notification(`DM from Admin`, { body: latestMsg.text });
+
+          const goToChat = () => { window.location.href = "/member/chat"; };
+          toast(`DM from Admin`, latestMsg.text, goToChat);
+
+          if (document.hidden) {
+            fireOSNotification(`DM from Admin`, latestMsg.text, goToChat);
           }
         }
       });
@@ -169,5 +160,61 @@ export function GlobalChatListener() {
     };
   }, [user, role, pathname, toast]);
 
-  return null; // This component just runs the effect
+  // ── 2. Admin broadcast → native OS popup ─────────────────────────────────
+  useEffect(() => {
+    // Only for logged-in students (uid exists, role is NOT admin/member portal)
+    if (!user?.uid) return;
+
+    const seenNotifIds = new Set<string>();
+    let isInitialLoad = true;
+
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        isInitialLoad = false;
+        return;
+      }
+
+      // On first load, just seed the seen set — don't fire popups for old notifications
+      if (isInitialLoad) {
+        snapshot.docs.forEach((d) => seenNotifIds.add(d.id));
+        isInitialLoad = false;
+        return;
+      }
+
+      // For each new doc that wasn't in the initial set, fire in-app toast + OS popup
+      for (const docSnap of snapshot.docs) {
+        if (seenNotifIds.has(docSnap.id)) continue;
+        seenNotifIds.add(docSnap.id);
+
+        const data = docSnap.data();
+        const title: string = data.title || "Connect Club";
+        const message: string = data.message || "";
+        const actionUrl: string | undefined = data.actionUrl;
+
+        const handleClick = actionUrl
+          ? () => { window.location.href = actionUrl; }
+          : undefined;
+
+        // Always show in-app toast
+        toast(title, message, handleClick);
+
+        // Native OS popup — fires whether or not the tab is visible
+        // so the student sees it even if the site is open in background
+        fireOSNotification(`🔔 ${title}`, message, handleClick);
+      }
+    }, () => {
+      // Swallow permission-denied errors silently
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid, toast]);
+
+  return null;
 }

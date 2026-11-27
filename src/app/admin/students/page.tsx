@@ -198,10 +198,6 @@ export default function AdminStudentsPage() {
           setIsRefreshing(false);
         },
         (error) => {
-          if ((error as { code?: string })?.code === "permission-denied") {
-            setLoading(false);
-            return;
-          }
           console.error("Realtime subscription error, falling back to getAllUsers:", error);
           getAllUsers()
             .then((data) => {

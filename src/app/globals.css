@@ -159,30 +159,28 @@
       0 8px 32px -4px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                border-color 0.4s ease,
-                box-shadow 0.4s ease;
+                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .glass-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow:
-      0 24px 48px -12px rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-      0 0 20px rgba(255, 255, 255, 0.03);
+    border-color: rgba(147, 51, 234, 0.3);
+    box-shadow: 
+      0 12px 40px -4px rgba(147, 51, 234, 0.15),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
   }
 
-  /* ── Text gradient ───────────────────────────────────── */
-  .text-gradient-cyan {
-    color: var(--primary);
+  /* ── Neon Text Effects ───────────────────────────────── */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.2);
   }
-
+  
   .text-highlight {
-    @apply text-primary inline-block font-normal;
-    text-shadow: 0 0 24px rgba(147, 51, 234, 0.5);
+    background: linear-gradient(135deg, #FFFFFF 0%, #A855F7 50%, #9333EA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  /* ── Glow button ─────────────────────────────────────── */
+  /* ── Premium High-Gloss Button ───────────────────────── */
   .btn-glow {
     position: relative;
     overflow: hidden;
@@ -328,4 +326,14 @@
 @keyframes shimmer {
   0%, 100% { background-position: 120% 0; }
   50%      { background-position: -20% 0; }
+}
+
+/* ── Stats cards: smooth left-to-right infinite scroll ───── */
+@keyframes marquee-ltr {
+  0%   { transform: translateX(-33.333%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-ltr {
+  animation: marquee-ltr 22s linear infinite;
 }

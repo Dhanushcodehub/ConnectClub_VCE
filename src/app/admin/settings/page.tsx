@@ -2,21 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { db } from "@/lib/firebase/config";
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
+import { auth, db } from "@/lib/firebase/config";
+import { 
+  EmailAuthProvider, 
+  reauthenticateWithCredential, 
+  updatePassword 
 } from "firebase/auth";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  doc,
-  getDoc,
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  getDocs, 
+  doc, 
+  getDoc, 
+  setDoc 
 } from "firebase/firestore";
 import { ShieldCheck, Key, History, Loader2, AlertCircle } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -169,6 +170,9 @@ export default function AdminSettingsPage() {
       }
       setTwoFactorEnabled(true);
       setIsSettingUp2FA(false);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("2fa_verified", "true");
+      }
       setSetupUri("");
       setTotpInput("");
     } catch (error: unknown) {
@@ -182,7 +186,7 @@ export default function AdminSettingsPage() {
   const disable2FA = async () => {
     if (!user) return;
     if (!confirm("Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.")) return;
-
+    
     setTfaLoading(true);
     setTfaError("");
     try {
@@ -198,6 +202,9 @@ export default function AdminSettingsPage() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Failed to disable 2FA.");
+      }
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("2fa_verified");
       }
       setTwoFactorEnabled(false);
     } catch (error: unknown) {
@@ -276,19 +283,16 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-  <label className="text-sm font-medium text-white/80">New Password</label>
-  <input
-    type="password"
-    required
-    minLength={6}
-    autoComplete="off"
-    data-form-type="other"
-    data-lpignore="true"
-    value={newPassword}
-    onChange={(e) => setNewPassword(e.target.value)}
-    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-  />
-</div>
+                <label className="text-sm font-medium text-white/80">New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={changingPwd}
@@ -341,7 +345,7 @@ export default function AdminSettingsPage() {
                 <p className="text-white/50 text-sm mb-4">
                   Open your Authenticator app and scan the QR code above. Then enter the 6-digit code below to verify.
                 </p>
-
+                
                 {tfaError && (
                   <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
                     {tfaError}

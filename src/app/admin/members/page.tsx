@@ -131,7 +131,6 @@ export default function AdminMembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("All");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -275,27 +274,6 @@ export default function AdminMembersPage() {
     setTimeout(() => setCopiedRoll(null), 2000);
   };
 
-  const handleExportCsv = () => {
-    if (filteredMembers.length === 0) {
-      toast.error("Nothing to export with the current filters.");
-      return;
-    }
-    const rows: CsvCell[][] = [
-      ["Name", "Tier", "Position", "Department", "Roll No", "Email", "Permissions"],
-      ...filteredMembers.map((member) => [
-        member.name,
-        member.tier,
-        member.position,
-        member.department ?? "",
-        member.rollNo,
-        member.email ?? "",
-        (member.permissions || []).join(" | "),
-      ]),
-    ];
-    downloadCsv(`connect-club-members-${timestampForFilename()}`, rows);
-    toast.success(`Exported ${filteredMembers.length} member(s).`);
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -306,17 +284,14 @@ export default function AdminMembersPage() {
         const uploadFormData = new FormData();
         uploadFormData.append('file', uploadFile);
         uploadFormData.append('type', 'image');
-
-        const uploadToken = await user?.getIdToken();
+        
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
-          headers: uploadToken ? { Authorization: `Bearer ${uploadToken}` } : {},
           body: uploadFormData,
         });
 
         if (!uploadResponse.ok) {
-          const uploadError = await uploadResponse.json().catch(() => ({}));
-          throw new Error(uploadError.error || 'Failed to upload image');
+          throw new Error('Failed to upload image');
         }
 
         const uploadResult = await uploadResponse.json();
@@ -381,6 +356,27 @@ export default function AdminMembersPage() {
     }
   };
 
+  const handleExportCsv = () => {
+    if (filteredMembers.length === 0) {
+      toast.error("Nothing to export with the current filters.");
+      return;
+    }
+    const rows: CsvCell[][] = [
+      ["Name", "Position", "Tier", "Department", "Roll No", "Email", "Order"],
+      ...filteredMembers.map((member) => [
+        member.name,
+        member.position,
+        member.tier,
+        member.department ?? "",
+        member.rollNo,
+        member.email ?? "",
+        member.order,
+      ]),
+    ];
+    downloadCsv(`connect-club-members-${timestampForFilename()}`, rows);
+    toast.success(`Exported ${filteredMembers.length} member(s).`);
+  };
+
   return (
     <div className="flex flex-col min-h-full pb-16 bg-transparent">
       {/* Top Header */}
@@ -402,36 +398,12 @@ export default function AdminMembersPage() {
 
         {/* Header Right Actions */}
         <div className="flex items-center gap-2.5">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 text-xs">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={cn(
-                "p-1.5 rounded-lg transition-all flex items-center gap-1",
-                viewMode === "grid" ? "bg-primary text-white shadow-sm" : "text-white/50 hover:text-white"
-              )}
-              title="Grid / Cards View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={cn(
-                "p-1.5 rounded-lg transition-all flex items-center gap-1",
-                viewMode === "table" ? "bg-primary text-white shadow-sm" : "text-white/50 hover:text-white"
-              )}
-              title="Table View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
           <button
             onClick={handleExportCsv}
             className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/10 flex items-center gap-1.5 transition-all"
             title="Export the currently filtered list as CSV"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
 
@@ -598,7 +570,7 @@ export default function AdminMembersPage() {
               </button>
             )}
           </div>
-        ) : viewMode === "grid" ? (
+        ) : (
           /* Cards / Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
             {filteredMembers.map((member) => {
@@ -607,29 +579,29 @@ export default function AdminMembersPage() {
               const avatarStyle = getAvatarStyle(member.name);
 
               return (
-                <motion.div
+                <div
                   key={member.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-3xl bg-[#0c0c0e] border border-white/10 hover:border-purple-500/30 p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/5 group relative overflow-hidden"
+                  className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-colors shadow-lg flex flex-col h-full group relative overflow-hidden"
                 >
+                  {/* Subtle top gradient */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
                   {/* Top Bar: Tier Badge, Order, and Actions */}
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div
-                        className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5",
-                          tierBadge
-                        )}
-                      >
+                    <div className="flex items-center justify-between gap-2 mb-6">
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider flex items-center gap-1.5",
+                        tierBadge
+                      )}>
                         {tierIcon}
                         <span>{member.tier}</span>
-                      </div>
+                      </span>
 
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-mono font-medium text-white/40 bg-white/5 px-2 py-0.5 rounded-md">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 p-1 rounded-xl border border-white/5">
+                        <span className="text-[10px] font-mono font-medium text-white/40 px-2 py-0.5 rounded-md">
                           #{member.order}
                         </span>
+                        <div className="w-px h-3 bg-white/10 mx-0.5"></div>
                         <button
                           onClick={() => handleOpenModal(member)}
                           className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -639,7 +611,7 @@ export default function AdminMembersPage() {
                         </button>
                         <button
                           onClick={() => setDeleteModalMember(member)}
-                          className="p-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                           title="Delete member"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -756,141 +728,9 @@ export default function AdminMembersPage() {
                       </span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
-          </div>
-        ) : (
-          /* Table View */
-          <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-white/5 bg-white/5 text-white/50 text-xs">
-                    <th className="px-6 py-4 font-semibold w-16">Order</th>
-                    <th className="px-6 py-4 font-semibold">Member</th>
-                    <th className="px-6 py-4 font-semibold">Tier & Role</th>
-                    <th className="px-6 py-4 font-semibold">Department</th>
-                    <th className="px-6 py-4 font-semibold">Roll No</th>
-                    <th className="px-6 py-4 font-semibold">Social</th>
-                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="text-white/80 divide-y divide-white/5">
-                  {filteredMembers.map((member) => {
-                    const tierBadge = getTierBadgeStyle(member.tier);
-                    const tierIcon = getTierIcon(member.tier);
-                    const avatarStyle = getAvatarStyle(member.name);
-
-                    return (
-                      <tr key={member.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4 font-mono text-xs text-white/50">
-                          #{member.order}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            {member.imageUrl ? (
-                              <img
-                                src={member.imageUrl}
-                                alt={member.name}
-                                className="w-9 h-9 rounded-xl object-cover border border-white/10 shrink-0"
-                              />
-                            ) : (
-                              <div
-                                className={cn(
-                                  "w-9 h-9 rounded-xl bg-gradient-to-tr flex items-center justify-center font-bold text-xs shrink-0",
-                                  avatarStyle
-                                )}
-                              >
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-semibold text-white text-sm">{member.name}</div>
-                              {member.email && (
-                                <div className="text-[11px] text-white/40">{member.email}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col items-start gap-1">
-                            <span
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1",
-                                tierBadge
-                              )}
-                            >
-                              {tierIcon}
-                              <span>{member.tier}</span>
-                            </span>
-                            <span className="text-xs text-white/70 font-medium">{member.position}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-white/60">
-                          {member.department || "-"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="inline-flex items-center gap-1.5 font-mono text-xs text-white/80 bg-white/5 px-2 py-0.5 rounded">
-                            <span>{member.rollNo}</span>
-                            <button
-                              onClick={() => handleCopyRoll(member.rollNo)}
-                              className="text-white/40 hover:text-white"
-                            >
-                              {copiedRoll === member.rollNo ? (
-                                <Check className="w-3 h-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {member.linkedinUrl && (
-                              <a
-                                href={member.linkedinUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white/40 hover:text-[#0077b5]"
-                              >
-                                <LinkedInIcon className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            {member.instaUrl && (
-                              <a
-                                href={member.instaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white/40 hover:text-pink-400"
-                              >
-                                <InstagramIcon className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleOpenModal(member)}
-                            className="p-1.5 text-white/50 hover:text-white transition-colors inline-flex rounded-lg hover:bg-white/10"
-                            aria-label="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteModalMember(member)}
-                            className="p-1.5 text-red-400/50 hover:text-red-400 transition-colors ml-1.5 inline-flex rounded-lg hover:bg-red-500/10"
-                            aria-label="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
       </div>
@@ -1038,11 +878,36 @@ export default function AdminMembersPage() {
                   <label className="text-xs font-semibold text-white/70">Profile Photo</label>
                   <div className="flex items-center gap-4">
                     {formData.imageUrl && !uploadFile && (
-                      <img
-                        src={formData.imageUrl}
-                        alt="Profile preview"
-                        className="w-14 h-14 rounded-2xl object-cover border border-white/10"
-                      />
+                      <div className="relative group shrink-0">
+                        <img
+                          src={formData.imageUrl}
+                          alt="Profile preview"
+                          className="w-14 h-14 rounded-2xl object-cover border border-white/10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, imageUrl: "" })}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow"
+                          title="Remove photo"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                    {uploadFile && (
+                      <div className="relative group shrink-0">
+                        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] text-primary font-bold text-center p-1">
+                          New Image
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUploadFile(null)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow"
+                          title="Cancel new photo"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     )}
                     <input
                       type="file"
@@ -1105,7 +970,7 @@ export default function AdminMembersPage() {
                         General Portal Sections
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {["events", "projects", "timeline", "gallery"].map((permission) => (
+                        {["events", "projects", "timeline", "gallery", "letter_editor"].map((permission) => (
                           <label
                             key={permission}
                             className="flex items-center gap-2 bg-white/5 p-2.5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
@@ -1125,7 +990,7 @@ export default function AdminMembersPage() {
                               }}
                             />
                             <span className="text-xs font-medium text-white capitalize">
-                              {permission}
+                              {permission.replace('_', ' ')}
                             </span>
                           </label>
                         ))}
@@ -1162,6 +1027,40 @@ export default function AdminMembersPage() {
                               }}
                             />
                             <span className="text-xs font-medium text-blue-100">{perm.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-[10px] uppercase tracking-wider text-orange-400 mb-2 font-bold mt-4">
+                        Battleground Event Tools
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { id: "battleground_attendance", label: "Attendance" },
+                          { id: "battleground_members_list", label: "Lists" },
+                          { id: "battleground_certificates", label: "Certificates" },
+                        ].map((perm) => (
+                          <label
+                            key={perm.id}
+                            className="flex items-center gap-2 bg-orange-900/10 p-2.5 rounded-xl border border-orange-500/20 cursor-pointer hover:bg-orange-900/20 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              className="w-3.5 h-3.5 rounded text-orange-500 focus:ring-orange-500/50 bg-black/50 border-orange-500/30"
+                              checked={formData.permissions?.includes(perm.id) || false}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  permissions: checked
+                                    ? [...(prev.permissions || []), perm.id]
+                                    : (prev.permissions || []).filter((p) => p !== perm.id),
+                                }));
+                              }}
+                            />
+                            <span className="text-xs font-medium text-orange-100">{perm.label}</span>
                           </label>
                         ))}
                       </div>

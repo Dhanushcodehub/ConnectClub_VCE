@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, ShieldCheck, ArrowRight, Activity } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, ArrowRight, Activity, Terminal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getFirebaseErrorMessage } from "@/lib/utils";
 
@@ -62,12 +62,16 @@ export default function AdminLoginPage() {
       if (statusData.twoFactorEnabled && !statusData.verified) {
         setTempUser(user);
         setRequires2FA(true);
-      } else {
-        await logLoginHistory(user);
-        router.push("/admin");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    } catch (err: unknown) {
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("2fa_verified", "true");
+      }
+      await logLoginHistory(user);
+      router.push("/admin");
+    } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
       setLoading(false);
@@ -84,7 +88,7 @@ export default function AdminLoginPage() {
       await sendPasswordResetEmail(auth, recoveryEmail.trim().toLowerCase());
       setRecoveryMessage("If this account is registered, a password-reset email has been sent.");
       setRecoveryEmail("");
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
     } finally {
@@ -116,6 +120,9 @@ export default function AdminLoginPage() {
         return;
       }
 
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("2fa_verified", "true");
+      }
       await logLoginHistory(tempUser);
       router.push("/admin");
     } catch {
@@ -126,7 +133,7 @@ export default function AdminLoginPage() {
   };
 
   const handleCancel2FA = async () => {
-    await signOut(auth).catch(() => {});
+    await signOut(auth);
     setRequires2FA(false);
     setTotpCode("");
     setOtpValues(["", "", "", "", "", ""]);

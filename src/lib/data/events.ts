@@ -18,6 +18,7 @@ export interface ConnectEvent {
   time?: string;
   price?: string;
   organizedBy?: string;
+  isClosed?: boolean;
 }
 
 export const eventsData: ConnectEvent[] = [

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, X } from "lucide-react";
 
@@ -29,8 +29,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     audioRef.current = audio;
   }, []);
 
-  const toast = (title: string, message: string, onClick?: () => void) => {
-    const id = Math.random().toString(36).substr(2, 9);
+  const toast = useCallback((title: string, message: string, onClick?: () => void) => {
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     setToasts((prev) => [...prev, { id, title, message, onClick }]);
     
     // Play sound
@@ -41,9 +41,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     
     // Auto remove after 5s
     setTimeout(() => {
-      removeToast(id);
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 5000);
-  };
+  }, []);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

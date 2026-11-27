@@ -23,6 +23,7 @@ import {
   Bell,
   Ticket,
   ClipboardList,
+  FileText,
   Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,6 +43,11 @@ const navItems = [
     name: "Feedback Forms",
     path: "/admin/feedback",
     icon: ClipboardList,
+  },
+  {
+    name: "Letter Editor",
+    path: "/admin/letter-editor",
+    icon: FileText,
   },
   { name: "Club Chat", path: "/admin/chat", icon: MessageSquare },
   {
@@ -96,12 +102,13 @@ export default function AdminSidebar() {
             )}
           </button>
 
-          <Link href="/admin">
+          <Link href="/admin" className="flex items-center gap-2">
             <img
-              src="/logo/logo-light.svg"
+              src="/logo/navbarlogo.png"
               alt="Connect Club"
-              className="h-10 w-auto object-contain brightness-0 invert"
+              className="h-7 sm:h-8 w-auto object-contain brightness-0 invert"
             />
+            <span className="font-bold text-sm text-white tracking-tight">Connect Club</span>
           </Link>
         </div>
 
