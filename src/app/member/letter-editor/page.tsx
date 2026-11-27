@@ -39,11 +39,19 @@ const TEMPLATES: Template[] = [
     fields: [
       { key: "eventName", label: "Event Name", placeholder: "e.g. Annual Technical Fest" },
       { key: "eventDates", label: "Event Dates", placeholder: "e.g. 10th to 12th October 2026" },
-      { key: "studentCount", label: "Number of Students", placeholder: "e.g. 45 volunteers" },
       { key: "role", label: "Student Role", placeholder: "e.g. organizers, volunteers, participants" },
       { key: "missedClasses", label: "Classes Missed", placeholder: "e.g. all classes on those 3 days" },
+      { key: "students", label: "Student Names & Roll Numbers", placeholder: "Format each student on a new line:\nK. Dhanush – 22B91A05C4\nT. Rahul – 22B91A05C5\nS. Priya – 22B91A05C6", type: "textarea" },
     ],
-    buildPrompt: (v) => `Requesting attendance on-duty / OD exemption for ${v.studentCount} students who served as ${v.role} for ${v.eventName} held from ${v.eventDates}. They missed ${v.missedClasses} due to their active contribution to the event.`,
+    buildPrompt: (v) => {
+      const studentList = v.students?.trim()
+        ? `\n\nThe following students require OD exemption:\n${v.students.trim()}`
+        : "";
+      const count = v.students?.trim()
+        ? v.students.trim().split("\n").filter(Boolean).length + " students"
+        : "the students";
+      return `Requesting attendance on-duty / OD exemption for ${count} who served as ${v.role} for ${v.eventName} held from ${v.eventDates}. They missed ${v.missedClasses} due to their active contribution to the event.${studentList} Please include the complete student list with their names and roll numbers in the letter body.`;
+    },
   },
   {
     id: "lab_booking",
