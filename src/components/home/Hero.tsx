@@ -1,11 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { BackgroundClient } from "@/components/three/BackgroundClient";
+
+const HeroGlobe = dynamic(
+  () => import("@/components/three/HeroGlobe").then((m) => m.HeroGlobe),
+  { ssr: false }
+);
 
 const PHRASES = [
   "Engineering Excellence.",
@@ -51,36 +57,11 @@ function TypingEffect({ reducedMotion }: { reducedMotion: boolean }) {
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const shouldReduceMotion = Boolean(useReducedMotion());
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const leftY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (shouldReduceMotion) {
-      video.pause();
-      return;
-    }
-
-    // Pause the globe video when scrolled out of view to save mobile GPU/battery
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: 0.05 }
-    );
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, [shouldReduceMotion]);
 
   return (
     <section
@@ -201,20 +182,10 @@ export function Hero() {
 
       </div>
 
-      {/* ── RIGHT / MOBILE BOTTOM: Globe Video (stacked cleanly on mobile without text overlap, right-aligned overlay on md+) ─── */}
-      <div className="relative md:absolute md:inset-0 flex items-center justify-center md:justify-end pointer-events-none z-0 mix-blend-screen overflow-hidden w-full mt-2 md:mt-0">
-        <div className="w-full md:w-1/2 lg:w-7/12 flex justify-center items-center opacity-85 md:opacity-100 md:pr-8 lg:pr-12 lg:translate-x-4">
-          <video
-            ref={videoRef}
-            src="/globe.webm"
-            autoPlay={!shouldReduceMotion}
-            loop={!shouldReduceMotion}
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            className="w-[220px] min-[375px]:w-[260px] sm:w-[320px] md:w-full h-auto max-w-full md:max-w-[800px] lg:max-w-[850px] object-contain scale-100 md:scale-[1.1] lg:scale-[1.15]"
-          />
+      {/* ── RIGHT / MOBILE BOTTOM: Real-time 3D Globe (stacked cleanly on mobile without text overlap, right-aligned overlay on md+) ─── */}
+      <div className="relative md:absolute md:inset-0 flex items-center justify-center md:justify-end pointer-events-none z-0 overflow-hidden w-full mt-2 md:mt-0">
+        <div className="w-full md:w-1/2 lg:w-7/12 flex justify-center items-center opacity-95 md:opacity-100 md:pr-6 lg:pr-10 lg:translate-x-4">
+          <HeroGlobe className="w-[230px] min-[375px]:w-[270px] sm:w-[320px] md:w-[400px] lg:w-[540px] xl:w-[600px] aspect-square max-w-full" />
         </div>
       </div>
 
