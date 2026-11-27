@@ -22,17 +22,13 @@ export default function MemberLoginPage() {
   const [cooldown, setCooldown] = useState(0);
 
   const router = useRouter();
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/member/dashboard");
-      }
+      router.push("/member/dashboard");
     }
-  }, [user, role, authLoading, router]);
+  }, [user, authLoading, router]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -53,7 +49,7 @@ export default function MemberLoginPage() {
         throw new Error("Authentication is not configured.");
       }
       await signInWithEmailAndPassword(auth, email, password);
-      // AuthContext will handle the redirect based on the role
+      // AuthContext will handle the redirect after sign-in
     } catch (err: unknown) {
       console.error(err);
       setError("Invalid email or password. Please try again.");

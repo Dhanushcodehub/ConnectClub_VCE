@@ -10,7 +10,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
 function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -39,11 +39,8 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (user && pathname !== "/member/login") {
-        if (role === "admin") {
-          router.replace("/admin");
-          return;
-        }
-
+        // Portal access follows the portal the user signed into, not the single
+        // role claim. Membership is enforced by the lookup below.
         if (user.email) {
           try {
             let currentProfile = memberProfile;
@@ -77,7 +74,7 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
 
     checkAuth();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, role, loading, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   if (loading || (user && profileLoading && pathname !== "/member/login")) {
     return (
@@ -92,11 +89,6 @@ function ProtectedMemberLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
   
-  // If user is an admin and not on login page, render nothing while redirecting
-  if (role === "admin" && pathname !== "/member/login") {
-    return null;
-  }
-
   // Synchronous check: if user is logged in but not in members collection, block rendering
   if (user && !memberProfile && pathname !== "/member/login") {
     return null;

@@ -9,7 +9,7 @@ import { auth } from "@/lib/firebase/config";
 import AdminSidebar from "./_components/AdminSidebar";
 
 function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [verifiedUid, setVerifiedUid] = useState<string | null>(null);
@@ -27,15 +27,8 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
       }
 
       if (user && pathname !== "/admin/login") {
-        if (role !== "admin") {
-          if (role === "member") {
-            router.replace("/member/dashboard");
-          } else {
-            router.replace("/u/login");
-          }
-          return;
-        }
-
+        // Admin access is verified server-side below. The role claim can still
+        // be "member" for someone who also has access to the member portal.
         try {
           const token = await user.getIdToken();
           const res = await fetch("/api/admin/2fa", {
@@ -67,11 +60,11 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [user, role, loading, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   const isChecking =
     loading ||
-    (pathname !== "/admin/login" && Boolean(user) && role === "admin" && verifiedUid !== user?.uid);
+    (pathname !== "/admin/login" && Boolean(user) && verifiedUid !== user?.uid);
 
   if (isChecking) {
     return (
@@ -82,10 +75,6 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user && pathname !== "/admin/login") {
-    return null;
-  }
-
-  if (role !== "admin" && pathname !== "/admin/login") {
     return null;
   }
 
