@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { staggerContainer, fadeUp, slideInRight, viewportOnce } from "@/lib/animations";
 
@@ -103,7 +102,7 @@ export function InstagramBanner() {
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                 <CTAButton
-                  href="https://instagram.com/connectclubvce"
+                  href="https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw=="
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="primary"
@@ -111,7 +110,7 @@ export function InstagramBanner() {
                   icon={<InstagramIcon className="w-4 h-4" />}
                   iconPosition="left"
                 >
-                  @connectclubvce
+                  @connectclub_vce
                 </CTAButton>
               </div>
             </div>

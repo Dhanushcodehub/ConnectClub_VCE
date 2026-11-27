@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, MapPin, Camera, Briefcase, ArrowUpRight, Send, Globe, Users, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, MapPin, Camera, Briefcase, ArrowUpRight, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/animations";
-import { cn } from "@/lib/utils";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function ContactPage() {
@@ -18,20 +15,12 @@ export default function ContactPage() {
     email: "",
     message: ""
   });
-  
-  // Pre-fill form data when user is loaded
-  useEffect(() => {
-    if (user) {
-      const fullName = profile?.name || user.displayName || "";
-      const nameParts = fullName.split(" ");
-      setFormData(prev => ({
-        ...prev,
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        email: user.email || ""
-      }));
-    }
-  }, [user, profile]);
+
+  const userFullName = profile?.name || user?.displayName || "";
+  const nameParts = userFullName ? userFullName.split(" ") : [];
+  const effectiveFirstName = user ? (nameParts[0] || "User") : formData.firstName;
+  const effectiveLastName = user ? (nameParts.slice(1).join(" ") || "") : formData.lastName;
+  const effectiveEmail = user ? (user.email || "") : formData.email;
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -42,7 +31,7 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.email || !formData.message) {
+    if (!effectiveFirstName || !effectiveEmail || !formData.message) {
       setStatus("error");
       setErrorMessage("Please fill in all required fields.");
       return;
@@ -54,7 +43,12 @@ export default function ContactPage() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          firstName: effectiveFirstName,
+          lastName: effectiveLastName,
+          email: effectiveEmail,
+          message: formData.message,
+        }),
       });
 
       const data = await res.json();
@@ -70,10 +64,10 @@ export default function ContactPage() {
       setTimeout(() => {
         setStatus("idle");
       }, 5000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form: ", error);
       setStatus("error");
-      setErrorMessage(error?.message || "Failed to send message. Please try again later.");
+      setErrorMessage(error instanceof Error ? error.message : "Failed to send message. Please try again later.");
     }
   };
 
@@ -100,7 +94,7 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="text-[15px] md:text-[16px] text-white/50 max-w-xl leading-relaxed">
-              Whether you want to sponsor an event, collaborate on a project, or just say hi—we'd love to hear from you. Let's build the future together.
+              {"Whether you want to sponsor an event, collaborate on a project, or just say hi—we'd love to hear from you. Let's build the future together."}
             </p>
           </motion.div>
 
@@ -145,14 +139,22 @@ export default function ContactPage() {
               <h3 className="text-[11px] font-bold text-white/40 uppercase tracking-[0.15em] mb-4 text-center lg:text-left">Connect on Socials</h3>
               <div className="flex gap-3 justify-center lg:justify-start">
                 {[
-                  { icon: Globe, href: "#", label: "Website" },
-                  { icon: Users, href: "#", label: "Community" },
-                  { icon: MessageSquare, href: "#", label: "Discord" },
-                  { icon: Camera, href: "#", label: "Instagram" }
+                  {
+                    icon: Camera,
+                    href: "https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw==",
+                    label: "Instagram",
+                  },
+                  {
+                    icon: Briefcase,
+                    href: "https://www.linkedin.com/in/connect-club-vce/",
+                    label: "LinkedIn",
+                  },
                 ].map((social, i) => (
                   <a 
                     key={i}
-                    href={social.href} 
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={social.label}
                     className="w-10 h-10 rounded-full bg-[#0C0C0E] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(0,112,243,0.2)] transition-all duration-300"
                   >
@@ -194,7 +196,7 @@ export default function ContactPage() {
                     </div>
                     <h4 className="text-xl font-bold text-white uppercase tracking-tight">Message Sent</h4>
                     <p className="text-[14px] text-white/60 max-w-sm">
-                      Thanks for reaching out! We've received your message and will get back to you shortly.
+                      {"Thanks for reaching out! We've received your message and will get back to you shortly."}
                     </p>
                   </motion.div>
                 ) : (

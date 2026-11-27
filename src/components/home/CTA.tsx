@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Camera, Briefcase, Play, Mail, ArrowRight, Sparkles } from "lucide-react";
+import { Camera, Briefcase, Mail, ArrowRight, Sparkles } from "lucide-react";
 import { staggerContainer, fadeUp, viewportOnce } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
 
@@ -34,17 +34,23 @@ export function CTA() {
             <div className="w-full flex flex-col md:flex-row justify-center items-center md:items-start gap-16 md:gap-32 text-left mb-16">
               {/* Left Column - Socials */}
               <motion.div variants={fadeUp} className="flex flex-col items-center md:items-start space-y-6">
-                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
+                <a
+                  href="https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw=="
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group"
+                >
                   <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   <span className="text-base font-medium">Instagram</span>
                 </a>
-                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
+                <a
+                  href="https://www.linkedin.com/in/connect-club-vce/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group"
+                >
                   <Briefcase className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   <span className="text-base font-medium">LinkedIn</span>
-                </a>
-                <a href="#" className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group">
-                  <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span className="text-base font-medium">YouTube</span>
                 </a>
               </motion.div>
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, ExternalLink, Mail, GitBranch } from "lucide-react";
+import { ExternalLink, Mail, GitBranch } from "lucide-react";
 
 const footerLinks = {
   Platform: [
@@ -42,7 +42,7 @@ export function Footer() {
               {/* Social icons */}
               <div className="flex items-center gap-3">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw=="
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
@@ -51,7 +51,7 @@ export function Footer() {
                   <ExternalLink className="w-4 h-4 lg:w-4 lg:h-4" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/in/connect-club-vce/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
