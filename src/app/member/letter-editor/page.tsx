@@ -203,7 +203,7 @@ function AITextArea({
 
   // Fetch AI suggestion after user stops typing
   const fetchSuggestion = useCallback(async (text: string) => {
-    if (text.trim().length < 20) { setSuggestion(""); return; }
+    if (text.trim().length < 15) { setSuggestion(""); setShowTabHint(false); return; }
 
     // Cancel previous request
     abortRef.current?.abort();
@@ -222,11 +222,12 @@ function AITextArea({
 
       if (!res.ok) return;
       const data = await res.json();
-      if (data.suggestion && data.suggestion.trim()) {
+      if (data.suggestion?.trim()) {
         setSuggestion(data.suggestion.trim());
         setShowTabHint(true);
       } else {
         setSuggestion("");
+        setShowTabHint(false);
       }
     } catch {
       // Silently ignore abort errors
@@ -236,8 +237,9 @@ function AITextArea({
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
     setSuggestion("");
+    setShowTabHint(false);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestion(e.target.value), 1200);
+    debounceRef.current = setTimeout(() => fetchSuggestion(e.target.value), 900);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -253,38 +255,61 @@ function AITextArea({
     }
   };
 
-  const alignClass = align === "center" ? "text-center" : align === "right" ? "text-right" : align === "justify" ? "text-justify" : "text-left";
+  const alignClass =
+    align === "center" ? "text-center" :
+    align === "right"  ? "text-right"  :
+    align === "justify"? "text-justify": "text-left";
+
+  // Shared style object ensures mirror div matches textarea font metrics exactly
+  const sharedStyle: React.CSSProperties = {
+    fontFamily:    "inherit",
+    fontSize:      "inherit",
+    lineHeight:    "inherit",
+    fontWeight:    bold ? "bold" : "normal",
+    wordBreak:     "break-word",
+    whiteSpace:    "pre-wrap",
+    overflowWrap:  "break-word",
+  };
 
   return (
-    <div className="relative group/ta">
+    <div className="relative">
+      {/*
+        Mirror div — ghost text layer, sits BEHIND the textarea.
+        • value portion  → transparent  (creates correct x-offset for suggestion)
+        • suggestion     → indigo/40%   (shows through the transparent textarea bg)
+      */}
+      {suggestion && (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none select-none absolute inset-0 overflow-hidden ${alignClass}`}
+          style={sharedStyle}
+        >
+          <span style={{ color: "transparent" }}>{value}</span>
+          <span style={{ color: "rgba(99,102,241,0.45)" }}>{" "}{suggestion}</span>
+        </div>
+      )}
+
+      {/* Textarea — z-[1] floats above mirror; bg always transparent so ghost shows through */}
       <textarea
         ref={textareaRef}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        onBlur={() => setTimeout(() => { setSuggestion(""); setShowTabHint(false); }, 200)}
+        onBlur={() => setTimeout(() => { setSuggestion(""); setShowTabHint(false); }, 150)}
         placeholder={placeholder}
-        className={`w-full resize-none outline-none bg-transparent overflow-hidden placeholder:text-gray-400 focus:bg-blue-50/40 rounded px-1 -mx-1 transition-colors ${alignClass} ${bold ? "font-bold" : ""} ${className}`}
+        className={`relative z-[1] w-full resize-none outline-none overflow-hidden bg-transparent placeholder:text-gray-400 rounded transition-colors ${alignClass} ${bold ? "font-bold" : ""} ${className}`}
         rows={1}
       />
-      {/* Ghost suggestion text */}
-      {suggestion && (
-        <span
-          className="pointer-events-none absolute left-0 top-0 px-1 text-blue-400/40 whitespace-pre-wrap break-words select-none"
-          style={{ width: "calc(100% - 2px)", fontFamily: "inherit", fontSize: "inherit", lineHeight: "inherit" }}
-        >
-          {value}<span className="text-blue-400/50">{" " + suggestion}</span>
-        </span>
-      )}
-      {/* Tab hint badge */}
+
+      {/* Tab-to-accept floating badge */}
       {showTabHint && suggestion && (
         <div
-          className="absolute -top-6 right-0 flex items-center gap-1 bg-blue-600/90 text-white text-[10px] font-mono px-2 py-0.5 rounded-full shadow-lg cursor-default z-10 select-none"
-          title={`Press Tab to accept: "${suggestion.slice(0, 60)}${suggestion.length > 60 ? "…" : ""}"`}
+          className="absolute -top-6 right-0 z-10 flex items-center gap-1 bg-indigo-600/90 backdrop-blur-sm text-white text-[10px] font-mono px-2 py-0.5 rounded-full shadow-lg select-none cursor-default"
+          title={`Press Tab to accept: "${suggestion.slice(0, 80)}${suggestion.length > 80 ? "…" : ""}"`}
         >
-          <span className="font-bold">Tab</span>
-          <ChevronRight className="w-2.5 h-2.5" />
-          <span className="max-w-[120px] truncate opacity-80">{suggestion.slice(0, 24)}{suggestion.length > 24 ? "…" : ""}</span>
+          <kbd className="font-bold bg-white/20 px-1 rounded text-[9px]">Tab</kbd>
+          <ChevronRight className="w-2.5 h-2.5 opacity-60" />
+          <span className="max-w-[140px] truncate opacity-80">{suggestion.slice(0, 32)}{suggestion.length > 32 ? "…" : ""}</span>
         </div>
       )}
     </div>
