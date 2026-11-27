@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, MapPin, Camera, Briefcase, ArrowUpRight, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, MapPin, ArrowUpRight, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { SiInstagram, SiLinkedin } from "@/components/icons/SocialIcons";
 import { fadeUp, staggerContainer } from "@/lib/animations";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
@@ -140,14 +141,16 @@ export default function ContactPage() {
               <div className="flex gap-3 justify-center lg:justify-start">
                 {[
                   {
-                    icon: Camera,
+                    icon: SiInstagram,
                     href: "https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw==",
                     label: "Instagram",
+                    hoverStyles: "hover:text-[#E1306C] hover:border-[#E1306C]/50 hover:bg-[#E1306C]/5 hover:shadow-[0_0_15px_rgba(225,48,108,0.2)]",
                   },
                   {
-                    icon: Briefcase,
+                    icon: SiLinkedin,
                     href: "https://www.linkedin.com/in/connect-club-vce/",
                     label: "LinkedIn",
+                    hoverStyles: "hover:text-[#0A66C2] hover:border-[#0A66C2]/50 hover:bg-[#0A66C2]/5 hover:shadow-[0_0_15px_rgba(10,102,194,0.2)]",
                   },
                 ].map((social, i) => (
                   <a 
@@ -156,9 +159,9 @@ export default function ContactPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="w-10 h-10 rounded-full bg-[#0C0C0E] border border-white/10 flex items-center justify-center text-white/60 hover:text-primary hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_15px_rgba(0,112,243,0.2)] transition-all duration-300"
+                    className={`w-10 h-10 rounded-full bg-[#0C0C0E] border border-white/10 flex items-center justify-center text-white/60 ${social.hoverStyles} transition-all duration-300`}
                   >
-                    <social.icon className="w-4 h-4" />
+                    <social.icon className="w-4 h-4 transition-transform hover:scale-110" />
                   </a>
                 ))}
               </div>

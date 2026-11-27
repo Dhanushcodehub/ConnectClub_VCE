@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ExternalLink, Mail, GitBranch } from "lucide-react";
+import { Mail } from "lucide-react";
+import { SiInstagram, SiLinkedin } from "@/components/icons/SocialIcons";
 
 const footerLinks = {
   Platform: [
@@ -45,19 +46,19 @@ export function Footer() {
                   href="https://www.instagram.com/connectclub_vce?utm_source=ig_web_button_share_sheet&dmpr=ZDNlZDc0MzIxNw=="
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
+                  className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-[#E1306C] hover:bg-white/[0.08] hover:border-[#E1306C]/30 transition-all"
                   aria-label="Instagram"
                 >
-                  <ExternalLink className="w-4 h-4 lg:w-4 lg:h-4" />
+                  <SiInstagram className="w-4 h-4 lg:w-4 lg:h-4" />
                 </a>
                 <a
                   href="https://www.linkedin.com/in/connect-club-vce/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
+                  className="w-10 h-10 lg:w-9 lg:h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-[#0A66C2] hover:bg-white/[0.08] hover:border-[#0A66C2]/30 transition-all"
                   aria-label="LinkedIn"
                 >
-                  <GitBranch className="w-4 h-4 lg:w-4 lg:h-4" />
+                  <SiLinkedin className="w-4 h-4 lg:w-4 lg:h-4" />
                 </a>
                 <a
                   href="mailto:connectclub@vce.ac.in"

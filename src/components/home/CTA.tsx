@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Camera, Briefcase, Mail, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, ArrowRight, Sparkles } from "lucide-react";
+import { SiInstagram, SiLinkedin } from "@/components/icons/SocialIcons";
 import { staggerContainer, fadeUp, viewportOnce } from "@/lib/animations";
 import { CTAButton } from "@/components/ui/CTAButton";
 
@@ -40,7 +41,7 @@ export function CTA() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group"
                 >
-                  <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <SiInstagram className="w-5 h-5 group-hover:scale-110 group-hover:text-[#E1306C] transition-all" />
                   <span className="text-base font-medium">Instagram</span>
                 </a>
                 <a
@@ -49,7 +50,7 @@ export function CTA() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 text-white/60 hover:text-white transition-colors group"
                 >
-                  <Briefcase className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <SiLinkedin className="w-5 h-5 group-hover:scale-110 group-hover:text-[#0A66C2] transition-all" />
                   <span className="text-base font-medium">LinkedIn</span>
                 </a>
               </motion.div>
