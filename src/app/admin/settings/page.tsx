@@ -2,21 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { db } from "@/lib/firebase/config";
-import {
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
+import { auth, db } from "@/lib/firebase/config";
+import { 
+  EmailAuthProvider, 
+  reauthenticateWithCredential, 
+  updatePassword 
 } from "firebase/auth";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  doc,
-  getDoc,
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  getDocs, 
+  doc, 
+  getDoc, 
+  setDoc 
 } from "firebase/firestore";
 import { ShieldCheck, Key, History, Loader2, AlertCircle } from "lucide-react";
 import { authenticator } from "otplib";
@@ -111,25 +112,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Persist 2FA status through the Admin SDK (client Firestore writes to
-  // `admins/*` are blocked by security rules).
-  const saveTwoFactorStatus = async (enabled: boolean, secret: string | null) => {
-    if (!user) throw new Error("You are not signed in.");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/2fa", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ twoFactorEnabled: enabled, twoFactorSecret: secret }),
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || "Failed to save 2FA settings.");
-    }
-  };
-
   // Handle 2FA Setup Initiation
   const start2FASetup = () => {
     if (!user || !user.email) return;
@@ -150,14 +132,17 @@ export default function AdminSettingsPage() {
     setTfaError("");
 
     const isValid = authenticator.verify({ token: totpInput, secret: setupSecret });
-
+    
     if (isValid) {
       try {
-        await saveTwoFactorStatus(true, setupSecret);
-
+        await setDoc(doc(db, "admins", user.uid), {
+          twoFactorEnabled: true,
+          twoFactorSecret: setupSecret
+        }, { merge: true });
+        
         setTwoFactorEnabled(true);
         setIsSettingUp2FA(false);
-        sessionStorage.setItem("2fa_verified", "true");
+        sessionStorage.setItem("2fa_verified", "true"); // Prevent immediate logout
       } catch (error: any) {
         setTfaError("Failed to save settings: " + error.message);
       }
@@ -171,14 +156,16 @@ export default function AdminSettingsPage() {
   const disable2FA = async () => {
     if (!user) return;
     if (!confirm("Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.")) return;
-
+    
     setTfaLoading(true);
     try {
-      await saveTwoFactorStatus(false, null);
+      await setDoc(doc(db, "admins", user.uid), {
+        twoFactorEnabled: false,
+        twoFactorSecret: null
+      }, { merge: true });
       setTwoFactorEnabled(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to disable 2FA", error);
-      setTfaError("Failed to disable 2FA: " + error.message);
     } finally {
       setTfaLoading(false);
     }
@@ -252,19 +239,16 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-  <label className="text-sm font-medium text-white/80">New Password</label>
-  <input
-    type="password"
-    required
-    minLength={6}
-    autoComplete="off"
-    data-form-type="other"
-    data-lpignore="true"
-    value={newPassword}
-    onChange={(e) => setNewPassword(e.target.value)}
-    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
-  />
-</div>
+                <label className="text-sm font-medium text-white/80">New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={changingPwd}
@@ -317,7 +301,7 @@ export default function AdminSettingsPage() {
                 <p className="text-white/50 text-sm mb-4">
                   Open your Authenticator app and scan the QR code above. Then enter the 6-digit code below to verify.
                 </p>
-
+                
                 {tfaError && (
                   <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
                     {tfaError}

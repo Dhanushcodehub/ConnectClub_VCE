@@ -68,7 +68,12 @@ const stats = [
   },
 ];
 
+// Duplicate cards so the marquee loops seamlessly
+const loopedStats = [...stats, ...stats, ...stats];
+
 export function StickyStats() {
+  const trackRef = useRef<HTMLDivElement>(null);
+
   return (
     <section className="py-20 relative z-10 border-t border-white/[0.06]">
       {/* Subtle top glow */}
@@ -91,20 +96,21 @@ export function StickyStats() {
             <span className="text-highlight">Accomplished</span>
           </motion.h2>
         </motion.div>
+      </div>
 
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="col-span-4 md:col-span-6 lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      {/* ── Infinite Marquee Strip ── */}
+      <div className="relative max-w-[1280px] mx-auto px-6 overflow-hidden">
+        <div
+          ref={trackRef}
+          className="flex gap-4 w-max animate-marquee-ltr hover:[animation-play-state:paused]"
+          style={{ willChange: "transform" }}
         >
-          {stats.map((stat, idx) => (
-            <motion.div
+          {loopedStats.map((stat, idx) => (
+            <div
               key={idx}
-              variants={fadeUp}
-              className="group relative rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 cursor-default overflow-hidden"
+              className="group relative rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1 cursor-default overflow-hidden shrink-0"
               style={{
+                width: "280px",
                 background: "#0C0E1A",
                 borderColor: "rgba(255,255,255,0.07)",
               }}
@@ -113,7 +119,7 @@ export function StickyStats() {
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
                 style={{
-                  background: `radial-gradient(ellipse at 20% 20%, ${stat.glow}15, transparent 70%)`,
+                  background: `radial-gradient(ellipse at 20% 20%, ${stat.glow}18, transparent 70%)`,
                 }}
               />
 
@@ -138,11 +144,10 @@ export function StickyStats() {
                 className="absolute bottom-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: `linear-gradient(90deg, transparent, ${stat.glow}80, transparent)` }}
               />
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 }
-

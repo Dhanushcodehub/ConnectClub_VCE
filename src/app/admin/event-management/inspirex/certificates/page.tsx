@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { describeError } from "@/lib/errors";
 import { issueInspirexCertificates } from "../issue-action";
 
 interface TemplateConfig {
@@ -271,22 +270,14 @@ export default function CertificateStudio() {
 
     const fetchData = async () => {
       try {
-        // Fetch Template. Isolated so a template read failure (or a missing
-        // template) still lets the participant list load.
-        try {
-          const docSnap = await getDoc(templateDocRef);
-          if (docSnap.exists() && isMounted) {
-            const tplData = docSnap.data() as TemplateConfig;
-            setConfig(tplData);
-            if (tplData.imageUrl) {
-              loadImage(tplData.imageUrl);
-            }
+        // Fetch Template
+        const docSnap = await getDoc(templateDocRef);
+        if (docSnap.exists() && isMounted) {
+          const tplData = docSnap.data() as TemplateConfig;
+          setConfig(tplData);
+          if (tplData.imageUrl) {
+            loadImage(tplData.imageUrl);
           }
-        } catch (templateError) {
-          console.error("Unable to load certificate template:", templateError);
-          toast.error(describeError(templateError, "Could not load the saved template."), {
-            duration: 8000,
-          });
         }
 
         // Fetch Participants
@@ -296,10 +287,10 @@ export default function CertificateStudio() {
             ...(token && { 'Authorization': `Bearer ${token}` })
           }
         });
-        const data = await res.json().catch(() => ({}));
+        const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.details || data.error || `Request failed with status ${res.status}`);
+          throw new Error(data.error || "Failed to load registrations");
         }
 
         if (isMounted) {
@@ -311,10 +302,7 @@ export default function CertificateStudio() {
           setPreviewIndex(0);
         }
       } catch (err) {
-        console.error("Failed to load studio data:", err);
-        toast.error(describeError(err, "Failed to load studio data"), {
-          duration: 8000,
-        });
+        toast.error("Failed to load studio data");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -431,13 +419,11 @@ export default function CertificateStudio() {
       reader.onloadend = async () => {
         try {
           const base64String = reader.result as string;
-
-          const uploadToken = await user?.getIdToken();
+          
           const res = await fetch("/api/upload", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              ...(uploadToken ? { Authorization: `Bearer ${uploadToken}` } : {}),
             },
             body: JSON.stringify({ file: base64String }),
           });
@@ -481,7 +467,7 @@ export default function CertificateStudio() {
       await setDoc(templateDocRef, config);
       toast.success("Certificate Configuration Saved!");
     } catch (error) {
-      toast.error(describeError(error, "Failed to save configuration"), { duration: 8000 });
+      toast.error("Failed to save configuration");
     } finally {
       setSaving(false);
     }

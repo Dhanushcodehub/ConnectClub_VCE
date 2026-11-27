@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Html5Qrcode } from "html5-qrcode";
 
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { describeError } from "@/lib/errors";
 
 interface Registration {
   id: string;
@@ -191,7 +190,7 @@ export default function InspirexAttendancePage({ isAdmin = true }: { isAdmin?: b
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.details || data.error || "Failed to fetch registrations");
+        throw new Error(data.error || "Failed to fetch registrations");
       }
       
       if (data.success && data.data) {
@@ -210,7 +209,7 @@ export default function InspirexAttendancePage({ isAdmin = true }: { isAdmin?: b
       }
     } catch (err: unknown) {
       console.error(err);
-      if (showLoader) setError(describeError(err, "Failed to load registrations."));
+      if (showLoader) setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       if (showLoader) setIsLoading(false);
     }

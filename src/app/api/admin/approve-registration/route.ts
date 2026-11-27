@@ -1,21 +1,17 @@
 /**
  * POST /api/admin/approve-registration
  *
- * Called by the admin dashboard to approve or reject a pending external
- * registration.
+ * Called by the admin dashboard to approve a pending external registration.
+ * Looks up the user by rollNo/email, creates the event_registrations document,
+ * and sends a notification to the user.
  *
- * Approve: looks up the user by rollNo/email, creates the event_registrations
- * document, and sends a notification to the user.
- * Reject: marks the inbox record rejected (no ticket, no notification).
- *
- * Body: { externalDocId: string, action?: "approve" | "reject" }
+ * Body: { externalDocId: string }
  */
 import { NextResponse } from "next/server";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { requireAdminRequest } from "@/lib/firebase/requestAuth";
-import { logAuditEvent } from "@/lib/firebase/auditLog";
 import {
   normalizeEmail,
   normalizeRollNo,
@@ -24,14 +20,12 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const adminToken = await requireAdminRequest(request);
+    await requireAdminRequest(request);
     const app = getAdminApp();
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    const body = await request.json();
-    const { externalDocId } = body;
-    const action = body.action === "reject" ? "reject" : "approve";
+    const { externalDocId } = await request.json();
 
     if (!externalDocId) {
       return NextResponse.json({ error: "Missing externalDocId" }, { status: 400 });
@@ -49,26 +43,6 @@ export async function POST(request: Request) {
 
     if (extData.status === "approved") {
       return NextResponse.json({ error: "Already approved" }, { status: 409 });
-    }
-    if (extData.status === "rejected") {
-      return NextResponse.json({ error: "Already rejected" }, { status: 409 });
-    }
-
-    if (action === "reject") {
-      await extRef.update({
-        status: "rejected",
-        rejectedAt: FieldValue.serverTimestamp(),
-        rejectedBy: adminToken.uid,
-      });
-      await logAuditEvent(db, {
-        actorUid: adminToken.uid,
-        actorEmail: adminToken.email,
-        action: "registration.rejected",
-        targetType: "external_registration",
-        targetId: externalDocId,
-        meta: { eventId: extData.eventId, rollNo: extData.rollNo, email: extData.email },
-      });
-      return NextResponse.json({ success: true, rejected: true });
     }
 
     const validationError = validateRegistrationIdentity({
@@ -181,22 +155,6 @@ export async function POST(request: Request) {
         ticketId,
       });
       return { created: true, ticketId };
-    });
-
-    await logAuditEvent(db, {
-      actorUid: adminToken.uid,
-      actorEmail: adminToken.email,
-      action: "registration.approved",
-      targetType: "external_registration",
-      targetId: externalDocId,
-      meta: {
-        eventId: extData.eventId,
-        rollNo: extData.rollNo,
-        email: extData.email,
-        userId: uid,
-        ticketId: result.ticketId,
-        created: result.created,
-      },
     });
 
     return NextResponse.json({ success: true, synced: result.created, ticketId: result.ticketId });

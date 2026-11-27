@@ -48,3 +48,45 @@ export function getAdminDb() {
   getAdminApp(); // Ensure it's initialized
   return getFirestore();
 }
+
+export function getBattlegroundAdminApp() {
+  const SECONDARY_APP_NAME = 'BattlegroundApp';
+  const apps = getApps();
+  const existingApp = apps.find(app => app.name === SECONDARY_APP_NAME);
+  if (existingApp) {
+    return existingApp;
+  }
+
+  if (!process.env.BG_FIREBASE_PROJECT_ID || !process.env.BG_FIREBASE_PRIVATE_KEY || !process.env.BG_FIREBASE_CLIENT_EMAIL) {
+    throw new Error("Battleground Firebase Admin environment variables are missing.");
+  }
+  
+  let privateKey = process.env.BG_FIREBASE_PRIVATE_KEY || "";
+  privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+
+  if (privateKey && !privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+    if (privateKey.startsWith('n')) {
+      privateKey = privateKey.substring(1);
+    }
+    privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----\n`;
+  }
+
+  try {
+    const app = initializeApp({
+      credential: cert({
+        projectId: process.env.BG_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.BG_FIREBASE_CLIENT_EMAIL,
+        privateKey,
+      }),
+    }, SECONDARY_APP_NAME);
+    console.log('Battleground Firebase Admin initialized successfully');
+    return app;
+  } catch (error: any) {
+    console.error('Battleground Firebase Admin initialization error:', error);
+    throw error;
+  }
+}
+
+export function getBattlegroundAdminDb() {
+  return getFirestore(getBattlegroundAdminApp());
+}

@@ -319,3 +319,13 @@
   0%, 100% { background-position: 120% 0; }
   50%      { background-position: -20% 0; }
 }
+
+/* ── Stats cards: smooth left-to-right infinite scroll ───── */
+@keyframes marquee-ltr {
+  0%   { transform: translateX(-33.333%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-ltr {
+  animation: marquee-ltr 22s linear infinite;
+}

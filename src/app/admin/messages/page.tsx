@@ -163,7 +163,6 @@ export default function AdminMessagesPage() {
         }
       },
       (error) => {
-        if ((error as { code?: string })?.code === "permission-denied") { setLoading(false); return; }
         console.error("Error fetching messages:", error);
         toast.error("Failed to load messages in realtime.");
         setLoading(false);

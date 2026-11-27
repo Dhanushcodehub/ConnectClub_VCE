@@ -55,6 +55,14 @@ export default function CreateProjectPage() {
         ...formData,
         id: slug,
       });
+
+      // Instantly revalidate the public cache so users see the changes
+      await fetch("/api/admin/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: ["/projects", "/"] }),
+      });
+
       router.push("/admin/projects");
     } catch (error) {
       console.error("Error creating project:", error);

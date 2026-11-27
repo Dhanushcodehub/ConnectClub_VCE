@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, ShieldCheck, ArrowRight, Activity } from "lucide-react";
+import { Loader2, Lock, ShieldCheck, ArrowRight, Activity, Terminal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { authenticator } from "otplib";
 import { getFirebaseErrorMessage } from "@/lib/utils";
@@ -51,16 +51,16 @@ export default function AdminLoginPage() {
 
       const adminDoc = await getDoc(doc(db, "admins", user.uid));
       if (adminDoc.exists() && adminDoc.data().twoFactorEnabled) {
-        const storedSecret = adminDoc.data().twoFactorSecret;
-        setTotpSecret(storedSecret);
+        setTotpSecret(adminDoc.data().twoFactorSecret);
         setTempUser(user);
         setRequires2FA(true);
-      } else {
-        await logLoginHistory(user);
-        router.push("/admin");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    } catch (err: unknown) {
+
+      await logLoginHistory(user);
+      router.push("/admin");
+    } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
       setLoading(false);
@@ -77,7 +77,7 @@ export default function AdminLoginPage() {
       await sendPasswordResetEmail(auth, recoveryEmail.trim().toLowerCase());
       setRecoveryMessage("If this account is registered, a password-reset email has been sent.");
       setRecoveryEmail("");
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
       setError(getFirebaseErrorMessage(err));
     } finally {
@@ -90,24 +90,27 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
 
-    const isValid = authenticator.verify({ token: totpCode, secret: totpSecret });
-
-    if (isValid && tempUser) {
-      sessionStorage.setItem("2fa_verified", "true");
-      await logLoginHistory(tempUser);
-      router.push("/admin");
-    } else {
-      setError("Invalid code. Please try again.");
+    try {
+      const isValid = authenticator.verify({ token: totpCode, secret: totpSecret });
+      if (isValid && tempUser) {
+        sessionStorage.setItem("2fa_verified", "true");
+        await logLoginHistory(tempUser);
+        router.push("/admin");
+      } else {
+        setError("Invalid 2FA code.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Error verifying code.");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCancel2FA = async () => {
-    await signOut(auth).catch(() => {});
+    await signOut(auth);
     setRequires2FA(false);
     setTotpCode("");
     setOtpValues(["", "", "", "", "", ""]);
-    setTotpSecret("");
     setTempUser(null);
   };
 

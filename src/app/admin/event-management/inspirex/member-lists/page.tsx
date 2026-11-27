@@ -13,12 +13,14 @@ import {
   Maximize,
   Save,
   CheckCircle2,
-  FileText
+  FileText,
+  Layers,
+  Eye,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { describeError } from "@/lib/errors";
 
 // --- Types ---
 interface PreviewRow {
@@ -71,6 +73,13 @@ export default function MemberListsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [mobileTab, setMobileTab] = useState<"list" | "preview">("preview");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setZoom(0.45);
+    }
+  }, []);
   const [para1, setPara1] = useState("Connect Club, Vardhaman College of Engineering is organizing \"InspireX Season 2\", a premier tech and design event, to be held at Vardhaman College of Engineering.");
   const [para2, setPara2] = useState("We kindly request that permission be granted to mark attendance for the below-listed students for their participation in this event.");
   
@@ -100,12 +109,12 @@ export default function MemberListsPage() {
           const text = await res.text();
           let errData;
           try { errData = JSON.parse(text); } catch(e) {}
-          throw new Error(errData?.details || errData?.error || `HTTP ${res.status}: ${text.substring(0, 50)}`);
+          throw new Error(errData?.error || `HTTP ${res.status}: ${text.substring(0, 50)}`);
         }
         
         const data = await res.json();
         
-        if (!data.success) throw new Error(data.details || data.error || "Failed to fetch registrations");
+        if (!data.success) throw new Error(data.error || "Failed to fetch registrations");
 
         const allRegistrations: any[] = data.data;
         const groups: Record<string, { label: string; rows: any[]; filename: string }> = {};
@@ -183,7 +192,7 @@ export default function MemberListsPage() {
 
       } catch (err: any) {
         console.error(err);
-        toast.error(describeError(err, "Error loading registration data"), { duration: 8000 });
+        toast.error(err.message || "Error loading registration data");
       } finally {
         setIsLoading(false);
       }
@@ -324,8 +333,8 @@ export default function MemberListsPage() {
 
   // --- Render Helpers ---
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
-  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
-  const resetZoom = () => setZoom(1);
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.3));
+  const resetZoom = () => setZoom(typeof window !== "undefined" && window.innerWidth < 768 ? 0.45 : 1);
 
   if (isLoading) {
     return (
@@ -340,89 +349,167 @@ export default function MemberListsPage() {
     <div className="h-[calc(100vh-theme(spacing.16))] flex flex-col bg-[#0c0c0e] overflow-hidden">
       
       {/* Top Navigation Bar */}
-      <div className="h-16 shrink-0 border-b border-white/5 px-6 flex items-center justify-between bg-[#0c0c0e]/80 backdrop-blur-md z-20">
-         <div className="flex items-center gap-4">
+      <div className="h-14 sm:h-16 shrink-0 border-b border-white/5 px-3 sm:px-6 flex items-center justify-between bg-[#0c0c0e]/90 backdrop-blur-md z-20 gap-2">
+         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link
               href={role === "admin" ? "/admin/event-management/inspirex" : "/member/dashboard"}
-              className="p-2 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white/60 hover:text-white"
+              className="p-1.5 sm:p-2 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white/60 hover:text-white shrink-0"
+              aria-label="Back"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.2)] shrink-0">
                   <FileText className="w-4 h-4 text-black" />
                </div>
-               <div>
-                 <h1 className="text-lg font-bold text-white leading-tight">Document Editor</h1>
-                 <p className="text-[10px] uppercase tracking-widest text-white/40">InspireX Attendance Lists</p>
+               <div className="min-w-0">
+                 <h1 className="text-sm sm:text-lg font-bold text-white leading-tight truncate">Document Editor</h1>
+                 <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-white/40 truncate hidden sm:block">InspireX Attendance Lists</p>
                </div>
             </div>
          </div>
 
-         <div className="flex items-center gap-3">
+         <div className="flex items-center gap-2 shrink-0">
+             {/* Mobile View Switcher */}
+             <div className="flex md:hidden bg-white/5 border border-white/10 rounded-lg p-0.5">
+               <button
+                 type="button"
+                 onClick={() => setMobileTab("list")}
+                 className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                   mobileTab === "list" ? "bg-amber-500 text-black font-bold shadow-sm" : "text-white/60 hover:text-white"
+                 }`}
+               >
+                 <Layers className="w-3.5 h-3.5" />
+                 <span>Lists</span>
+               </button>
+               <button
+                 type="button"
+                 onClick={() => setMobileTab("preview")}
+                 className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                   mobileTab === "preview" ? "bg-amber-500 text-black font-bold shadow-sm" : "text-white/60 hover:text-white"
+                 }`}
+               >
+                 <Eye className="w-3.5 h-3.5" />
+                 <span>Preview</span>
+               </button>
+             </div>
+
              <button
                 onClick={downloadAll}
                 disabled={isGenerating || documents.length === 0}
-                className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm shrink-0 shadow-lg shadow-amber-500/10 active:scale-95"
               >
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Download All (.zip)
+                {isGenerating ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                <span className="hidden sm:inline">Download All (.zip)</span>
+                <span className="sm:hidden">Zip</span>
              </button>
          </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Left Sidebar - Document List */}
-        <div className="w-72 shrink-0 border-r border-white/5 bg-[#0c0c0e] flex flex-col relative z-10">
-          <div className="p-4 border-b border-white/5">
+        <div 
+          className={`
+            border-r border-white/5 bg-[#0c0c0e] flex flex-col z-10
+            ${mobileTab === "list" ? "w-full flex" : "hidden"}
+            md:flex md:w-72 md:shrink-0
+          `}
+        >
+          <div className="p-3 sm:p-4 border-b border-white/5 flex items-center justify-between">
             <h2 className="text-xs font-bold text-white/40 uppercase tracking-wider">Generated Documents ({documents.length})</h2>
+            <span className="text-[10px] text-white/40 md:hidden">Tap to preview</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 custom-scrollbar">
              {documents.map(doc => (
                 <button
                   key={doc.key}
-                  onClick={() => setSelectedDocKey(doc.key)}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center justify-between group ${
+                  onClick={() => {
+                    setSelectedDocKey(doc.key);
+                    setMobileTab("preview");
+                  }}
+                  className={`w-full text-left px-3.5 sm:px-4 py-3 rounded-xl transition-all flex items-center justify-between group ${
                     selectedDocKey === doc.key 
                       ? "bg-amber-500/10 border border-amber-500/20" 
-                      : "border border-transparent hover:bg-white/[0.02]"
+                      : "border border-white/5 hover:border-white/10 hover:bg-white/[0.02]"
                   }`}
                 >
-                   <div>
-                      <p className={`text-sm font-bold ${selectedDocKey === doc.key ? "text-amber-400" : "text-white"}`}>
+                   <div className="min-w-0 pr-2">
+                      <p className={`text-sm font-bold truncate ${selectedDocKey === doc.key ? "text-amber-400" : "text-white"}`}>
                         {doc.label}
                       </p>
                       <p className="text-xs text-white/40 mt-0.5">{doc.rows.length} records</p>
                    </div>
-                   {selectedDocKey === doc.key && (
-                      <CheckCircle2 className="w-4 h-4 text-amber-500" />
-                   )}
+                   <div className="flex items-center gap-1.5 shrink-0">
+                     {selectedDocKey === doc.key ? (
+                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                     ) : (
+                        <span className="text-[11px] text-white/30 group-hover:text-white/60 md:hidden">View →</span>
+                     )}
+                   </div>
                 </button>
              ))}
           </div>
         </div>
 
         {/* Main Workspace - Simulator */}
-        <div className="flex-1 bg-[#111114] relative flex flex-col overflow-hidden" 
-             style={{ backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)", backgroundSize: "30px 30px" }}>
-            
+        <div 
+          className={`
+            flex-1 bg-[#111114] relative flex flex-col overflow-hidden
+            ${mobileTab === "preview" ? "flex" : "hidden"}
+            md:flex
+          `}
+          style={{ backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)", backgroundSize: "30px 30px" }}
+        >
+            {/* Mobile quick document switcher bar */}
+            <div className="md:hidden flex items-center justify-between px-3 py-2 bg-[#0c0c0e]/90 border-b border-white/5 z-20">
+               <div className="flex items-center gap-2 min-w-0 flex-1">
+                 <button
+                   onClick={() => setMobileTab("list")}
+                   className="text-xs text-amber-400 font-semibold flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg shrink-0"
+                 >
+                   <Layers className="w-3.5 h-3.5" />
+                   <span>Lists</span>
+                 </button>
+                 {selectedDoc && (
+                   <div className="relative flex-1 min-w-0">
+                     <select
+                       value={selectedDocKey || ""}
+                       onChange={(e) => setSelectedDocKey(e.target.value)}
+                       className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white appearance-none pr-6 truncate font-medium focus:outline-none"
+                     >
+                       {documents.map((d) => (
+                         <option key={d.key} value={d.key} className="bg-[#111114] text-white">
+                           {d.label} ({d.rows.length})
+                         </option>
+                       ))}
+                     </select>
+                     <ChevronDown className="w-3.5 h-3.5 text-white/40 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                   </div>
+                 )}
+               </div>
+            </div>
+
             {/* Toolbar */}
-            <div className="absolute top-6 right-8 z-20 flex items-center gap-2 bg-[#0c0c0e]/90 backdrop-blur-md border border-white/10 rounded-full px-2 py-1.5 shadow-2xl">
-               <button onClick={handleZoomOut} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-                  <ZoomOut className="w-4 h-4" />
+            <div className="absolute top-12 sm:top-6 right-3 sm:right-8 z-20 flex items-center gap-1 sm:gap-2 bg-[#0c0c0e]/90 backdrop-blur-md border border-white/10 rounded-full px-1.5 sm:px-2 py-1 sm:py-1.5 shadow-2xl scale-90 sm:scale-100">
+               <button onClick={handleZoomOut} className="p-1 sm:p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="Zoom Out">
+                  <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                </button>
-               <span className="text-xs font-mono font-medium text-white/80 w-12 text-center">{Math.round(zoom * 100)}%</span>
-               <button onClick={handleZoomIn} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-                  <ZoomIn className="w-4 h-4" />
+               <span className="text-[11px] sm:text-xs font-mono font-medium text-white/80 w-10 sm:w-12 text-center">{Math.round(zoom * 100)}%</span>
+               <button onClick={handleZoomIn} className="p-1 sm:p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="Zoom In">
+                  <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                </button>
-               <div className="w-px h-4 bg-white/10 mx-1" />
-               <button onClick={resetZoom} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-                  <Maximize className="w-4 h-4" />
+               <div className="w-px h-3 sm:h-4 bg-white/10 mx-0.5 sm:mx-1" />
+               <button 
+                 onClick={resetZoom} 
+                 className="p-1 sm:p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                 title="Fit / Reset"
+               >
+                  <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                </button>
             </div>
 
             {/* Document Container */}
-            <div className="flex-1 overflow-auto custom-scrollbar flex justify-center py-12 px-8 relative" id="workspace-scroll-area">
+            <div className="flex-1 overflow-auto custom-scrollbar flex justify-center items-start py-6 sm:py-12 px-2 sm:px-8 relative" id="workspace-scroll-area">
                 {selectedDoc && (
                    <div 
                      className="bg-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-transform duration-200 origin-top flex flex-col"
@@ -606,21 +693,22 @@ export default function MemberListsPage() {
             
             {/* Bottom floating action for current document */}
             {selectedDoc && (
-               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-4 py-3 bg-[#0c0c0e]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-                  <div className="flex items-center gap-2 pr-4 border-r border-white/10">
-                     <FileSpreadsheet className="w-5 h-5 text-amber-400" />
-                     <div className="text-left">
-                        <p className="text-sm font-bold text-white">{selectedDoc.label}</p>
-                        <p className="text-[10px] text-white/50">{selectedDoc.rows.length} rows</p>
+               <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-[#0c0c0e]/95 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] max-w-[95vw] sm:max-w-none">
+                  <div className="flex items-center gap-2 pr-2 sm:pr-4 border-r border-white/10 min-w-0">
+                     <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+                     <div className="text-left min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[120px] sm:max-w-none">{selectedDoc.label}</p>
+                        <p className="text-[9px] sm:text-[10px] text-white/50">{selectedDoc.rows.length} rows</p>
                      </div>
                   </div>
                   <button
                     onClick={() => downloadDocument(selectedDoc)}
                     disabled={isGenerating || selectedDoc.rows.length === 0}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all disabled:opacity-40 text-sm"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg sm:rounded-xl transition-all disabled:opacity-40 text-xs sm:text-sm shrink-0 whitespace-nowrap active:scale-95"
                   >
-                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    Download this .docx
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                    <span className="hidden sm:inline">Download this .docx</span>
+                    <span className="sm:hidden">Download</span>
                   </button>
                </div>
             )}
