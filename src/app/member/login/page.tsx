@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Sparkles, Users } from "lucide-react";
-import { motion } from "framer-motion";
+import { Loader2, ArrowRight, ArrowLeft, Sparkles, Users } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function MemberLoginPage() {
@@ -13,6 +13,14 @@ export default function MemberLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Forgot Password state
+  const [view, setView] = useState<"login" | "reset">("login");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
   const router = useRouter();
   const { user, role, loading: authLoading } = useAuth();
 
@@ -26,18 +34,88 @@ export default function MemberLoginPage() {
     }
   }, [user, role, authLoading, router]);
 
+  // Resend cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
+      if (!isFirebaseConfigured || !auth) {
+        throw new Error("Authentication is not configured.");
+      }
       await signInWithEmailAndPassword(auth, email, password);
       // AuthContext will handle the redirect based on the role
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError("Invalid email or password. Please try again.");
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetLoading || cooldown > 0) return;
+    setResetError("");
+    setResetSuccess("");
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setResetError("Please enter your email address.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setResetError("Please enter a valid email address.");
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      if (!isFirebaseConfigured || !auth) {
+        const cfgErr = new Error("Authentication is not configured. Missing Firebase environment variables.");
+        (cfgErr as Error & { code?: string }).code = "auth/configuration-not-found";
+        throw cfgErr;
+      }
+      await sendPasswordResetEmail(auth, cleanEmail);
+      setResetSuccess(
+        "Password reset instructions have been sent if an account exists with this email address. Please check your inbox and spam folder."
+      );
+      setCooldown(60);
+    } catch (err: unknown) {
+      console.error("Password reset error:", err);
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/user-not-found") {
+        // Generic success for security to prevent user enumeration
+        setResetSuccess(
+          "Password reset instructions have been sent if an account exists with this email address. Please check your inbox and spam folder."
+        );
+        setCooldown(60);
+      } else if (code === "auth/invalid-email") {
+        setResetError("Please enter a valid email address.");
+      } else if (code === "auth/missing-email") {
+        setResetError("Please enter your email address.");
+      } else if (code === "auth/too-many-requests") {
+        setResetError("Too many requests. Please wait a moment before trying again.");
+      } else if (code === "auth/network-request-failed") {
+        setResetError("Network error. Please check your internet connection.");
+      } else if (code === "auth/configuration-not-found") {
+        setResetError("Authentication is not configured. Missing Firebase environment variables.");
+      } else {
+        setResetError("An error occurred while sending the reset link. Please try again.");
+      }
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -95,7 +173,7 @@ export default function MemberLoginPage() {
         </div>
       </div>
 
-      {/* Left Side - Login Form */}
+      {/* Right Side - Login / Reset Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
         <div className="absolute inset-0 lg:hidden bg-gradient-to-bl from-blue-900/20 via-[#050505] to-primary/10" />
         
@@ -116,61 +194,175 @@ export default function MemberLoginPage() {
           >
             <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
             
-            <div className="mb-8">
-              <h2 className="text-3xl font-black font-heading text-white mb-2">Member Login</h2>
-              <p className="text-white/50 text-sm">Sign in to access your dashboard</p>
-            </div>
+            <AnimatePresence mode="wait">
+              {view === "login" ? (
+                <motion.div
+                  key="login-view"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-black font-heading text-white mb-2">Member Login</h2>
+                    <p className="text-white/50 text-sm">Sign in to access your dashboard</p>
+                  </div>
 
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center">
-                {error}
-              </motion.div>
-            )}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
 
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2 relative">
-                <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Club Email</label>
-                <div className="relative group/input">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                    placeholder="member@connectclub.com"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2 relative">
-                <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Password</label>
-                <div className="relative group/input">
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
-                    placeholder="••••••••••••"
-                  />
-                </div>
-              </div>
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <div className="space-y-2 relative">
+                      <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Club Email</label>
+                      <div className="relative group/input">
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
+                          placeholder="member@connectclub.com"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 relative">
+                      <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Password</label>
+                      <div className="relative group/input">
+                        <input
+                          type="password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:bg-white/5 transition-all"
+                          placeholder="••••••••••••"
+                        />
+                      </div>
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setView("reset");
+                            setError("");
+                            setResetError("");
+                            setResetSuccess("");
+                          }}
+                          className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors focus:outline-none focus:underline"
+                        >
+                          Forgot Password?
+                        </button>
+                      </div>
+                    </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    Sign In 
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-            </form>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          Sign In 
+                          <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="reset-view"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-black font-heading text-white mb-2">Reset Your Password</h2>
+                    <p className="text-white/50 text-sm">
+                      Enter your registered club email address and we&apos;ll send you a password reset link.
+                    </p>
+                  </div>
+
+                  {resetError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium flex items-center"
+                    >
+                      {resetError}
+                    </motion.div>
+                  )}
+
+                  {resetSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium"
+                    >
+                      {resetSuccess}
+                    </motion.div>
+                  )}
+
+                  <form onSubmit={handleResetPassword} className="space-y-5">
+                    <div className="space-y-2 relative">
+                      <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Club Email</label>
+                      <div className="relative group/input">
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:border-purple-500 focus:bg-white/5 transition-all"
+                          placeholder="member@connectclub.com"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={resetLoading || cooldown > 0}
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-8 group/btn"
+                    >
+                      {resetLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : cooldown > 0 ? (
+                        `Resend Link in ${cooldown}s`
+                      ) : (
+                        <>
+                          Send Reset Link
+                          <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("login");
+                          setError("");
+                          setResetError("");
+                          setResetSuccess("");
+                        }}
+                        className="inline-flex items-center text-xs font-medium text-white/50 hover:text-white transition-colors focus:outline-none focus:underline"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                        Back to Login
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>

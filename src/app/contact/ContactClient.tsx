@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function ContactPage() {
   const { user, profile } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -37,9 +37,9 @@ export default function ContactPage() {
       setErrorMessage("Please fill in all required fields.");
       return;
     }
-    
+
     setStatus("loading");
-    
+
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -57,10 +57,10 @@ export default function ContactPage() {
       if (!res.ok) {
         throw new Error(data.error || "Failed to send message.");
       }
-      
+
       setStatus("success");
       setFormData({ firstName: "", lastName: "", email: "", message: "" });
-      
+
       // Reset success message after 5 seconds
       setTimeout(() => {
         setStatus("idle");
@@ -75,16 +75,16 @@ export default function ContactPage() {
   return (
     <div className="w-full min-h-screen pt-28 pb-20 md:pt-40 md:pb-24">
       {/* Main Grid for Header, Contact Info and Form */}
-      <motion.div 
+      <motion.div
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
         className="w-full container-grid items-start"
       >
-        
+
         {/* Left Column: Header + Contact Info */}
         <div className="col-span-full lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left mb-12 lg:mb-0 lg:pr-8">
-          
+
           {/* Header Section */}
           <motion.div variants={fadeUp} className="mb-12 md:mb-16 flex flex-col items-center lg:items-start">
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
@@ -100,7 +100,7 @@ export default function ContactPage() {
           </motion.div>
 
           {/* Contact Info Section */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
@@ -127,9 +127,9 @@ export default function ContactPage() {
               </div>
               <div className="flex flex-col items-center lg:items-start">
                 <h3 className="text-lg md:text-xl font-bold text-white uppercase tracking-tight mb-1">Visit Us</h3>
-                <p className="text-[14px] text-white/50 mb-2 leading-relaxed max-w-xs">Vardhaman College of Engineering,<br/>Shamshabad, Hyderabad.</p>
-                <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="text-[13px] text-white font-semibold hover:text-primary transition-colors inline-flex items-center gap-1 group/link">
-                  Get Directions 
+                <p className="text-[14px] text-white/50 mb-2 leading-relaxed max-w-xs">Vardhaman College of Engineering,<br />Shamshabad, Hyderabad.</p>
+                <a href="https://maps.app.goo.gl/YYBwheMRQJKLbJ9g6" target="_blank" rel="noopener noreferrer" className="text-[13px] text-white font-semibold hover:text-primary transition-colors inline-flex items-center gap-1 group/link">
+                  Get Directions
                   <ArrowUpRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
                 </a>
               </div>
@@ -153,7 +153,7 @@ export default function ContactPage() {
                     hoverStyles: "hover:text-[#0A66C2] hover:border-[#0A66C2]/50 hover:bg-[#0A66C2]/5 hover:shadow-[0_0_15px_rgba(10,102,194,0.2)]",
                   },
                 ].map((social, i) => (
-                  <a 
+                  <a
                     key={i}
                     href={social.href}
                     target="_blank"
@@ -170,7 +170,7 @@ export default function ContactPage() {
         </div>
 
         {/* Right Column: Contact Form Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
@@ -180,15 +180,15 @@ export default function ContactPage() {
             {/* Ambient Glows */}
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-secondary/10 rounded-full blur-[80px] pointer-events-none translate-y-1/2 -translate-x-1/3" />
-            
+
             <div className="relative z-10">
               <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight mb-6">
                 Send a Message
               </h3>
-              
+
               <AnimatePresence mode="wait">
                 {status === "success" ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -203,11 +203,11 @@ export default function ContactPage() {
                     </p>
                   </motion.div>
                 ) : (
-                  <motion.form 
+                  <motion.form
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="space-y-5" 
+                    className="space-y-5"
                     onSubmit={handleSubmit}
                   >
                     <div className="space-y-5">
@@ -216,8 +216,8 @@ export default function ContactPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div className="space-y-2">
                               <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">First Name *</label>
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 name="firstName"
                                 value={formData.firstName}
                                 onChange={handleChange}
@@ -229,8 +229,8 @@ export default function ContactPage() {
                             </div>
                             <div className="space-y-2">
                               <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Last Name</label>
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 name="lastName"
                                 value={formData.lastName}
                                 onChange={handleChange}
@@ -243,8 +243,8 @@ export default function ContactPage() {
 
                           <div className="space-y-2">
                             <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Email Address *</label>
-                            <input 
-                              type="email" 
+                            <input
+                              type="email"
                               name="email"
                               value={formData.email}
                               onChange={handleChange}
@@ -263,7 +263,7 @@ export default function ContactPage() {
 
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">Message *</label>
-                        <textarea 
+                        <textarea
                           name="message"
                           value={formData.message}
                           onChange={handleChange}
