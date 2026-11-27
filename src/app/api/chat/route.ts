@@ -1,86 +1,66 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
-import { eventsData } from "@/lib/data/events";
-import { projectsData } from "@/lib/data/projects";
+import { AI_CONFIG } from "@/lib/ai/config";
+import { buildSystemPrompt } from "@/lib/ai/guardrails";
+import { buildContext } from "@/lib/ai/contextBuilder";
+import { generateResponse, type ChatTurn } from "@/lib/ai/llmProvider";
+import { checkRateLimit, getClientIp, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
+/**
+ * Legacy `/api/chat` endpoint — secured with distributed rate limiting, strict
+ * payload bounds, prompt guardrails, and sanitized errors.
+ */
 export async function POST(req: Request) {
+  const rl = await checkRateLimit({
+    namespace: "public:ai-chat",
+    identifier: getClientIp(req),
+    limit: 25,
+    windowMs: 5 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return rateLimitExceededResponse(rl);
+  }
+
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API Key is not configured." }, { status: 500 });
+    const body = await req.json().catch(() => null);
+    const messages = body && typeof body === "object" ? (body as { messages?: unknown }).messages : null;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json({ error: "A non-empty messages array is required." }, { status: 400 });
     }
 
-    const { messages } = await req.json();
-    
-    // RAG Lite: Fetch club knowledge
-    let knowledgeContext = "";
-    try {
-      // In a real app, this would query the `knowledge_base` collection in Firestore.
-      // For now, we'll build a context string from our events and projects data
-      const eventsContext = eventsData.map(e => `- ${e.title} (${e.status}): ${e.description} on ${e.date} at ${e.venue}`).join("\\n");
-      const projectsContext = projectsData.map(p => `- ${p.name}: ${p.description}`).join("\\n");
-      
-      knowledgeContext = `
-      Connect Club Information:
-      We are a student-led technology community at Vardhaman College of Engineering.
-      
-      Events:
-      ${eventsContext}
-      
-      Projects:
-      ${projectsContext}
-      `;
-    } catch (e) {
-      console.warn("Failed to fetch knowledge base", e);
+    const sanitized: ChatTurn[] = [];
+    for (const item of messages.slice(-AI_CONFIG.limits.maxHistoryTurns)) {
+      if (!item || typeof item !== "object") continue;
+      const entry = item as { role?: unknown; content?: unknown };
+      if (typeof entry.content !== "string") continue;
+      const content = entry.content.trim().slice(0, AI_CONFIG.limits.maxMessageLength);
+      if (!content) continue;
+      const role = entry.role === "user" ? "user" : "ai";
+      sanitized.push({ role, content });
     }
 
-    const systemInstruction = `
-      You are Connect AI, the official AI assistant for Connect Club at Vardhaman College of Engineering.
-      Your goal is to assist students, answer their questions about the club, events, and projects, and help them get involved.
-      You are friendly, concise, and highly knowledgeable.
-      
-      Use the following knowledge base to answer questions:
-      ${knowledgeContext}
-      
-      If a user asks a question not covered by the knowledge base, politely inform them that you are still learning and recommend they contact us at hello@connectclubvce.in.
-      Do not hallucinate events or projects that do not exist in your knowledge base.
-    `;
+    const lastTurn = sanitized[sanitized.length - 1];
+    if (!lastTurn || lastTurn.role !== "user") {
+      return NextResponse.json({ error: "Last message must be a non-empty user message." }, { status: 400 });
+    }
 
-    // Map messages to Gemini format
-    const history = messages.map((m: any) => ({
-      role: m.role === "ai" ? "model" : "user",
-      parts: [{ text: m.content }]
-    }));
-    
-    const latestMessage = history.pop()?.parts[0].text;
-
-
-    
-    // Send history (we have to send history if it's more than just the latest message)
-    // Actually, @google/genai chats API allows passing history in the create call:
-    const chatSession = ai.chats.create({
-      model: "gemini-3.5-flash",
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.7,
-      },
-      history: history
+    const context = await buildContext();
+    const systemPrompt = buildSystemPrompt(context.contextText);
+    const result = await generateResponse({
+      message: lastTurn.content,
+      history: sanitized.slice(0, -1),
+      systemPrompt,
+      context,
     });
-
-    const response = await chatSession.sendMessage({ message: latestMessage });
 
     return NextResponse.json({
-      content: response.text,
-      role: "ai"
+      content: result.content,
+      role: "ai",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Chat API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate response.", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate response." }, { status: 500 });
   }
 }

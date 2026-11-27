@@ -3,6 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 
 export function MarkdownContent({
   content,
@@ -15,22 +16,27 @@ export function MarkdownContent({
     <div className={cn("min-w-0 text-[15px] leading-relaxed", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        urlTransform={(url) => getSafeHref(url, { allowRelative: true }) ?? ""}
         components={{
           p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
           strong: ({ children }) => (
             <strong className="font-semibold text-white">{children}</strong>
           ),
           em: ({ children }) => <em className="italic text-white/80">{children}</em>,
-          a: ({ children, href }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 break-all hover:text-primary/80"
-            >
-              {children}
-            </a>
-          ),
+          a: ({ children, href }) => {
+            const safeHref = getSafeHref(href, { allowRelative: true });
+            if (!safeHref) return <span className="text-white/80">{children}</span>;
+            return (
+              <a
+                href={safeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 break-all hover:text-primary/80"
+              >
+                {children}
+              </a>
+            );
+          },
           ul: ({ children }) => (
             <ul className="mb-3 ml-5 list-disc space-y-1.5 last:mb-0">{children}</ul>
           ),

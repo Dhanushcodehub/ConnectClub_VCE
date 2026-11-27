@@ -3,29 +3,30 @@
 import { useAuth, AuthProvider } from "@/lib/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { Loader2 } from "lucide-react";
-import { auth, db } from "@/lib/firebase/config";
+import { auth } from "@/lib/firebase/config";
 import AdminSidebar from "./_components/AdminSidebar";
 
 function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [is2FAChecking, setIs2FAChecking] = useState(false);
+  const [verifiedUid, setVerifiedUid] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     const checkAuth = async () => {
       if (loading) return;
 
       if (!user && pathname !== "/admin/login") {
+        if (active) setVerifiedUid(null);
         router.push("/admin/login");
         return;
       }
 
       if (user && pathname !== "/admin/login") {
-        // Strict Role Check: Only Admins can access /admin
         if (role !== "admin") {
           if (role === "member") {
             router.replace("/member/dashboard");
@@ -35,31 +36,44 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // 2FA Verification Gate
-        if (!is2FAChecking) {
-          setIs2FAChecking(true);
-          try {
-            const adminDoc = await getDoc(doc(db, "admins", user.uid));
-            if (
-              adminDoc.exists() &&
-              adminDoc.data().twoFactorEnabled &&
-              sessionStorage.getItem("2fa_verified") !== "true"
-            ) {
-              await signOut(auth);
-              router.replace("/admin/login");
-              return;
-            }
-          } finally {
-            setIs2FAChecking(false);
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch("/api/admin/2fa", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) {
+            await signOut(auth).catch(() => {});
+            if (active) setVerifiedUid(null);
+            router.replace("/admin/login");
+            return;
           }
+          const data = await res.json();
+          if (data.twoFactorEnabled && !data.verified) {
+            await signOut(auth).catch(() => {});
+            if (active) setVerifiedUid(null);
+            router.replace("/admin/login");
+            return;
+          }
+          if (active) setVerifiedUid(user.uid);
+        } catch {
+          await signOut(auth).catch(() => {});
+          if (active) setVerifiedUid(null);
+          router.replace("/admin/login");
         }
       }
     };
 
-    checkAuth();
-  }, [user, role, loading, pathname, router, is2FAChecking]);
+    void checkAuth();
+    return () => {
+      active = false;
+    };
+  }, [user, role, loading, pathname, router]);
 
-  if (loading) {
+  const isChecking =
+    loading ||
+    (pathname !== "/admin/login" && Boolean(user) && role === "admin" && verifiedUid !== user?.uid);
+
+  if (isChecking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -67,12 +81,10 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If not logged in and not on login page, render nothing while redirecting
   if (!user && pathname !== "/admin/login") {
     return null;
   }
-  
-  // If user is not admin and not on login page, render nothing while redirecting
+
   if (role !== "admin" && pathname !== "/admin/login") {
     return null;
   }

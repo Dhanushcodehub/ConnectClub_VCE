@@ -62,11 +62,15 @@ function hashQuery(normalized: string): string {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
-export function getCachedResponse(rawQuery: string): {
+export function getCachedResponse(
+  rawQuery: string,
+  hasHistory = false
+): {
   content: string;
   provider: string;
   cached: boolean;
 } | null {
+  if (hasHistory) return null;
   const key = hashQuery(normalizeQuery(rawQuery));
   const entry = cache.get(key);
   if (!entry) return null;

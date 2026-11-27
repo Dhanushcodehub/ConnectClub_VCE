@@ -6,6 +6,7 @@ import { getUserRegistrations } from "@/lib/firebase/users";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, ArrowRight, Download, CheckCircle2, Clock3 } from "lucide-react";
 import Link from "next/link";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 
 export default function MyEventsPage() {
   const { user } = useAuth();
@@ -105,20 +106,25 @@ export default function MyEventsPage() {
 
               <div className="pt-6 border-t border-white/[0.06] flex items-center justify-between mt-auto">
                 <div className="flex items-center gap-2">
-                  {reg.certificateUrl ? (
-                    <a 
-                      href={reg.certificateUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-primary text-sm font-medium hover:underline"
-                    >
-                      <Download className="w-4 h-4" /> Download Certificate
-                    </a>
-                  ) : reg.attended ? (
-                    <span className="text-white/40 text-sm">Certificate generating...</span>
-                  ) : (
-                    <span className="text-white/30 text-sm">Attend to earn certificate</span>
-                  )}
+                  {(() => {
+                    const certHref = getSafeHref(reg.certificateUrl, { allowRelative: true });
+                    if (certHref) {
+                      return (
+                        <a
+                          href={certHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-primary text-sm font-medium hover:underline"
+                        >
+                          <Download className="w-4 h-4" /> Download Certificate
+                        </a>
+                      );
+                    }
+                    if (reg.attended) {
+                      return <span className="text-white/40 text-sm">Certificate generating...</span>;
+                    }
+                    return <span className="text-white/30 text-sm">Attend to earn certificate</span>;
+                  })()}
                 </div>
                 <Link href={`/events/${reg.eventId}`} className="text-white/50 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
                   View Event <ArrowRight className="w-4 h-4" />

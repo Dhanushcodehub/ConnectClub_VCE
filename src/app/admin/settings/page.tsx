@@ -19,7 +19,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { ShieldCheck, Key, History, Loader2, AlertCircle } from "lucide-react";
-import { authenticator } from "otplib";
 import { QRCodeSVG } from "qrcode.react";
 
 export default function AdminSettingsPage() {
@@ -36,14 +35,15 @@ export default function AdminSettingsPage() {
   // 2FA State
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
-  const [setupSecret, setSetupSecret] = useState("");
   const [setupUri, setSetupUri] = useState("");
   const [totpInput, setTotpInput] = useState("");
   const [tfaError, setTfaError] = useState("");
   const [tfaLoading, setTfaLoading] = useState(false);
 
   // History State
-  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [loginHistory, setLoginHistory] = useState<
+    Array<{ id: string; timestamp?: string; email?: string; userAgent?: string }>
+  >([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState("");
 
@@ -68,11 +68,15 @@ export default function AdminSettingsPage() {
           limit(10)
         );
         const snapshot = await getDocs(q);
-        const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const history = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as { timestamp?: string; email?: string; userAgent?: string }),
+        }));
         setLoginHistory(history);
-      } catch (error: any) {
-        if (error.message?.includes("requires an index")) {
-          setHistoryError(error.message);
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "";
+        if (msg.includes("requires an index")) {
+          setHistoryError(msg);
         }
       } finally {
         setLoadingHistory(false);
@@ -100,71 +104,78 @@ export default function AdminSettingsPage() {
       setPwdSuccess("Password updated successfully.");
       setCurrentPassword("");
       setNewPassword("");
-    } catch (err: any) {
-      if (err.code === "auth/wrong-password") {
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      if (code === "auth/wrong-password") {
         setPwdError("Incorrect current password.");
       } else {
-        setPwdError("Failed to update password. " + err.message);
+        setPwdError("Failed to update password. " + msg);
       }
     } finally {
       setChangingPwd(false);
     }
   };
 
-  // Persist 2FA status through the Admin SDK (client Firestore writes to
-  // `admins/*` are blocked by security rules).
-  const saveTwoFactorStatus = async (enabled: boolean, secret: string | null) => {
-    if (!user) throw new Error("You are not signed in.");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/2fa", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ twoFactorEnabled: enabled, twoFactorSecret: secret }),
-    });
-    if (!response.ok) {
+  // Persist or trigger server-side 2FA actions
+  const start2FASetup = async () => {
+    if (!user) return;
+    setTfaLoading(true);
+    setTfaError("");
+    setTotpInput("");
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/admin/2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "setup" }),
+      });
       const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || "Failed to save 2FA settings.");
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to initialize 2FA setup.");
+      }
+      setSetupUri(data.uri || "");
+      setIsSettingUp2FA(true);
+    } catch (error: unknown) {
+      setTfaError(error instanceof Error ? error.message : "Failed to start 2FA setup.");
+    } finally {
+      setTfaLoading(false);
     }
   };
 
-  // Handle 2FA Setup Initiation
-  const start2FASetup = () => {
-    if (!user || !user.email) return;
-    const secret = authenticator.generateSecret();
-    const uri = authenticator.keyuri(user.email, "ConnectClub Admin", secret);
-    setSetupSecret(secret);
-    setSetupUri(uri);
-    setIsSettingUp2FA(true);
-    setTfaError("");
-    setTotpInput("");
-  };
-
-  // Handle 2FA Verification and Saving
+  // Handle 2FA Verification and Saving on server
   const verifyAndEnable2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setTfaLoading(true);
     setTfaError("");
 
-    const isValid = authenticator.verify({ token: totpInput, secret: setupSecret });
-
-    if (isValid) {
-      try {
-        await saveTwoFactorStatus(true, setupSecret);
-
-        setTwoFactorEnabled(true);
-        setIsSettingUp2FA(false);
-        sessionStorage.setItem("2fa_verified", "true");
-      } catch (error: any) {
-        setTfaError("Failed to save settings: " + error.message);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/admin/2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "enable", token: totpInput }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid code. Try again.");
       }
-    } else {
-      setTfaError("Invalid code. Try again.");
+      setTwoFactorEnabled(true);
+      setIsSettingUp2FA(false);
+      setSetupUri("");
+      setTotpInput("");
+    } catch (error: unknown) {
+      setTfaError(error instanceof Error ? error.message : "Failed to enable 2FA.");
+    } finally {
+      setTfaLoading(false);
     }
-    setTfaLoading(false);
   };
 
   // Handle 2FA Disable
@@ -173,12 +184,25 @@ export default function AdminSettingsPage() {
     if (!confirm("Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.")) return;
 
     setTfaLoading(true);
+    setTfaError("");
     try {
-      await saveTwoFactorStatus(false, null);
+      const token = await user.getIdToken();
+      const response = await fetch("/api/admin/2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "disable" }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to disable 2FA.");
+      }
       setTwoFactorEnabled(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to disable 2FA", error);
-      setTfaError("Failed to disable 2FA: " + error.message);
+      setTfaError(error instanceof Error ? error.message : "Failed to disable 2FA.");
     } finally {
       setTfaLoading(false);
     }
@@ -402,7 +426,7 @@ export default function AdminSettingsPage() {
                   {loginHistory.map((log) => (
                     <tr key={log.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
                       <td className="py-4 text-white">
-                        {new Date(log.timestamp).toLocaleString()}
+                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : "—"}
                       </td>
                       <td className="py-4 text-white/70">{log.email}</td>
                       <td className="py-4 text-white/50 truncate max-w-xs" title={log.userAgent}>

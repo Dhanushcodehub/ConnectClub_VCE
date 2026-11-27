@@ -33,6 +33,7 @@ import {
   HeartHandshake,
   Download
 } from "lucide-react";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -716,28 +717,34 @@ export default function AdminMembersPage() {
                   {/* Card Footer: Social links and permissions indicator */}
                   <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      {member.linkedinUrl && (
-                        <a
-                          href={member.linkedinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-[#0077b5]/20 hover:text-[#0077b5] text-white/50 transition-colors"
-                          title="LinkedIn Profile"
-                        >
-                          <LinkedInIcon className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                      {member.instaUrl && (
-                        <a
-                          href={member.instaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-pink-500/20 hover:text-pink-400 text-white/50 transition-colors"
-                          title="Instagram Profile"
-                        >
-                          <InstagramIcon className="w-3.5 h-3.5" />
-                        </a>
-                      )}
+                      {(() => {
+                        const li = getSafeHref(member.linkedinUrl, { allowRelative: false });
+                        return li ? (
+                          <a
+                            href={li}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-[#0077b5]/20 hover:text-[#0077b5] text-white/50 transition-colors"
+                            title="LinkedIn Profile"
+                          >
+                            <LinkedInIcon className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null;
+                      })()}
+                      {(() => {
+                        const ig = getSafeHref(member.instaUrl, { allowRelative: false });
+                        return ig ? (
+                          <a
+                            href={ig}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-pink-500/20 hover:text-pink-400 text-white/50 transition-colors"
+                            title="Instagram Profile"
+                          >
+                            <InstagramIcon className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null;
+                      })()}
                       {!member.linkedinUrl && !member.instaUrl && (
                         <span className="text-[11px] text-white/30 italic">No social links</span>
                       )}

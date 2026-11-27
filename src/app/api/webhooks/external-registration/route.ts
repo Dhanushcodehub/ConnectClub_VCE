@@ -1,104 +1,108 @@
 import { NextResponse } from "next/server";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { generateTicketId } from "@/lib/tickets";
+import { normalizeRollNo } from "@/lib/registrations/validation";
 
-// Define CORS headers
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
-// The external ticket ID must match TX-XXXXXX.. (alphanumeric, bounded length)
-// so a malicious payload can't smuggle arbitrary strings into ticket documents.
 const TICKET_ID_PATTERN = /^[A-Za-z0-9_-]{4,64}$/;
+const DOC_ID_SAFE_PATTERN = /^[A-Za-z0-9_-]{2,80}$/;
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+function verifyBearerSecret(authHeader: string | null, expectedSecret: string): boolean {
+  if (!authHeader || !expectedSecret) return false;
+  const a = createHash("sha256").update(authHeader).digest();
+  const b = createHash("sha256").update(`Bearer ${expectedSecret}`).digest();
+  return timingSafeEqual(a, b);
 }
 
 export async function POST(request: Request) {
   try {
-    // 1. Verify Authorization
     const authHeader = request.headers.get("authorization");
     const expectedSecret = process.env.CONNECT_CLUB_WEBHOOK_SECRET;
 
     if (!expectedSecret) {
-      console.error(
-        "Webhook secret is not configured — rejecting request instead of falling back to an insecure default."
-      );
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500, headers: corsHeaders });
+      console.error("Webhook secret is not configured.");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    // Timing-safe comparison so request timing can't leak the secret.
-    if (!authHeader || authHeader.length !== `Bearer ${expectedSecret}`.length) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
-    }
-    if (!timingSafeEqual(authHeader, `Bearer ${expectedSecret}`)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+    if (!verifyBearerSecret(authHeader, expectedSecret)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Parse Payload
-    let body: {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const { rollNo, eventId, eventTitle, ticketId } = body as {
       rollNo?: unknown;
       eventId?: unknown;
       eventTitle?: unknown;
       ticketId?: unknown;
     };
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: corsHeaders });
+
+    if (
+      typeof rollNo !== "string" ||
+      typeof eventId !== "string" ||
+      typeof eventTitle !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields: rollNo, eventId, eventTitle" },
+        { status: 400 }
+      );
     }
 
-    const { rollNo, eventId, eventTitle, ticketId } = body;
+    const cleanRollNo = normalizeRollNo(rollNo).slice(0, 30);
+    const cleanEventId = eventId.trim();
+    const cleanEventTitle = eventTitle.trim().slice(0, 200);
 
-    if (typeof rollNo !== "string" || !rollNo.trim() || typeof eventId !== "string" || !eventId.trim() || typeof eventTitle !== "string" || !eventTitle.trim()) {
-      return NextResponse.json({ error: "Missing required fields: rollNo, eventId, eventTitle" }, { status: 400, headers: corsHeaders });
+    if (
+      !cleanRollNo ||
+      !DOC_ID_SAFE_PATTERN.test(cleanEventId) ||
+      !cleanEventTitle
+    ) {
+      return NextResponse.json(
+        { error: "Invalid rollNo, eventId, or eventTitle format" },
+        { status: 400 }
+      );
     }
+
     if (ticketId !== undefined && (typeof ticketId !== "string" || !TICKET_ID_PATTERN.test(ticketId))) {
-      return NextResponse.json({ error: "Invalid ticketId format" }, { status: 400, headers: corsHeaders });
+      return NextResponse.json({ error: "Invalid ticketId format" }, { status: 400 });
     }
 
-    const cleanRollNo = rollNo.toUpperCase().trim();
-
-    // 3. Initialize Admin SDK
-    const app = getAdminApp();
-    const db = getFirestore(app);
-
-    // 4. Find the Connect Club User(s)
-    // Since some users might have duplicate accounts with the same roll number during testing,
-    // we should apply the registration to all matching accounts so they see it.
-    const usersSnapshot = await db.collection("users").where("rollNo", "==", cleanRollNo).get();
+    const db = getFirestore(getAdminApp());
+    const usersSnapshot = await db
+      .collection("users")
+      .where("rollNo", "==", cleanRollNo)
+      .limit(5)
+      .get();
 
     if (usersSnapshot.empty) {
-      // User is not a Connect Club member, nothing to do on our side
-      return NextResponse.json({ success: true, message: "User is not a Connect Club member. Ignored." }, { headers: corsHeaders });
+      return NextResponse.json({
+        success: true,
+        message: "User is not a Connect Club member. Ignored.",
+      });
     }
 
     let updatedCount = 0;
 
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
+      const registrationRef = db.collection("event_registrations").doc(`${cleanEventId}_${userId}`);
 
-      // Deterministic registration ID makes concurrent webhook deliveries
-      // idempotent: whoever writes second sees the doc exist and skips.
-      const registrationRef = db.collection("event_registrations").doc(`${eventId}_${userId}`);
-
-      // 5-7. Create registration + notification transactionally
       await db.runTransaction(async (transaction) => {
         const existing = await transaction.get(registrationRef);
         if (existing.exists) {
-          return; // Already registered (or a concurrent delivery won the race)
+          return;
         }
 
-        const generatedTicketId = ticketId || generateTicketId();
+        const generatedTicketId = (typeof ticketId === "string" && ticketId) || generateTicketId();
 
         transaction.set(registrationRef, {
           userId,
-          eventId,
-          eventTitle,
+          eventId: cleanEventId,
+          eventTitle: cleanEventTitle,
           ticketId: generatedTicketId,
           registeredAt: FieldValue.serverTimestamp(),
           attended: false,
@@ -110,7 +114,7 @@ export async function POST(request: Request) {
           userId,
           type: "event",
           title: "Registration Confirmed!",
-          message: `You have successfully registered for ${eventTitle}! It has been added to your My Events tab.`,
+          message: `You have successfully registered for ${cleanEventTitle}! It has been added to your My Events tab.`,
           read: false,
           actionUrl: `/u/dashboard`,
           createdAt: FieldValue.serverTimestamp(),
@@ -120,26 +124,13 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Registration synced and notification sent.",
-        updatedCount,
-      },
-      { headers: corsHeaders }
-    );
-  } catch (error: any) {
+    return NextResponse.json({
+      success: true,
+      message: "Registration synced and notification sent.",
+      updatedCount,
+    });
+  } catch (error) {
     console.error("Webhook error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500, headers: corsHeaders });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
-
-/** Constant-time string comparison (avoids leaking the secret via timing). */
-function timingSafeEqual(a: string, b: string): boolean {
-  const maxLength = Math.max(a.length, b.length);
-  let mismatch = 0;
-  for (let i = 0; i < maxLength; i++) {
-    mismatch |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  }
-  return mismatch === 0;
 }

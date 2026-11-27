@@ -137,7 +137,22 @@ function formatMember(m: MemberDoc): string {
   return `- ${parts.join(" — ")}`;
 }
 
+const CONTEXT_CACHE_TTL_MS = 60 * 1000;
+let cachedContext: { data: BuiltAIContext; expiresAt: number } | null = null;
+
+function sanitizePromptField(val: unknown, maxLen = 280): string {
+  return String(val ?? "")
+    .replace(/---\s*(BEGIN|END)\s*CONTEXT\s*---/gi, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .trim()
+    .slice(0, maxLen);
+}
+
 export async function buildContext(): Promise<BuiltAIContext> {
+  if (cachedContext && Date.now() < cachedContext.expiresAt) {
+    return cachedContext.data;
+  }
+
   const [liveEvents, liveProjects, liveTeam, liveFaqs, liveDomains] = await Promise.all([
     fetchCollectionDocs<EventDoc>("events", LIMITS.events),
     fetchCollectionDocs<ProjectDoc>("projects", LIMITS.projects),
@@ -151,7 +166,7 @@ export async function buildContext(): Promise<BuiltAIContext> {
 
   const upcomingEvents = events
     .filter((e) => e.status === "Upcoming")
-    .map((e) => e.title || "")
+    .map((e) => sanitizePromptField(e.title, 120))
     .filter(Boolean);
 
   const sections: string[] = [];
@@ -164,14 +179,20 @@ export async function buildContext(): Promise<BuiltAIContext> {
   sections.push(`\n${WEBSITE_SITE_MAP}`);
 
   sections.push(`\n### Events (${events.length})`);
-  events.slice(0, LIMITS.events).forEach((e, i) => sections.push(formatEvent(e, i)));
+  events
+    .slice(0, LIMITS.events)
+    .forEach((e, i) => sections.push(sanitizePromptField(formatEvent(e, i), 900)));
 
   sections.push(`\n### Projects (${projects.length})`);
-  projects.slice(0, LIMITS.projects).forEach((p, i) => sections.push(formatProject(p, i)));
+  projects
+    .slice(0, LIMITS.projects)
+    .forEach((p, i) => sections.push(sanitizePromptField(formatProject(p, i), 500)));
 
   sections.push(`\n### Team / Domains`);
   if (liveTeam.length > 0) {
-    liveTeam.slice(0, LIMITS.team).forEach((m) => sections.push(formatMember(m)));
+    liveTeam
+      .slice(0, LIMITS.team)
+      .forEach((m) => sections.push(sanitizePromptField(formatMember(m), 200)));
   } else {
     sections.push("- Team roster is managed in the club's member database.");
   }
@@ -179,7 +200,11 @@ export async function buildContext(): Promise<BuiltAIContext> {
   if (liveDomains.length > 0) {
     sections.push(`\n### Technical Domains`);
     liveDomains.slice(0, LIMITS.domains).forEach((d) =>
-      sections.push(`- ${d.name || "Domain"}${d.description ? ` — ${d.description}` : ""}`)
+      sections.push(
+        `- ${sanitizePromptField(d.name || "Domain", 80)}${
+          d.description ? ` — ${sanitizePromptField(d.description, 200)}` : ""
+        }`
+      )
     );
   }
 
@@ -193,15 +218,15 @@ export async function buildContext(): Promise<BuiltAIContext> {
   if (collectedFaqs.length > 0) {
     sections.push(`\n### FAQs`);
     collectedFaqs.slice(0, LIMITS.faqs).forEach((f) => {
-      sections.push(`- Q: ${f.question || ""}`);
-      sections.push(`  A: ${f.answer || ""}`);
+      sections.push(`- Q: ${sanitizePromptField(f.question, 220)}`);
+      sections.push(`  A: ${sanitizePromptField(f.answer, 400)}`);
     });
   }
 
   sections.push(`\n## Vardhaman College of Engineering (VCE)`);
   sections.push(vceStaticContextText());
 
-  return {
+  const built: BuiltAIContext = {
     contextText: sections.join("\n"),
     liveSources: {
       events: liveEvents.length > 0,
@@ -212,4 +237,7 @@ export async function buildContext(): Promise<BuiltAIContext> {
     },
     upcomingEvents,
   };
+
+  cachedContext = { data: built, expiresAt: Date.now() + CONTEXT_CACHE_TTL_MS };
+  return built;
 }

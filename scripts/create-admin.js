@@ -25,8 +25,12 @@ async function createAdmin() {
     admin.initializeApp();
   }
 
-  const email = "admin@connectclubvce.in";
-  const password = "password123";
+  const email = process.env.ADMIN_INITIAL_EMAIL || "admin@connectclubvce.in";
+  const password = process.env.ADMIN_INITIAL_PASSWORD;
+  if (!password || password.length < 12) {
+    console.error("Set ADMIN_INITIAL_PASSWORD (min 12 chars) in environment before running this script.");
+    process.exit(1);
+  }
 
   try {
     let userRecord;
@@ -56,7 +60,7 @@ async function createAdmin() {
       twoFactorEnabled: false
     });
 
-    console.log(`Admin user setup complete. You can login with:\nEmail: ${email}\nPassword: ${password}`);
+    console.log(`Admin user setup complete for ${email}.`);
   } catch (error) {
     console.error("Error creating admin user:", error);
   }

@@ -3,6 +3,7 @@ import { getUserProfile, getUserProjects } from "@/lib/firebase/users";
 import { ArrowLeft, Code2, Heart, MessageCircle, GitBranch, Globe } from "lucide-react";
 import Link from "next/link";
 import { ConnectProject } from "@/lib/data/projects";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function PublicProfilePage({
     notFound();
   }
 
-  const userProjects = await getUserProjects(id);
+  const userProjects = await getUserProjects(id, true);
   
   // Calculate stats dynamically from all projects
   const totalLikes = userProjects.reduce((sum, p) => sum + (p.likes || 0), 0);
@@ -70,16 +71,22 @@ export default async function PublicProfilePage({
                 {profile.yearOfStudy || "Student"}
               </span>
               
-              {profile.githubUrl && (
-                <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 border border-white/10 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors" title="GitHub">
-                  <GitBranch className="w-4 h-4" />
-                </a>
-              )}
-              {profile.linkedinUrl && (
-                <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 border border-white/10 rounded-full text-white/70 hover:text-white hover:bg-[#0A66C2]/20 hover:border-[#0A66C2]/30 hover:text-[#0A66C2] transition-colors" title="LinkedIn">
-                  <Globe className="w-4 h-4" />
-                </a>
-              )}
+              {(() => {
+                const ghHref = getSafeHref(profile.githubUrl, { allowRelative: false });
+                return ghHref ? (
+                  <a href={ghHref} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 border border-white/10 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors" title="GitHub">
+                    <GitBranch className="w-4 h-4" />
+                  </a>
+                ) : null;
+              })()}
+              {(() => {
+                const liHref = getSafeHref(profile.linkedinUrl, { allowRelative: false });
+                return liHref ? (
+                  <a href={liHref} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white/5 border border-white/10 rounded-full text-white/70 hover:text-white hover:bg-[#0A66C2]/20 hover:border-[#0A66C2]/30 hover:text-[#0A66C2] transition-colors" title="LinkedIn">
+                    <Globe className="w-4 h-4" />
+                  </a>
+                ) : null;
+              })()}
             </div>
 
             <p className="text-white/70 max-w-2xl text-lg leading-relaxed mb-8">

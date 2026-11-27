@@ -30,6 +30,14 @@ export default function AdminGalleryPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    return () => {
+      if (preview && preview.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
   // Fetch Items
   const fetchItems = async () => {
     try {

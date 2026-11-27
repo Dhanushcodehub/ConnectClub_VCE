@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
 import { requireStaffRequest } from "@/lib/firebase/requestAuth";
+
+type MemberRow = Record<string, unknown>;
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ function buildSignatureBlock(): string {
   `;
 }
 
-function buildTable(rows: any[], columns: Record<string, boolean>): any {
+function buildTable(rows: MemberRow[], columns: Record<string, boolean>): string {
   const activeHeaders = [];
   if (columns.sno) activeHeaders.push("S.NO");
   if (columns.name) activeHeaders.push("STUDENT NAME");
@@ -124,7 +125,7 @@ function buildTable(rows: any[], columns: Record<string, boolean>): any {
             <w:right w:val="single" w:sz="4" w:color="000000"/>
           </w:tcBorders></w:tcPr>
           <w:p><w:pPr><w:jc w:val="center"/></w:pPr>
-            <w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">${escapeXml(cell)}</w:t></w:r>
+            <w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">${escapeXml(String(cell ?? ""))}</w:t></w:r>
           </w:p>
         </w:tc>`
         )
@@ -155,6 +156,7 @@ function buildTable(rows: any[], columns: Record<string, boolean>): any {
 function escapeXml(str: string): string {
   if (!str) return "";
   return String(str)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -163,7 +165,7 @@ function escapeXml(str: string): string {
 }
 
 async function generateDocx(
-  rows: any[],
+  rows: MemberRow[],
   columns: Record<string, boolean>,
   label: string,
   para1: string,
@@ -183,7 +185,7 @@ async function generateDocx(
   // order; any unexpected year label ("First Year", "1", typos, etc.) gets
   // its own table after them instead of being silently dropped.
   const KNOWN_YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-  const byYear = new Map<string, any[]>();
+  const byYear = new Map<string, MemberRow[]>();
   for (const row of rows) {
     const year = row.year && String(row.year).trim() ? String(row.year).trim() : "Unknown";
     const bucket = byYear.get(year);
@@ -233,67 +235,99 @@ export async function POST(request: Request) {
     // Staff-only endpoint — this generates official attendance sheets.
     await requireStaffRequest(request);
 
-    const body = await request.json();
-    const { documents, columns, para1, para2 } = body;
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
+    const { documents, columns, para1, para2 } = body as {
+      documents?: Array<{ rows?: unknown[]; label?: unknown; filename?: unknown }>;
+      columns?: Record<string, boolean>;
+      para1?: unknown;
+      para2?: unknown;
+    };
 
     if (!documents || !Array.isArray(documents) || documents.length === 0) {
-       return NextResponse.json(
+      return NextResponse.json(
         { error: "No documents provided to generate." },
         { status: 400 }
       );
     }
-    
-    // Default columns if not provided
+    if (documents.length > 50) {
+      return NextResponse.json(
+        { error: "Too many document groups (max 50)." },
+        { status: 400 }
+      );
+    }
+    const totalRows = documents.reduce(
+      (sum, d) => sum + (Array.isArray(d?.rows) ? d.rows.length : 0),
+      0
+    );
+    if (totalRows > 3000) {
+      return NextResponse.json(
+        { error: "Total row count exceeds maximum of 3000." },
+        { status: 413 }
+      );
+    }
+
     const cols = columns || { sno: true, rollNo: true, name: true, branch: true, year: true, section: true, signature: false };
-    const p1 = para1 || "";
-    const p2 = para2 || "";
+    const p1 = typeof para1 === "string" ? para1.slice(0, 2000) : "";
+    const p2 = typeof para2 === "string" ? para2.slice(0, 2000) : "";
 
     // 1. Load template
     const templatePath = path.join(
       process.cwd(),
       "src/lib/data/Template (lock).docx"
     );
-    
+
     if (!fs.existsSync(templatePath)) {
       return NextResponse.json(
         { error: "Template file not found." },
         { status: 404 }
       );
     }
-    const templateBuffer = fs.readFileSync(templatePath);
+    const templateBuffer = await fs.promises.readFile(templatePath);
 
     // 2. Generate .docx per document group
-    // If only one document, we can just return that .docx file directly
     if (documents.length === 1) {
-       const doc = documents[0];
-       if (!doc.rows || doc.rows.length === 0) {
-         return NextResponse.json(
-           { error: "The selected document has no rows to include." },
-           { status: 400 }
-         );
-       }
-       const docBuffer = await generateDocx(doc.rows, cols, doc.label || "", p1, p2, templateBuffer);
-       
-       return new NextResponse(docBuffer as any, {
+      const docItem = documents[0];
+      if (!Array.isArray(docItem?.rows) || docItem.rows.length === 0) {
+        return NextResponse.json(
+          { error: "The selected document has no rows to include." },
+          { status: 400 }
+        );
+      }
+      const label = typeof docItem.label === "string" ? docItem.label.slice(0, 120) : "";
+      const fname = typeof docItem.filename === "string" ? docItem.filename : "member_list";
+      const docBuffer = await generateDocx(docItem.rows as MemberRow[], cols, label, p1, p2, templateBuffer);
+
+      return new NextResponse(new Uint8Array(docBuffer), {
         status: 200,
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "Content-Disposition": `attachment; filename="${safeFilename(doc.filename || "member_list")}"`,
+          "Content-Disposition": `attachment; filename="${safeFilename(fname)}"`,
         },
       });
     }
 
-    // 3. Multiple documents, return a zip
+    // 3. Multiple documents, return a zip without filename collisions
     const outputZip = new JSZip();
+    const usedNames = new Set<string>();
 
-    for (const doc of documents) {
-      if (!doc.rows || doc.rows.length === 0) continue;
-      const docBuffer = await generateDocx(doc.rows, cols, doc.label || "", p1, p2, templateBuffer);
-      outputZip.file(safeFilename(doc.filename || "member_list"), docBuffer);
+    for (let i = 0; i < documents.length; i++) {
+      const docItem = documents[i];
+      if (!Array.isArray(docItem?.rows) || docItem.rows.length === 0) continue;
+      const label = typeof docItem.label === "string" ? docItem.label.slice(0, 120) : "";
+      const rawName = typeof docItem.filename === "string" ? docItem.filename : `member_list_${i + 1}`;
+      let name = safeFilename(rawName);
+      if (usedNames.has(name)) {
+        const dotIdx = name.lastIndexOf(".");
+        name = dotIdx > 0 ? `${name.slice(0, dotIdx)}_${i + 1}${name.slice(dotIdx)}` : `${name}_${i + 1}`;
+      }
+      usedNames.add(name);
+      const docBuffer = await generateDocx(docItem.rows as MemberRow[], cols, label, p1, p2, templateBuffer);
+      outputZip.file(name, docBuffer);
     }
 
-    // Every document group could have been empty — fail loudly instead of
-    // returning a 0-byte zip.
     if (Object.keys(outputZip.files).length === 0) {
       return NextResponse.json(
         { error: "All provided document groups were empty; nothing to generate." },
@@ -303,14 +337,14 @@ export async function POST(request: Request) {
 
     const zipBuffer = await outputZip.generateAsync({ type: "nodebuffer" });
 
-    return new NextResponse(zipBuffer as any, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": "attachment; filename=member_lists.zip",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     if (message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Unauthorized: staff authentication required." }, { status: 401 });
@@ -318,10 +352,10 @@ export async function POST(request: Request) {
     if (message === "FORBIDDEN") {
       return NextResponse.json({ error: "Forbidden: staff access required." }, { status: 403 });
     }
+    if (message.startsWith("ADMIN_SDK_NOT_CONFIGURED")) {
+      return NextResponse.json({ error: "Server authentication service is not configured." }, { status: 500 });
+    }
     console.error("Error generating member list:", error);
-    return NextResponse.json(
-      { error: "Failed to generate documents.", details: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate documents." }, { status: 500 });
   }
 }

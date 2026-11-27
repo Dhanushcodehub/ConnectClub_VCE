@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, query, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { collection, query, limit, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase/config";
 import { ConnectUser, getAllUsers, createNotification } from "@/lib/firebase/users";
 import { 
@@ -169,7 +169,7 @@ export default function AdminStudentsPage() {
     }
 
     try {
-      const q = query(collection(db, "users"));
+      const q = query(collection(db, "users"), limit(500));
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {

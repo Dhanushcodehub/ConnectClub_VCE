@@ -268,7 +268,8 @@ export function subscribeToUnreadCounts(
     q = query(
       collection(db, DM_COLLECTION),
       where("read", "==", false),
-      where("senderRole", "==", "member")
+      where("senderRole", "==", "member"),
+      limit(200)
     );
   } else {
     // Member needs to know how many unread messages came from admin to them
@@ -276,7 +277,8 @@ export function subscribeToUnreadCounts(
       collection(db, DM_COLLECTION),
       where("roomId", "==", currentUserEmail),
       where("read", "==", false),
-      where("senderRole", "==", "admin")
+      where("senderRole", "==", "admin"),
+      limit(200)
     );
   }
 
@@ -385,7 +387,8 @@ export function subscribeToLastMessages(callback: (lastMessages: Record<string, 
 
   const q = query(
     collection(db, DM_COLLECTION),
-    orderBy("timestamp", "desc")
+    orderBy("timestamp", "desc"),
+    limit(300)
   );
 
   return onSnapshot(q, (snapshot) => {

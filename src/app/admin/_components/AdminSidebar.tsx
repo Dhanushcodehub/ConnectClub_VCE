@@ -59,8 +59,22 @@ export default function AdminSidebar() {
   // Mobile sidebar state only
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSignOut = () => {
-    signOut(auth);
+  const handleSignOut = async () => {
+    try {
+      const token = await user?.getIdToken();
+      if (token) {
+        await fetch("/api/admin/2fa", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: "logout" }),
+        }).catch(() => {});
+      }
+    } finally {
+      await signOut(auth);
+    }
   };
 
   return (

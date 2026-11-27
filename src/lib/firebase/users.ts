@@ -147,99 +147,18 @@ export async function checkUserExists(uid: string): Promise<boolean> {
   }
 }
 
-export const fallbackUsers: ConnectUser[] = [
-  {
-    uid: "student-1",
-    name: "Bhavesh Sharma",
-    email: "bhavesh.sharma@gmail.com",
-    rollNo: "22881A0512",
-    phone: "9876543210",
-    department: "CSE",
-    yearOfStudy: "3rd Year",
-    provider: "google",
-    projectsCount: 2,
-    likesReceived: 14,
-    commentsCount: 5,
-    certificatesCount: 1,
-    createdAt: new Date("2026-08-15T10:00:00Z"),
-    updatedAt: new Date("2026-08-15T10:00:00Z"),
-  },
-  {
-    uid: "student-2",
-    name: "Ananya Reddy",
-    email: "ananya.reddy@gmail.com",
-    rollNo: "23881A6624",
-    phone: "9848012345",
-    department: "AI&ML",
-    yearOfStudy: "2nd Year",
-    provider: "google",
-    projectsCount: 1,
-    likesReceived: 8,
-    commentsCount: 2,
-    certificatesCount: 2,
-    createdAt: new Date("2026-08-20T14:30:00Z"),
-    updatedAt: new Date("2026-08-20T14:30:00Z"),
-  },
-  {
-    uid: "student-3",
-    name: "Karthik Varma",
-    email: "karthik.varma@outlook.com",
-    rollNo: "21881A1245",
-    phone: "9123456780",
-    department: "IT",
-    yearOfStudy: "4th Year",
-    provider: "email",
-    projectsCount: 4,
-    likesReceived: 32,
-    commentsCount: 12,
-    certificatesCount: 3,
-    createdAt: new Date("2026-07-10T09:15:00Z"),
-    updatedAt: new Date("2026-07-10T09:15:00Z"),
-  },
-  {
-    uid: "student-4",
-    name: "Sneha Patel",
-    email: "sneha.patel@gmail.com",
-    rollNo: "24881A0456",
-    phone: "9988776655",
-    department: "ECE",
-    yearOfStudy: "1st Year",
-    provider: "google",
-    projectsCount: 0,
-    likesReceived: 2,
-    commentsCount: 1,
-    certificatesCount: 0,
-    createdAt: new Date("2026-09-01T16:45:00Z"),
-    updatedAt: new Date("2026-09-01T16:45:00Z"),
-  },
-  {
-    uid: "student-5",
-    name: "Rohit Kumar",
-    email: "rohit.k@gmail.com",
-    rollNo: "22881A6708",
-    phone: "9001122334",
-    department: "DS",
-    yearOfStudy: "3rd Year",
-    provider: "email",
-    projectsCount: 1,
-    likesReceived: 5,
-    commentsCount: 3,
-    certificatesCount: 1,
-    createdAt: new Date("2026-08-28T11:20:00Z"),
-    updatedAt: new Date("2026-08-28T11:20:00Z"),
-  },
-];
+export const fallbackUsers: ConnectUser[] = [];
 
 export async function getAllUsers(): Promise<ConnectUser[]> {
-  if (!isFirebaseConfigured || !db) return fallbackUsers;
+  if (!isFirebaseConfigured || !db) return [];
   try {
-    const q = query(collection(db, USERS_COLLECTION));
+    const q = query(collection(db, USERS_COLLECTION), limit(500));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return [];
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as ConnectUser));
   } catch (error) {
     console.error("Error fetching all users:", error);
-    return fallbackUsers;
+    return [];
   }
 }
 
@@ -462,15 +381,16 @@ export async function submitUserProject(project: Omit<UserProject, "id" | "likes
   try {
     const docRef = await addDoc(collection(db, USER_PROJECTS_COLLECTION), {
       ...project,
+      status: "pending",
       likes: 0,
       commentsCount: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
-    // Increment user's project count
+    // Server rules block counter tampering from clients; best-effort update when allowed.
     const userRef = doc(db, USERS_COLLECTION, project.userId);
-    await updateDoc(userRef, { projectsCount: increment(1) });
+    await updateDoc(userRef, { projectsCount: increment(1) }).catch(() => {});
 
     return docRef.id;
   } catch (error) {
@@ -479,12 +399,20 @@ export async function submitUserProject(project: Omit<UserProject, "id" | "likes
   }
 }
 
-export async function getUserProjects(userId: string): Promise<UserProject[]> {
+export async function getUserProjects(userId: string, approvedOnly = false): Promise<UserProject[]> {
   try {
-    const q = query(
-      collection(db, USER_PROJECTS_COLLECTION),
-      where("userId", "==", userId)
-    );
+    const q = approvedOnly
+      ? query(
+          collection(db, USER_PROJECTS_COLLECTION),
+          where("userId", "==", userId),
+          where("status", "==", "approved"),
+          limit(50)
+        )
+      : query(
+          collection(db, USER_PROJECTS_COLLECTION),
+          where("userId", "==", userId),
+          limit(50)
+        );
     const querySnapshot = await getDocs(q);
     const projects = querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -508,13 +436,19 @@ export async function getApprovedUserProjects(): Promise<UserProject[]> {
   try {
     const q = query(
       collection(db, USER_PROJECTS_COLLECTION),
-      orderBy("createdAt", "desc")
+      where("status", "==", "approved"),
+      limit(50)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const projects = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as UserProject[];
+    return projects.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis?.() || 0;
+      const timeB = b.createdAt?.toMillis?.() || 0;
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching approved projects:", error);
     return [];

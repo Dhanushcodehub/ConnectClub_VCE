@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { FolderGit2, Plus, Heart, MessageCircle, ExternalLink, GitBranch, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 
 export default function MyProjectsPage() {
   const { user } = useAuth();
@@ -93,9 +94,9 @@ export default function MyProjectsPage() {
               transition={{ delay: i * 0.1 }}
               className="bg-[#0C0C0E] border border-white/[0.06] rounded-3xl overflow-hidden flex flex-col h-full hover:border-white/10 transition-colors"
             >
-              {project.bannerUrl ? (
+              {(project.banner || project.bannerUrl) ? (
                 <div className="relative h-48 w-full bg-white/5">
-                  <Image src={project.bannerUrl} alt={project.title} fill className="object-cover" />
+                  <Image src={project.banner || project.bannerUrl} alt={project.title} fill className="object-cover" />
                 </div>
               ) : (
                 <div className="h-32 w-full bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center border-b border-white/[0.06]">
@@ -136,21 +137,27 @@ export default function MyProjectsPage() {
                       <Heart className="w-4 h-4" /> {project.likes || 0}
                     </div>
                     <div className="flex items-center gap-1.5 text-white/50 text-sm">
-                      <MessageCircle className="w-4 h-4" /> {project.comments || 0}
+                      <MessageCircle className="w-4 h-4" /> {project.commentsCount ?? project.comments ?? 0}
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {project.githubUrl && (
-                      <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                        <GitBranch className="w-4 h-4" />
-                      </a>
-                    )}
-                    {project.demoUrl && (
-                      <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
+                    {(() => {
+                      const gh = getSafeHref(project.githubUrl, { allowRelative: false });
+                      return gh ? (
+                        <a href={gh} target="_blank" rel="noopener noreferrer" className="p-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                          <GitBranch className="w-4 h-4" />
+                        </a>
+                      ) : null;
+                    })()}
+                    {(() => {
+                      const demo = getSafeHref(project.demoUrl, { allowRelative: false });
+                      return demo ? (
+                        <a href={demo} target="_blank" rel="noopener noreferrer" className="p-2 text-white/50 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </div>

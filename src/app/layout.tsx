@@ -5,6 +5,7 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { ClientLayout } from "@/components/ClientLayout";
 import { GridBackground } from "@/components/GridBackground";
 import { Toaster } from 'sonner';
+import { safeJsonLd } from "@/lib/security/sanitizeUrl";
 
 const anton = Anton({
   weight: "400",
@@ -122,7 +123,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLd({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "Connect Club",

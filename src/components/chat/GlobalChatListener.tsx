@@ -18,8 +18,10 @@ export function GlobalChatListener() {
   const lastGlobalMsgIdRef = useRef<string | null>(null);
   
   useEffect(() => {
-    // We only want notifications if they are logged in and have an email
-    if (!user || !role || !user.email) return;
+    // Only staff (admins and club members) participate in club/DM chat.
+    if (!user || !user.email || (role !== "admin" && role !== "member")) return;
+
+    let initTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Listen to Global Chat
     const unsubscribeGlobal = subscribeToMessages((messages) => {
@@ -32,7 +34,9 @@ export function GlobalChatListener() {
         lastGlobalMsgIdRef.current = latestMsg.id || null;
         
         // Give it a tiny delay to mark initial load as false, so both listeners can initialize
-        setTimeout(() => { initialLoadRef.current = false; }, 1000);
+        if (!initTimer) {
+          initTimer = setTimeout(() => { initialLoadRef.current = false; }, 1000);
+        }
         return;
       }
 
@@ -146,19 +150,20 @@ export function GlobalChatListener() {
             () => { window.location.href = "/member/chat"; }
           );
           
-          if (Notification.permission === "granted" && document.hidden) {
+          if (typeof Notification !== "undefined" && Notification.permission === "granted" && document.hidden) {
             new Notification(`DM from Admin`, { body: latestMsg.text });
           }
         }
       });
     }
 
-    // Ask for browser notification permission
-    if (Notification.permission === "default") {
-      Notification.requestPermission();
+    // Ask for browser notification permission where supported
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
     }
 
     return () => {
+      if (initTimer) clearTimeout(initTimer);
       unsubscribeGlobal();
       unsubscribeDM();
     };

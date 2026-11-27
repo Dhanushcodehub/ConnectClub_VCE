@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock, ShieldCheck, ArrowRight, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { authenticator } from "otplib";
 import { getFirebaseErrorMessage } from "@/lib/utils";
 
 export default function AdminLoginPage() {
@@ -22,7 +21,6 @@ export default function AdminLoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [totpCode, setTotpCode] = useState("");
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
-  const [totpSecret, setTotpSecret] = useState("");
   const [tempUser, setTempUser] = useState<User | null>(null);
 
   const router = useRouter();
@@ -48,11 +46,20 @@ export default function AdminLoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      const idToken = await user.getIdToken(true);
 
-      const adminDoc = await getDoc(doc(db, "admins", user.uid));
-      if (adminDoc.exists() && adminDoc.data().twoFactorEnabled) {
-        const storedSecret = adminDoc.data().twoFactorSecret;
-        setTotpSecret(storedSecret);
+      const statusRes = await fetch("/api/admin/2fa", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!statusRes.ok) {
+        await signOut(auth).catch(() => {});
+        const data = await statusRes.json().catch(() => ({}));
+        throw new Error(data.error || "This account does not have administrator access.");
+      }
+
+      const statusData = await statusRes.json();
+      if (statusData.twoFactorEnabled && !statusData.verified) {
         setTempUser(user);
         setRequires2FA(true);
       } else {
@@ -87,19 +94,35 @@ export default function AdminLoginPage() {
 
   const handle2FAVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tempUser) return;
     setError("");
     setLoading(true);
 
-    const isValid = authenticator.verify({ token: totpCode, secret: totpSecret });
+    try {
+      const idToken = await tempUser.getIdToken();
+      const res = await fetch("/api/admin/2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ action: "verify", token: totpCode }),
+      });
 
-    if (isValid && tempUser) {
-      sessionStorage.setItem("2fa_verified", "true");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Invalid code. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       await logLoginHistory(tempUser);
       router.push("/admin");
-    } else {
-      setError("Invalid code. Please try again.");
+    } catch {
+      setError("Verification failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCancel2FA = async () => {
@@ -107,7 +130,6 @@ export default function AdminLoginPage() {
     setRequires2FA(false);
     setTotpCode("");
     setOtpValues(["", "", "", "", "", ""]);
-    setTotpSecret("");
     setTempUser(null);
   };
 

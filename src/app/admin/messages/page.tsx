@@ -5,13 +5,14 @@ import {
   collection, 
   query, 
   orderBy, 
+  limit,
   onSnapshot, 
   doc, 
   updateDoc, 
-  deleteDoc,
-  writeBatch
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { commitInChunks } from "@/lib/firebase/batch";
 import { 
   Trash2, 
   MailOpen, 
@@ -134,7 +135,8 @@ export default function AdminMessagesPage() {
 
     const q = query(
       collection(db, "contact_messages"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(200)
     );
 
     const unsubscribe = onSnapshot(
@@ -233,11 +235,14 @@ export default function AdminMessagesPage() {
 
     setIsMarkingAll(true);
     try {
-      const batch = writeBatch(db);
-      unread.forEach((m) => {
-        batch.update(doc(db, "contact_messages", m.id), { status: "read" });
-      });
-      await batch.commit();
+      await commitInChunks(
+        db,
+        unread.map((m) => ({
+          type: "update" as const,
+          ref: doc(db, "contact_messages", m.id),
+          data: { status: "read" },
+        }))
+      );
       toast.success(`Marked all ${unread.length} inquiries as read`);
     } catch (error) {
       console.error("Error marking all as read:", error);

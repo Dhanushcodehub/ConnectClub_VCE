@@ -4,51 +4,64 @@ import { getAuth } from "firebase-admin/auth";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { requireUserRequest, authErrorResponse } from "@/lib/firebase/requestAuth";
 import { logAuditEvent } from "@/lib/firebase/auditLog";
+import { checkRateLimit, getClientIp, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_CASCADE = 500;
+const BATCH_SIZE = 200;
 
 async function deleteOwnedByUid(db: ReturnType<typeof getFirestore>, uid: string) {
-  const deleted: Record<string, number> = {};
+  const deleted: Record<string, number> = { user_projects: 0, notifications: 0 };
 
-  for (const collectionName of ["user_projects", "notifications"]) {
-    const snap = await db
-      .collection(collectionName)
-      .where("userId", "==", uid)
-      .limit(MAX_CASCADE)
-      .get();
+  for (const collectionName of ["user_projects", "notifications"] as const) {
+    while (true) {
+      const snap = await db
+        .collection(collectionName)
+        .where("userId", "==", uid)
+        .limit(BATCH_SIZE)
+        .get();
+      if (snap.empty) break;
 
-    if (!snap.empty) {
+      if (collectionName === "user_projects") {
+        for (const projDoc of snap.docs) {
+          const commentsSnap = await projDoc.ref.collection("comments").limit(500).get();
+          if (!commentsSnap.empty) {
+            const commentBatch = db.batch();
+            commentsSnap.docs.forEach((c) => commentBatch.delete(c.ref));
+            await commentBatch.commit();
+          }
+        }
+      }
+
       const batch = db.batch();
-      snap.docs.forEach((doc) => batch.delete(doc.ref));
+      snap.docs.forEach((d) => batch.delete(d.ref));
       await batch.commit();
+      deleted[collectionName] += snap.size;
+
+      if (snap.size < BATCH_SIZE) break;
     }
-    deleted[collectionName] = snap.size;
   }
 
   return deleted;
 }
 
-/**
- * POST /api/account/delete
- *
- * Self-service hard delete for a regular user account.
- *
- * Removes the Firestore profile, the user's notifications and their projects,
- * then deletes the Firebase Auth record. Certificate and ticket records are
- * deliberately kept — they are club-issued proof of attendance, not personal
- * profile data.
- *
- * Body: { confirm: "<the account email>" }
- */
 export async function POST(request: Request) {
   let token;
   try {
     token = await requireUserRequest(request);
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit({
+    namespace: "account:delete",
+    identifier: `${token.uid}:${getClientIp(request)}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return rateLimitExceededResponse(rl);
   }
 
   try {
@@ -62,27 +75,34 @@ export async function POST(request: Request) {
       );
     }
 
+    // Enforce recent sign-in (<= 30 minutes) before destructive account deletion.
+    const authTime = typeof token.auth_time === "number" ? token.auth_time * 1000 : 0;
+    if (!authTime || Date.now() - authTime > 30 * 60 * 1000) {
+      return NextResponse.json(
+        { error: "Please sign out and sign back in recently before deleting your account." },
+        { status: 403 }
+      );
+    }
+
     const app = getAdminApp();
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    const profileSnap = await db.collection("users").doc(token.uid).get();
-    if (!profileSnap.exists) {
-      // Already removed — still drop the auth record below.
-      console.warn(`account/delete: no profile for ${token.uid}`);
-    }
-
-    const profileData = profileSnap.exists ? profileSnap.data()! : {};
-    const role = String(profileData.role || token.role || "user");
-
-    // Staff accounts must be removed through the admin panel so the club does
-    // not silently lose its own operators.
-    if (role === "admin" || role === "member") {
+    // Determine staff status strictly from trusted token/collections (never users/{uid}.role).
+    const isStaff =
+      token.role === "admin" ||
+      token.role === "superadmin" ||
+      token.role === "member" ||
+      (token.email === "admin@connectclubvce.in" && token.email_verified === true);
+    if (isStaff) {
       return NextResponse.json(
         { error: "Staff accounts cannot self-delete. Ask an administrator." },
         { status: 403 }
       );
     }
+
+    const profileSnap = await db.collection("users").doc(token.uid).get();
+    const profileData = profileSnap.exists ? profileSnap.data()! : {};
 
     const deleted = await deleteOwnedByUid(db, token.uid);
     await db.collection("users").doc(token.uid).delete();
@@ -108,7 +128,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, deleted });
-  } catch (error: unknown) {
+  } catch (error) {
     const authError = authErrorResponse(error);
     if (authError) return authError;
     console.error("Account deletion failed:", error);

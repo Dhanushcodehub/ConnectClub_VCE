@@ -95,6 +95,10 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
   const [reactionMessageId, setReactionMessageId] = useState<string | null>(null);
   
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const showScrollBottomRef = useRef(false);
+  useEffect(() => {
+    showScrollBottomRef.current = showScrollBottom;
+  }, [showScrollBottom]);
   const [unreadCount, setUnreadCount] = useState(0);
   // Older history loaded beyond the realtime window (newest 100 messages).
   const [olderMessages, setOlderMessages] = useState<ChatMessage[]>([]);
@@ -103,6 +107,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
   
   const [typingUsers, setTypingUsers] = useState<{email: string; name: string}[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentAtRef = useRef<number>(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -131,9 +136,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
           setLoadError(null);
           markMessagesAsRead(dmRoomId, user.email || "");
 
-          // Track unread if not at bottom
-          if (showScrollBottom) {
-             // Basic unread approximation
+          if (showScrollBottomRef.current) {
              setUnreadCount(prev => prev + 1);
           } else {
              scrollToBottom();
@@ -147,7 +150,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
           setMessages(msgs);
           setIsLoading(false);
           setLoadError(null);
-          if (showScrollBottom) {
+          if (showScrollBottomRef.current) {
              setUnreadCount(prev => prev + 1);
           } else {
              scrollToBottom();
@@ -162,6 +165,7 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
     });
 
     return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       unsubscribeMessages();
       unsubscribeTyping();
     };
@@ -233,13 +237,18 @@ export default function GlobalChat({ memberProfile, dmRoomId, dmRoomName, onBack
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + "px";
     }
 
-    // Typing indicator logic
+    // Typing indicator logic (throttled to at most once every 1.5s)
     if (user && user.email) {
       const room = dmRoomId || "global";
-      setTypingStatus(room, user.email, memberProfile?.name || user.displayName || "User", true);
-      
+      const now = Date.now();
+      if (now - lastTypingSentAtRef.current > 1500) {
+        lastTypingSentAtRef.current = now;
+        setTypingStatus(room, user.email, memberProfile?.name || user.displayName || "User", true);
+      }
+
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
+        lastTypingSentAtRef.current = 0;
         setTypingStatus(room, user.email!, memberProfile?.name || user.displayName || "User", false);
       }, 2000);
     }

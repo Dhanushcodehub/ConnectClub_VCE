@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdminRequest, authErrorResponse } from "@/lib/firebase/requestAuth";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
+import { logAuditEvent } from "@/lib/firebase/auditLog";
 import { FieldValue } from "firebase-admin/firestore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const PRIMARY_ADMIN_EMAIL = "admin@connectclubvce.in";
+const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
 interface AdminListItem {
   uid: string | null;
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snaps = await getAdminDb().collection("admins").get();
+    const snaps = await getAdminDb().collection("admins").limit(100).get();
     const admins: AdminListItem[] = snaps.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -72,12 +74,15 @@ export async function POST(request: Request) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => ({} as Record<string, unknown>));
   const action = typeof body.action === "string" ? body.action : "";
   const targetEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
   if (!action || !targetEmail) {
     return NextResponse.json({ error: "action and email are required." }, { status: 400 });
+  }
+  if (!EMAIL_PATTERN.test(targetEmail) || targetEmail.length > 254) {
+    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
   if (action !== "grant" && action !== "revoke") {
     return NextResponse.json({ error: "action must be 'grant' or 'revoke'." }, { status: 400 });
@@ -114,7 +119,7 @@ export async function POST(request: Request) {
       const userDocRef = db.collection("users").doc(user.uid);
       const userDoc = await userDocRef.get();
       if (userDoc.exists) {
-        await userDocRef.update({ role: "admin" }).catch(() => {});
+        await userDocRef.update({ role: "admin" });
       }
 
       await db.collection("admins").doc(user.uid).set(
@@ -128,6 +133,15 @@ export async function POST(request: Request) {
         { merge: true }
       );
 
+      await logAuditEvent(db, {
+        actorUid: caller.uid,
+        actorEmail: caller.email ?? null,
+        action: "admin_access_granted",
+        targetType: "admin",
+        targetId: user.uid,
+        meta: { targetEmail },
+      });
+
       return NextResponse.json({ success: true, uid: user.uid });
     }
 
@@ -139,14 +153,28 @@ export async function POST(request: Request) {
     }
 
     await auth.setCustomUserClaims(user.uid, { ...(user.customClaims || {}), role: "user" });
+    // Revoke existing refresh tokens so revoked admins are locked out of `verifyIdToken(..., true)`.
+    await auth.revokeRefreshTokens(user.uid);
 
     const userDocRef = db.collection("users").doc(user.uid);
     const userDoc = await userDocRef.get();
     if (userDoc.exists) {
-      await userDocRef.update({ role: "user" }).catch(() => {});
+      await userDocRef.update({ role: "user" });
     }
 
-    await db.collection("admins").doc(user.uid).delete();
+    await Promise.all([
+      db.collection("admins").doc(user.uid).delete(),
+      db.collection("admin_secrets").doc(user.uid).delete().catch(() => {}),
+    ]);
+
+    await logAuditEvent(db, {
+      actorUid: caller.uid,
+      actorEmail: caller.email ?? null,
+      action: "admin_access_revoked",
+      targetType: "admin",
+      targetId: user.uid,
+      meta: { targetEmail },
+    });
 
     return NextResponse.json({ success: true, uid: user.uid });
   } catch (error: unknown) {

@@ -2,18 +2,14 @@ import { NextResponse } from "next/server";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { generateTicketId } from "@/lib/tickets";
 import * as admin from "firebase-admin";
-import { getAdminApp } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { requireUserRequest, authErrorResponse } from "@/lib/firebase/requestAuth";
 import { normalizeRollNo } from "@/lib/registrations/validation";
+import { checkRateLimit, getClientIp, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
-/**
- * POST /api/users/retroactive-sync
- *
- * Hardened: requires a valid ID token and always syncs tickets into the
- * caller's own account. A body `userId` is only honoured for admins, so an
- * anonymous caller can no longer inject registrations (and notifications)
- * into someone else's event list.
- */
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   let token;
   try {
@@ -22,30 +18,47 @@ export async function POST(request: Request) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rl = await checkRateLimit({
+    namespace: "users:retroactive-sync",
+    identifier: `${token.uid}:${getClientIp(request)}`,
+    limit: 15,
+    windowMs: 5 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return rateLimitExceededResponse(rl);
+  }
+
   try {
-    const body = await request.json();
-    const { userId, rollNo } = body;
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
+    const { userId, rollNo } = body as { userId?: unknown; rollNo?: unknown };
 
     if (!rollNo || typeof rollNo !== "string") {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const isAdmin = token.role === "admin" || token.email === "admin@connectclubvce.in";
+    const isAdmin =
+      token.role === "admin" ||
+      token.role === "superadmin" ||
+      (token.email === "admin@connectclubvce.in" && token.email_verified === true);
     const requestedUserId = typeof userId === "string" && userId ? userId : token.uid;
     if (requestedUserId !== token.uid && !isAdmin) {
       return NextResponse.json({ error: "Forbidden: cannot sync another account" }, { status: 403 });
     }
 
     const targetUserId = requestedUserId;
-    const cleanRollNo = rollNo.toUpperCase().trim().slice(0, 20);
+    const cleanRollNo = normalizeRollNo(rollNo).slice(0, 30);
+    if (!/^[A-Z0-9][A-Z0-9-]{3,29}$/.test(cleanRollNo)) {
+      return NextResponse.json({ error: "Invalid roll number format" }, { status: 400 });
+    }
 
-    // 1. Initialize the secondary InspireX Admin SDK
     const projectId = process.env.INSPIREX_FIREBASE_PROJECT_ID;
     const clientEmail = process.env.INSPIREX_FIREBASE_CLIENT_EMAIL;
     const privateKey = process.env.INSPIREX_FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
     if (!projectId || !clientEmail || !privateKey) {
-      console.warn("InspireX database credentials missing. Skipping retroactive sync.");
       return NextResponse.json({ success: true, message: "Skipped (no creds)" });
     }
 
@@ -68,9 +81,8 @@ export async function POST(request: Request) {
     }
 
     const inspirexDb = getFirestore(inspirexApp);
-
-    // 2. Query InspireX database to see if they registered
-    const registrationsSnapshot = await inspirexDb.collection("registrations")
+    const registrationsSnapshot = await inspirexDb
+      .collection("registrations")
       .where("rollNo", "==", cleanRollNo)
       .limit(1)
       .get();
@@ -79,17 +91,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "No InspireX registration found." });
     }
 
-    // 3. They did register! Check if we already synced it in Connect Club
-    const primaryApp = getAdminApp();
-    const ccDb = getFirestore(primaryApp);
-
-    // The roll number must belong to the account being synced — otherwise a
-    // signed-in user could attach someone else's InspireX registration to
-    // their ticket list.
+    const ccDb = getAdminDb();
     const profileSnap = await ccDb.collection("users").doc(targetUserId).get();
-    const profileRollNo = profileSnap.exists
-      ? normalizeRollNo(profileSnap.data()?.rollNo)
-      : "";
+    const profileRollNo = profileSnap.exists ? normalizeRollNo(profileSnap.data()?.rollNo) : "";
 
     if (!profileRollNo) {
       return NextResponse.json({
@@ -97,59 +101,73 @@ export async function POST(request: Request) {
         message: "Skipped: complete your profile (roll number) first.",
       });
     }
-    if (profileRollNo !== cleanRollNo.replace(/[\s]/g, "").toUpperCase()) {
+    if (profileRollNo.replace(/[^A-Z0-9]/g, "") !== cleanRollNo.replace(/[^A-Z0-9]/g, "")) {
       return NextResponse.json({
         success: true,
         message: "Skipped: roll number does not match your profile.",
       });
     }
 
-    const eventId = "inspirex-s2";
-    const eventTitle = "InspireX Season 2";
-
-    const existingRegistration = await ccDb.collection("event_registrations")
-      .where("userId", "==", targetUserId)
-      .where("eventId", "==", eventId)
-      .limit(1)
+    // Refuse if another user already owns this normalized roll number.
+    const dupUsers = await ccDb
+      .collection("users")
+      .where("normalizedRollNo", "==", profileRollNo)
+      .limit(2)
       .get();
-
-    if (!existingRegistration.empty) {
-      return NextResponse.json({ success: true, message: "Already synced." });
+    if (dupUsers.docs.some((d) => d.id !== targetUserId)) {
+      return NextResponse.json({
+        success: true,
+        message: "Skipped: conflicting roll number ownership.",
+      });
     }
 
-    // 4. Create Event Registration Document (deterministic id so concurrent
-    //    calls cannot create duplicate tickets for the same user/event).
-    const batch = ccDb.batch();
-
+    const eventId = "inspirex-s2";
+    const eventTitle = "InspireX Season 2";
     const registrationRef = ccDb.collection("event_registrations").doc(`${eventId}_${targetUserId}`);
-    const generatedTicketId = generateTicketId();
 
-    batch.set(registrationRef, {
-      userId: targetUserId,
-      eventId,
-      eventTitle,
-      ticketId: generatedTicketId,
-      registeredAt: FieldValue.serverTimestamp(),
-      attended: false,
-      certificateIssued: false
+    const outcome = await ccDb.runTransaction(async (tx) => {
+      const existingById = await tx.get(registrationRef);
+      if (existingById.exists) return "already";
+
+      const legacyQuery = await tx.get(
+        ccDb
+          .collection("event_registrations")
+          .where("userId", "==", targetUserId)
+          .where("eventId", "==", eventId)
+          .limit(1)
+      );
+      if (!legacyQuery.empty) return "already";
+
+      const generatedTicketId = generateTicketId();
+      tx.set(registrationRef, {
+        userId: targetUserId,
+        eventId,
+        eventTitle,
+        ticketId: generatedTicketId,
+        registeredAt: FieldValue.serverTimestamp(),
+        attended: false,
+        certificateIssued: false,
+      });
+
+      const notificationRef = ccDb.collection("notifications").doc();
+      tx.set(notificationRef, {
+        userId: targetUserId,
+        type: "event",
+        title: "Registration Confirmed!",
+        message: `You have successfully registered for ${eventTitle}! It has been added to your My Events tab.`,
+        read: false,
+        actionUrl: `/u/dashboard`,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      return "created";
     });
 
-    // 5. Create Notification
-    const notificationRef = ccDb.collection("notifications").doc();
-    batch.set(notificationRef, {
-      userId: targetUserId,
-      type: "event",
-      title: "Registration Confirmed!",
-      message: `You have successfully registered for ${eventTitle}! It has been added to your My Events tab.`,
-      read: false,
-      actionUrl: `/u/dashboard`,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-
+    if (outcome === "already") {
+      return NextResponse.json({ success: true, message: "Already synced." });
+    }
     return NextResponse.json({ success: true, message: "Retroactive sync complete." });
-  } catch (error: any) {
+  } catch (error) {
     const authError = authErrorResponse(error);
     if (authError) return authError;
     console.error("Retroactive sync error:", error);

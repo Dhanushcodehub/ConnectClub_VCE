@@ -201,10 +201,16 @@ export async function submitFeedbackResponse(
     submittedAt: serverTimestamp(),
   });
 
-  // Increment response count on the form
-  await updateDoc(doc(db, "feedback_forms", formId), {
-    responsesCount: increment(1),
-  });
+  // Increment response count on the form (best-effort; unauthenticated
+  // respondents are intentionally blocked from writing to `feedback_forms`
+  // directly by Firestore rules).
+  try {
+    await updateDoc(doc(db, "feedback_forms", formId), {
+      responsesCount: increment(1),
+    });
+  } catch {
+    // Response is already saved cleanly in feedback_responses.
+  }
 
   return ref.id;
 }

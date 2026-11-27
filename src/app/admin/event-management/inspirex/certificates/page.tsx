@@ -499,7 +499,8 @@ export default function CertificateStudio() {
 
     setIssuing(true);
     try {
-      const result = await issueInspirexCertificates();
+      const token = await user?.getIdToken();
+      const result = await issueInspirexCertificates(token);
       if (result.success) {
         toast.success(result.message);
       } else {

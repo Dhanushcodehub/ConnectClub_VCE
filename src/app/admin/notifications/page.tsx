@@ -33,6 +33,7 @@ import { db } from "@/lib/firebase/config";
 import ImageUploader from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 
 interface SentBroadcast {
   id: string;
@@ -690,18 +691,20 @@ export default function AdminNotificationsPage() {
               )}
 
               <div className="pl-12 pt-1 flex items-center justify-between gap-2">
-                {actionUrl ? (
-                  <a
-                    href={actionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline hover:text-purple-300 transition-colors"
-                  >
-                    <span>View Details</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ) : (
+                {(() => {
+                  const safeActionUrl = getSafeHref(actionUrl, { allowRelative: true });
+                  return safeActionUrl ? (
+                    <a
+                      href={safeActionUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline hover:text-purple-300 transition-colors"
+                    >
+                      <span>View Details</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -713,7 +716,8 @@ export default function AdminNotificationsPage() {
                     <span>View Details</span>
                     <Eye className="w-3 h-3" />
                   </button>
-                )}
+                  );
+                })()}
 
                 <button
                   type="button"

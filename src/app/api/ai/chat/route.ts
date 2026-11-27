@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { AI_CONFIG, isMockMode } from "@/lib/ai/config";
+import { AI_CONFIG } from "@/lib/ai/config";
 import { buildSystemPrompt } from "@/lib/ai/guardrails";
 import { buildContext } from "@/lib/ai/contextBuilder";
 import { getCachedResponse, setCachedResponse } from "@/lib/ai/cache";
 import { generateResponse, type ChatTurn } from "@/lib/ai/llmProvider";
+import { requireAdminRequest } from "@/lib/firebase/requestAuth";
+import { checkRateLimit, getClientIp, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,11 +36,16 @@ function sanitizeHistory(value: unknown): ChatTurn[] {
     if (!item || typeof item !== "object") continue;
     const msg = item as IncomingMessage;
     if (typeof msg.content !== "string") continue;
-    const content = msg.content.trim();
+    const content = msg.content.trim().slice(0, AI_CONFIG.limits.maxMessageLength);
     if (!content) continue;
 
-    const role = msg.role === "user" ? "user" : msg.role === "model" || msg.role === "assistant" ? "ai" : msg.role;
-    if (role !== "user" && role !== "ai") continue;
+    const role =
+      msg.role === "user"
+        ? "user"
+        : msg.role === "model" || msg.role === "assistant" || msg.role === "ai"
+          ? "ai"
+          : null;
+    if (!role) continue;
 
     turns.push({ role, content });
   }
@@ -46,9 +53,23 @@ function sanitizeHistory(value: unknown): ChatTurn[] {
 }
 
 export async function POST(req: Request) {
+  const rl = await checkRateLimit({
+    namespace: "public:ai-chat",
+    identifier: getClientIp(req),
+    limit: 25,
+    windowMs: 5 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return rateLimitExceededResponse(rl);
+  }
+
   let body: RequestBody;
   try {
-    body = await req.json();
+    const parsed = await req.json();
+    if (!parsed || typeof parsed !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
+    body = parsed as RequestBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -61,10 +82,9 @@ export async function POST(req: Request) {
     history = sanitizeHistory(body.history);
   } else if (Array.isArray(body.messages)) {
     const raw = body.messages as unknown[];
-    const turns = sanitizeHistory(raw);
     const last = raw[raw.length - 1] as IncomingMessage | undefined;
     message = validateMessage(last?.content);
-    history = turns.slice(0, -1);
+    history = sanitizeHistory(raw.slice(0, -1));
   }
 
   if (!message) {
@@ -75,10 +95,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const forceFailover =
-      req.headers.get("x-ai-force-failover") === "true" || process.env.AI_FORCE_FAILOVER === "true";
+    let allowForceFailover = process.env.AI_FORCE_FAILOVER === "true";
+    if (!allowForceFailover && req.headers.get("x-ai-force-failover") === "true") {
+      try {
+        await requireAdminRequest(req);
+        allowForceFailover = true;
+      } catch {
+        allowForceFailover = false;
+      }
+    }
 
-    const cached = forceFailover ? null : getCachedResponse(message);
+    const hasHistory = history.length > 0;
+    const cached = allowForceFailover || hasHistory ? null : getCachedResponse(message);
     if (cached) {
       return NextResponse.json({
         content: cached.content,
@@ -93,9 +121,15 @@ export async function POST(req: Request) {
     const context = await buildContext();
     const systemPrompt = buildSystemPrompt(context.contextText);
 
-    const result = await generateResponse({ message, history, systemPrompt, context, forceFailover });
+    const result = await generateResponse({
+      message,
+      history,
+      systemPrompt,
+      context,
+      forceFailover: allowForceFailover,
+    });
 
-    if (!forceFailover) {
+    if (!allowForceFailover && !hasHistory) {
       setCachedResponse(message, result.content, result.provider);
     }
 
@@ -111,14 +145,9 @@ export async function POST(req: Request) {
     const messageText = error instanceof Error ? error.message : String(error);
     console.error("[api/ai/chat] Error:", messageText);
 
-    const status = isMockMode ? 500 : 503;
     return NextResponse.json(
-      {
-        error: "Failed to generate a response.",
-        details: messageText,
-        hint: "Check that GROQ_API_KEY / GEMINI_API_KEY are configured in .env.local.",
-      },
-      { status }
+      { error: "Assistant is temporarily unavailable. Please try again shortly." },
+      { status: 503 }
     );
   }
 }

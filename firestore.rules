@@ -2,10 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'admin@connectclubvce.in' || 
+      return isSignedIn() && (
+        (request.auth.token.email == 'admin@connectclubvce.in' && request.auth.token.email_verified == true) ||
         request.auth.token.role == 'admin' ||
         request.auth.token.role == 'superadmin' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
@@ -13,57 +17,109 @@ service cloud.firestore {
     }
 
     function isMember() {
-      return request.auth != null && request.auth.token.role == 'member';
+      return isSignedIn() && request.auth.token.role == 'member';
     }
 
-    // Staff = club members + admins. Members curate content from the
-    // /member portal, so they need write access to the collections they
-    // edit there (events, projects, timeline, gallery).
+    // Staff = club members + admins.
     function isStaff() {
       return isAdmin() || isMember();
     }
 
-    // Anyone can read events and projects
+    function isSafeUrlOrEmpty(val) {
+      return !(val is string) ||
+        val == '' ||
+        val.matches('^https://.*') ||
+        val.matches('^http://.*') ||
+        val.matches('^/[^/].*');
+    }
+
+    function isValidLikeCounterDelta() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']) &&
+        (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes']) ||
+          (
+            request.resource.data.likes is int &&
+            resource.data.get('likes', 0) is int &&
+            request.resource.data.likes >= 0 &&
+            (
+              request.resource.data.likes == resource.data.get('likes', 0) + 1 ||
+              request.resource.data.likes == resource.data.get('likes', 0) - 1
+            )
+          )
+        ) &&
+        (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['commentsCount']) ||
+          (
+            request.resource.data.commentsCount is int &&
+            resource.data.get('commentsCount', 0) is int &&
+            request.resource.data.commentsCount == resource.data.get('commentsCount', 0) + 1
+          )
+        );
+    }
+
+    // Public catalog collections (staff write)
     match /events/{document=**} {
       allow read: if true;
       allow write: if isStaff();
     }
+
     match /projects/{projectId} {
       allow read: if true;
       allow write: if isStaff();
-      // Likes / comment counters are social interactions: any signed-in user
-      // may bump them, but nothing else on the project doc is writable.
-      allow update: if request.auth != null &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']);
+      allow update: if isSignedIn() && isValidLikeCounterDelta();
 
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if request.auth != null &&
-          request.resource.data.get('authorId', null) == request.auth.uid;
+        allow create: if isSignedIn() &&
+          request.resource.data.get('authorId', null) == request.auth.uid &&
+          request.resource.data.get('content', '') is string &&
+          request.resource.data.content.size() > 0 &&
+          request.resource.data.content.size() <= 2000;
         allow update, delete: if isAdmin() ||
-          (request.auth != null && resource.data.get('authorId', null) == request.auth.uid);
+          (isSignedIn() && resource.data.get('authorId', null) == request.auth.uid);
       }
     }
+
     match /user_projects/{projectId} {
-      allow read: if true;
-      // Owners submit and edit their own project; admins moderate.
-      allow create: if request.auth != null &&
-        request.resource.data.get('userId', null) == request.auth.uid;
+      allow read: if resource.data.get('status', 'approved') == 'approved' ||
+        isAdmin() ||
+        (isSignedIn() && resource.data.get('userId', null) == request.auth.uid);
+
+      // Owners submit their own project strictly as pending with zeroed counters.
+      allow create: if isSignedIn() &&
+        request.resource.data.get('userId', null) == request.auth.uid &&
+        request.resource.data.get('status', 'pending') == 'pending' &&
+        request.resource.data.get('likes', 0) == 0 &&
+        request.resource.data.get('commentsCount', 0) == 0 &&
+        isSafeUrlOrEmpty(request.resource.data.get('githubUrl', '')) &&
+        isSafeUrlOrEmpty(request.resource.data.get('demoUrl', ''));
+
+      // Owners may edit content fields only (never status, userId, likes, commentsCount).
       allow update: if isAdmin() ||
-        (request.auth != null && resource.data.get('userId', null) == request.auth.uid) ||
-        (request.auth != null &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']));
+        (
+          isSignedIn() &&
+          resource.data.get('userId', null) == request.auth.uid &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'status', 'likes', 'commentsCount', 'createdAt']) &&
+          isSafeUrlOrEmpty(request.resource.data.get('githubUrl', '')) &&
+          isSafeUrlOrEmpty(request.resource.data.get('demoUrl', ''))
+        ) ||
+        (isSignedIn() && isValidLikeCounterDelta());
+
       allow delete: if isAdmin() ||
-        (request.auth != null && resource.data.get('userId', null) == request.auth.uid);
+        (isSignedIn() && resource.data.get('userId', null) == request.auth.uid);
 
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if request.auth != null &&
-          request.resource.data.get('authorId', null) == request.auth.uid;
+        allow create: if isSignedIn() &&
+          request.resource.data.get('authorId', null) == request.auth.uid &&
+          request.resource.data.get('content', '') is string &&
+          request.resource.data.content.size() > 0 &&
+          request.resource.data.content.size() <= 2000;
         allow update, delete: if isAdmin() ||
-          (request.auth != null && resource.data.get('authorId', null) == request.auth.uid);
+          (isSignedIn() && resource.data.get('authorId', null) == request.auth.uid);
       }
     }
+
     match /timeline/{document=**} {
       allow read: if true;
       allow write: if isStaff();
@@ -77,90 +133,144 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
-    // Certificate templates. The Certificate Studio is reachable by club
-    // members (they configure the template for their own events), so both
-    // read and write are staff-only rather than admin-only.
+    // Certificate templates (staff-only).
     match /event_templates/{eventId} {
       allow read, write: if isStaff();
     }
 
-    // Audit trail. Written exclusively by the Admin SDK, read by admins.
+    // Audit trail & internal secrets / rate limits: Admin SDK only.
     match /audit_logs/{logId} {
       allow read: if isAdmin();
       allow write: if false;
     }
-    
-    // Admins can read their own admin document; only Server Admin SDK can write admins
+    match /admin_secrets/{userId} {
+      allow read, write: if false;
+    }
+    match /_rate_limits/{bucketId} {
+      allow read, write: if false;
+    }
+
+    // Admin metadata readable by owner/admins; written only via Admin SDK.
     match /admins/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if false;
     }
 
-    // Allow logging login history
+    // Login history
     match /loginHistory/{document=**} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
-    // Allow users to read/write their own profile, admins can read all
+    // User profiles: owners cannot escalate privileges (`role`, `isAdmin`, `permissions`)
+    // or forge server-owned counters/identity fields.
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if isAdmin() || (
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        request.resource.data.get('uid', userId) == userId &&
+        !request.resource.data.keys().hasAny(['role', 'isAdmin', 'permissions']) &&
+        request.resource.data.get('projectsCount', 0) == 0 &&
+        request.resource.data.get('likesReceived', 0) == 0 &&
+        request.resource.data.get('commentsCount', 0) == 0 &&
+        request.resource.data.get('certificatesCount', 0) == 0 &&
+        isSafeUrlOrEmpty(request.resource.data.get('linkedinUrl', '')) &&
+        isSafeUrlOrEmpty(request.resource.data.get('githubUrl', ''))
+      );
+
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        request.auth.uid == userId &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'role', 'isAdmin', 'permissions', 'uid', 'email', 'provider',
+          'projectsCount', 'likesReceived', 'commentsCount', 'certificatesCount', 'createdAt'
+        ]) &&
+        isSafeUrlOrEmpty(request.resource.data.get('linkedinUrl', '')) &&
+        isSafeUrlOrEmpty(request.resource.data.get('githubUrl', ''))
+      );
+
+      allow delete: if isAdmin();
     }
 
+    // Registrations & certificates: client writes blocked (issued via Admin SDK only).
     match /event_registrations/{docId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /certificates/{docId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow write: if isAdmin();
     }
 
     match /notifications/{docId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if isAdmin();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+        request.resource.data.read is bool
+      );
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
     }
 
-    // Chats and messaging
-    match /messages/{document=**} {
-      allow read, write: if request.auth != null; // Everyone can use general club chat
+    // Staff-only club chat
+    match /messages/{docId} {
+      allow read: if isStaff();
+      allow create: if isStaff() &&
+        request.resource.data.get('senderEmail', '') == request.auth.token.email &&
+        request.resource.data.get('text', '') is string &&
+        request.resource.data.text.size() <= 4000;
+      allow update: if isAdmin() || (
+        isStaff() && (
+          resource.data.get('senderEmail', '') == request.auth.token.email ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+        )
+      );
+      allow delete: if isAdmin() ||
+        (isStaff() && resource.data.get('senderEmail', '') == request.auth.token.email);
     }
+
     match /direct_messages/{document=**} {
-      // DM rooms are keyed by the member's email in `roomId`, and messages
-      // carry `senderEmail`. Neither `senderId` nor `receiverId` is ever
-      // written by the app, so the rule must be expressed in terms of the
-      // fields that actually exist, otherwise members are denied on every
-      // read and write of their own conversation.
-      allow read: if request.auth != null && (
+      allow read: if isSignedIn() && (
         isAdmin() ||
         resource.data.roomId == request.auth.token.email ||
         resource.data.senderEmail == request.auth.token.email
       );
-      allow create: if request.auth != null && (
+      allow create: if isSignedIn() && (
         isAdmin() ||
-        request.resource.data.roomId == request.auth.token.email ||
-        request.resource.data.senderEmail == request.auth.token.email
+        (
+          request.resource.data.roomId == request.auth.token.email &&
+          request.resource.data.senderEmail == request.auth.token.email &&
+          request.resource.data.get('senderRole', 'member') != 'admin'
+        )
       );
-      allow update, delete: if request.auth != null && (
+      allow update: if isSignedIn() && (
         isAdmin() ||
-        resource.data.roomId == request.auth.token.email ||
-        resource.data.senderEmail == request.auth.token.email
+        resource.data.senderEmail == request.auth.token.email ||
+        (
+          resource.data.roomId == request.auth.token.email &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        )
       );
+      allow delete: if isAdmin() ||
+        (isSignedIn() && resource.data.senderEmail == request.auth.token.email);
     }
+
     match /typing_status/{document=**} {
-      allow read, write: if request.auth != null; 
+      allow read, write: if isStaff();
     }
     match /unreadCounts/{document=**} {
-      allow read, write: if request.auth != null; 
+      allow read, write: if isStaff();
     }
     match /typingStatus/{document=**} {
-      allow read, write: if request.auth != null; 
+      allow read, write: if isStaff();
     }
+
     match /forms/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
@@ -170,17 +280,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /registrations/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if isStaff();
       allow write: if isAdmin();
     }
 
-    // ── External Registration Inbox ───────────────────────────────────────
-    // Written to by external sites (InspireX etc.) using Connect Club's
-    // public client SDK. No auth needed to create — Firestore Rules validate
-    // the required fields. Immutable once written (no update/delete).
-    // Only admins can read and approve.
+    // External Registration Inbox (immutable after validated creation)
     match /external_registrations/{docId} {
-      // Anyone (external site) can create — but fields are validated
       allow create: if
         request.resource.data.keys().hasAll(['eventId', 'rollNo', 'name', 'email', 'registeredAt']) &&
         request.resource.data.eventId == 'inspirex-s2' &&
@@ -194,52 +299,49 @@ service cloud.firestore {
         request.resource.data.email.size() >= 3 &&
         request.resource.data.email.size() <= 254 &&
         request.resource.data.registeredAt is timestamp;
-
-      // Nobody can update or delete via client SDK — only Admin SDK can
       allow update, delete: if false;
-
-      // Only admins can read
       allow read: if isAdmin();
     }
-    
-    // ── Contact Messages Inbox ──────────────────────────────────────────
+
+    // Contact messages must go through rate-limited /api/contact (Admin SDK).
     match /contact_messages/{messageId} {
-      allow create: if true;
+      allow create: if false;
       allow read, update, delete: if isAdmin();
     }
-    
-    // ── Contact Inquiries (legacy collection) ───────────────────────────
-    // The admin dashboard shows an inquiries count and the three most recent
-    // entries, so admins need list/read access. Submissions come from the
-    // public contact form.
+
     match /contactInquiries/{entryId} {
-      allow create: if true;
+      allow create: if
+        request.resource.data.email is string &&
+        request.resource.data.email.size() >= 3 &&
+        request.resource.data.email.size() <= 254 &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() >= 2 &&
+        request.resource.data.message.size() <= 3000;
       allow read, update, delete: if isAdmin();
     }
-    
-    // ── Feedback forms ──────────────────────────────────────────────────
-    // Published forms are shareable links, so reading a form must be public.
+
+    // Feedback forms & responses
     match /feedback_forms/{formId} {
       allow read: if true;
       allow write: if isAdmin();
-      // Respondents bump `responsesCount` when they submit; that is the only
-      // field on a form a non-admin may touch.
-      allow update: if request.auth != null &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responsesCount']);
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responsesCount']) &&
+        request.resource.data.responsesCount is int &&
+        resource.data.get('responsesCount', 0) is int &&
+        request.resource.data.responsesCount == resource.data.get('responsesCount', 0) + 1;
     }
+
     match /feedback_responses/{responseId} {
-      // Answers are private: admins, or the person who submitted them.
       allow read: if isAdmin() ||
-        (request.auth != null && resource.data.get('userId', null) == request.auth.uid);
-      // Forms may be filled in without signing in (requireLogin = false).
+        (isSignedIn() && resource.data.get('userId', null) == request.auth.uid);
       allow create: if request.resource.data.get('userId', null) == null ||
-        (request.auth != null && request.resource.data.get('userId', null) == request.auth.uid);
+        (isSignedIn() && request.resource.data.get('userId', null) == request.auth.uid);
       allow update: if isAdmin() ||
-        (request.auth != null && resource.data.get('userId', null) == request.auth.uid);
+        (isSignedIn() && resource.data.get('userId', null) == request.auth.uid);
       allow delete: if isAdmin();
     }
 
-    // Everything else, admins can do anything
+    // Default deny for everything else unless admin
     match /{document=**} {
       allow read, write: if isAdmin();
     }

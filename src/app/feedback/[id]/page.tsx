@@ -78,7 +78,7 @@ export default function FeedbackFormPage() {
   const collectValidationErrors = (): Record<string, string> => {
     if (!form) return {};
     const errors: Record<string, string> = {};
-    if (!rollNo.trim()) {
+    if (form.collectRollNo !== false && !rollNo.trim()) {
       errors['rollNo'] = 'Roll Number is required';
     }
 
@@ -119,6 +119,11 @@ export default function FeedbackFormPage() {
 
     setSubmitting(true);
     try {
+      if (form.requireLogin && !user?.uid) {
+        alert('Please sign in to submit this feedback form.');
+        setSubmitting(false);
+        return;
+      }
       await submitFeedbackResponse(id, answers, {
         uid: user?.uid,
         name: profile?.name || user?.displayName || undefined,

@@ -8,14 +8,15 @@ import { ConnectEvent } from "@/lib/data/events";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { toast } from "sonner";
+import { escapeHtml, getSafeHref, getSafeMediaUrl } from "@/lib/security/sanitizeUrl";
 
 const formatText = (text?: string) => {
   if (!text) return null;
   const paragraphs = text.split(/\n\s*\n/);
-  
+
   return paragraphs.map((para, i) => {
-    // Basic Markdown parsing: replace **bold** with <strong>bold</strong>
-    let formatted = para.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    const escaped = escapeHtml(para);
+    const formatted = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
     return (
       <p key={i} className="mb-4 last:mb-0" dangerouslySetInnerHTML={{ __html: formatted }} />
     );
@@ -38,7 +39,7 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
-    
+
     if (user?.uid && event?.id) {
       import("@/lib/firebase/users").then(({ checkEventRegistration }) => {
         checkEventRegistration(user.uid, event.id).then((isReg) => {
@@ -58,8 +59,9 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
     // If an external registration link exists, redirect there.
     // Internal registration (Firestore ticket + notification) happens ONLY
     // after the external site confirms via the sync webhook — NOT here.
-    if (event.registrationLink && event.registrationLink !== "#") {
-      window.open(event.registrationLink, "_blank");
+    const safeRegUrl = getSafeHref(event.registrationLink, { allowRelative: true });
+    if (safeRegUrl && event.registrationLink !== "#") {
+      window.open(safeRegUrl, "_blank", "noopener,noreferrer");
     } else {
       // No external link yet — show info toast, do NOT auto-register
       toast.info("Registration link coming soon! Check back later.");
@@ -88,18 +90,18 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Top Navigation Bar */}
         <div className="flex items-center justify-between mb-8">
-          <button 
+          <button
             onClick={() => router.push("/events")}
             className="flex items-center text-sm font-medium text-white/70 hover:text-white transition-colors gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to events
           </button>
-          
-          <button 
+
+          <button
             onClick={handleShare}
             className="flex items-center text-sm font-medium text-white/70 hover:text-white transition-colors gap-2"
           >
@@ -110,19 +112,19 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
 
         {/* Hero Section Split Layout */}
         <div className="flex flex-col lg:flex-row items-stretch gap-6 mb-12">
-          
+
           {/* Left: Banner Image */}
           <div className="w-full lg:w-3/5 rounded-2xl overflow-hidden border border-white/5 bg-[#0A0A0C] relative aspect-[16/9] lg:aspect-auto">
-             {/* Blurred backdrop to fill empty space seamlessly */}
-             <div 
-               className="absolute inset-0 w-full h-full bg-cover bg-center blur-2xl opacity-40 scale-110 pointer-events-none"
-               style={{ backgroundImage: `url(${event.banner || "/images/placeholder.jpg"})` }}
-             />
-             <img 
-               src={event.banner || "/images/placeholder.jpg"} 
-               alt={event.title}
-               className="absolute inset-0 w-full h-full object-contain p-2 md:p-4 z-10 drop-shadow-2xl"
-             />
+            {/* Blurred backdrop to fill empty space seamlessly */}
+            <div
+              className="absolute inset-0 w-full h-full bg-cover bg-center blur-2xl opacity-40 scale-110 pointer-events-none"
+              style={{ backgroundImage: `url(${getSafeMediaUrl(event.banner)})` }}
+            />
+            <img
+              src={getSafeMediaUrl(event.banner)}
+              alt={event.title}
+              className="absolute inset-0 w-full h-full object-contain p-2 md:p-4 z-10 drop-shadow-2xl"
+            />
           </div>
 
           {/* Right: Event Info Box */}
@@ -137,31 +139,31 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto">
               {/* Date Box */}
               <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 flex flex-col gap-2">
-                 <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
-                   <Calendar className="w-4 h-4 text-primary" />
-                   Date
-                 </div>
-                 <span className="text-white font-medium text-sm">{event.date}</span>
+                <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  Date
+                </div>
+                <span className="text-white font-medium text-sm">{event.date}</span>
               </div>
 
               {/* Time Box */}
               {event.time && (
                 <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 flex flex-col gap-2">
-                   <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
-                     <Clock className="w-4 h-4 text-primary" />
-                     Time
-                   </div>
-                   <span className="text-white font-medium text-sm">{event.time}</span>
+                  <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Time
+                  </div>
+                  <span className="text-white font-medium text-sm">{event.time}</span>
                 </div>
               )}
 
               {/* Location Box */}
               <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 flex flex-col gap-2 sm:col-span-2">
-                 <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
-                   <MapPin className="w-4 h-4 text-primary" />
-                   Location
-                 </div>
-                 <span className="text-white font-medium text-sm">{event.venue}</span>
+                <div className="flex items-center gap-2 text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  Location
+                </div>
+                <span className="text-white font-medium text-sm">{event.venue}</span>
               </div>
             </div>
           </div>
@@ -170,7 +172,7 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
 
         {/* Content Section Split Layout */}
         <div className="flex flex-col lg:flex-row gap-12">
-          
+
           {/* Left: Detailed Information */}
           <div className="w-full lg:w-[65%] space-y-12 order-2 lg:order-1">
 
@@ -186,7 +188,7 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                 </div>
               </section>
             )}
-            
+
             {/* About this event */}
             <section className="bg-[#111114] border border-white/[0.05] rounded-2xl overflow-hidden shadow-lg">
               <div className="p-6 md:p-8 border-b border-white/[0.05]">
@@ -296,18 +298,18 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                     {event.galleryAlbums.map((media, idx) => {
                       const isVideo = isVideoMedia(media);
                       return (
-                        <div 
-                          key={idx} 
+                        <div
+                          key={idx}
                           className="relative aspect-video rounded-xl overflow-hidden bg-white/5 border border-white/10 group cursor-pointer"
                           onClick={() => setSelectedMedia(media)}
                         >
                           {isVideo ? (
                             <>
-                              <video 
-                                src={media} 
-                                autoPlay 
-                                muted 
-                                loop 
+                              <video
+                                src={media}
+                                autoPlay
+                                muted
+                                loop
                                 playsInline
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                               />
@@ -316,9 +318,9 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                               </div>
                             </>
                           ) : (
-                            <img 
-                              src={media} 
-                              alt={`Gallery media ${idx + 1}`} 
+                            <img
+                              src={media}
+                              alt={`Gallery media ${idx + 1}`}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                             />
                           )}
@@ -335,7 +337,7 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
           {/* Right: Sticky Sidebar (Venue & Entry) */}
           <div className="w-full lg:w-[35%] relative order-1 lg:order-2">
             <div className="sticky top-28 bg-[#111114] border border-white/[0.05] rounded-2xl overflow-hidden shadow-2xl">
-              
+
               <div className="p-6 md:p-8 space-y-6">
                 {/* Venue Details */}
                 <div>
@@ -363,7 +365,7 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
                       Registered
                     </div>
                   ) : event.status === "Upcoming" && event.registrationLink ? (
-                    <button 
+                    <button
                       onClick={handleRegister}
                       className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm flex justify-center items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                     >
@@ -404,11 +406,11 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
 
       {/* Media Lightbox rendered via Portal */}
       {selectedMedia && mounted && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 cursor-pointer"
           onClick={() => setSelectedMedia(null)}
         >
-          <button 
+          <button
             type="button"
             className="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-black/50 hover:bg-black/80 border border-white/10 text-white rounded-full transition-all z-[10000] shadow-2xl"
             onClick={(e) => {
@@ -419,22 +421,22 @@ export default function EventDetailClient({ event }: { event: ConnectEvent }) {
           >
             <X className="w-6 h-6" />
           </button>
-          
-          <div 
+
+          <div
             className="relative flex items-center justify-center max-w-6xl max-h-[90vh] w-auto h-auto cursor-auto"
             onClick={(e) => e.stopPropagation()} // Prevent clicking the actual media from closing
           >
             {isVideoMedia(selectedMedia) ? (
-              <video 
-                src={selectedMedia} 
+              <video
+                src={selectedMedia}
                 controls
                 autoPlay
                 className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
               />
             ) : (
-              <img 
-                src={selectedMedia} 
-                alt="Expanded media" 
+              <img
+                src={selectedMedia}
+                alt="Expanded media"
                 className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
               />
             )}

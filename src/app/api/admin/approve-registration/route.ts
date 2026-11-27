@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { getAdminApp } from "@/lib/firebase/admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import { requireAdminRequest } from "@/lib/firebase/requestAuth";
+import { requireAdminRequest, authErrorResponse } from "@/lib/firebase/requestAuth";
 import { logAuditEvent } from "@/lib/firebase/auditLog";
 import {
   normalizeEmail,
@@ -23,22 +23,43 @@ import {
 } from "@/lib/registrations/validation";
 
 export async function POST(request: Request) {
+  let adminToken;
   try {
-    const adminToken = await requireAdminRequest(request);
+    adminToken = await requireAdminRequest(request);
+  } catch (error) {
+    return authErrorResponse(error) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
     const app = getAdminApp();
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    const body = await request.json();
-    const { externalDocId } = body;
-    const action = body.action === "reject" ? "reject" : "approve";
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { externalDocId, action: rawAction } = body as {
+      externalDocId?: unknown;
+      action?: unknown;
+    };
 
-    if (!externalDocId) {
-      return NextResponse.json({ error: "Missing externalDocId" }, { status: 400 });
+    if (typeof externalDocId !== "string" || !externalDocId.trim() || externalDocId.includes("/")) {
+      return NextResponse.json({ error: "Valid externalDocId is required" }, { status: 400 });
+    }
+
+    const action =
+      rawAction === undefined || rawAction === "approve"
+        ? "approve"
+        : rawAction === "reject"
+          ? "reject"
+          : null;
+    if (!action) {
+      return NextResponse.json({ error: "Invalid action; must be 'approve' or 'reject'" }, { status: 400 });
     }
 
     // 1. Fetch the pending registration
-    const extRef = db.collection("external_registrations").doc(externalDocId);
+    const extRef = db.collection("external_registrations").doc(externalDocId.trim());
     const extSnap = await extRef.get();
 
     if (!extSnap.exists) {

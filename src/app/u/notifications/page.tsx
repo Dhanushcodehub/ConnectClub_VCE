@@ -7,6 +7,7 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
   onSnapshot, 
   doc, 
   updateDoc, 
@@ -14,6 +15,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { getSafeHref } from "@/lib/security/sanitizeUrl";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bell, 
@@ -70,7 +72,8 @@ export default function NotificationsPage() {
     const q = query(
       collection(db, "notifications"),
       where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(100)
     );
 
     const unsubscribe = onSnapshot(
@@ -504,19 +507,23 @@ export default function NotificationsPage() {
                         )}
 
                         {/* Action URL Button */}
-                        {notif.actionUrl && (
-                          <div className="mt-3.5 flex items-center gap-3">
-                            <a
-                              href={notif.actionUrl}
-                              target={notif.actionUrl.startsWith("http") ? "_blank" : "_self"}
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-bold transition-all shadow-md group-hover:scale-105"
-                            >
-                              <span>View Details</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          </div>
-                        )}
+                        {(() => {
+                          const safeUrl = getSafeHref(notif.actionUrl, { allowRelative: true });
+                          if (!safeUrl) return null;
+                          return (
+                            <div className="mt-3.5 flex items-center gap-3">
+                              <a
+                                href={safeUrl}
+                                target={safeUrl.startsWith("http") ? "_blank" : "_self"}
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-bold transition-all shadow-md group-hover:scale-105"
+                              >
+                                <span>View Details</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </motion.div>

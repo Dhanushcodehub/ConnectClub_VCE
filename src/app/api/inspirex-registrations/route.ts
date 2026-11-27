@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAdminApp } from "@/lib/firebase/admin";
-import { requireStaffRequest } from "@/lib/firebase/requestAuth";
+import { requireStaffRequest, authErrorResponse } from "@/lib/firebase/requestAuth";
 import {
   normalizeEmail,
   normalizePhone,
@@ -11,6 +11,9 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MAX_REGISTRATIONS = 2000;
+const MAX_USER_ROLLS = 5000;
+
 export async function GET(req: Request) {
   try {
     await requireStaffRequest(req);
@@ -18,21 +21,23 @@ export async function GET(req: Request) {
     const primaryApp = getAdminApp();
     const primaryDb = getFirestore(primaryApp);
 
-    // 1. Fetch all Connect Club users' roll numbers to cross-reference
-    const ccUsersSnapshot = await primaryDb.collection("users").select("rollNo").get();
+    const [ccUsersSnapshot, externalSnapshot] = await Promise.all([
+      primaryDb.collection("users").select("rollNo").limit(MAX_USER_ROLLS).get(),
+      primaryDb
+        .collection("external_registrations")
+        .where("eventId", "==", "inspirex-s2")
+        .orderBy("registeredAt", "desc")
+        .limit(MAX_REGISTRATIONS)
+        .get(),
+    ]);
+
     const ccRollNumbers = new Set(
       ccUsersSnapshot.docs
-        .map(doc => normalizeRollNo(doc.data().rollNo))
+        .map((doc) => normalizeRollNo(doc.data().rollNo))
         .filter(Boolean)
     );
 
-    // 2. Fetch external registrations
-    const externalSnapshot = await primaryDb.collection("external_registrations")
-      .where("eventId", "==", "inspirex-s2")
-      .orderBy("registeredAt", "desc")
-      .get();
-    
-    const externalRegistrations = externalSnapshot.docs.map(doc => {
+    const externalRegistrations = externalSnapshot.docs.map((doc) => {
       const data = doc.data();
       const rawRollNo = data.rollNo || "";
       const cleanRollNo = normalizeRollNo(rawRollNo);
@@ -46,7 +51,7 @@ export async function GET(req: Request) {
         branch: data.branch || "",
         year: data.year || "",
         section: data.section || "",
-        status: data.status || "pending", // "pending" or "approved"
+        status: data.status || "pending",
         ticketId: data.ticketId || null,
         registeredAt: serializeTimestamp(data.registeredAt),
         approvedAt: serializeTimestamp(data.approvedAt),
@@ -58,7 +63,7 @@ export async function GET(req: Request) {
         normalizedPhone: normalizePhone(data.phone),
         duplicateKey: `${cleanRollNo}:${normalizeEmail(data.email)}:${normalizePhone(data.phone)}`,
         isConnectClubMember: ccRollNumbers.has(cleanRollNo),
-        source: "external"
+        source: "external",
       };
     });
 
@@ -68,7 +73,7 @@ export async function GET(req: Request) {
       const keys = [
         registration.normalizedEmail && `email:${registration.normalizedEmail}`,
         registration.normalizedPhone && `phone:${registration.normalizedPhone}`,
-        registration.rollNo !== "Unknown" && `roll:${cleanRegistrationRollNo(registration.rollNo)}`,
+        registration.rollNo !== "Unknown" && `roll:${normalizeRollNo(registration.rollNo)}`,
       ].filter(Boolean) as string[];
       keys.forEach((key) => {
         if (seen.has(key)) {
@@ -87,21 +92,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, count: data.length, data });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "Unauthorized: Admin authentication required." }, { status: 401 });
-    }
-    if (message === "FORBIDDEN") {
-      return NextResponse.json({ error: "Forbidden: Admin access required." }, { status: 403 });
-    }
+    const authError = authErrorResponse(error);
+    if (authError) return authError;
     console.error("Error fetching external registrations:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch registrations.", details: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch registrations." }, { status: 500 });
   }
-}
-
-function cleanRegistrationRollNo(value: string): string {
-  return normalizeRollNo(value);
 }
